@@ -1,6 +1,6 @@
 {
     "name": "@ehfuse/forma",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Advanced React form state management library with individual field subscriptions and global state support",
     "main": "dist/index.js",
     "module": "dist/esm/index.js",
@@ -32,6 +32,8 @@
         "react",
         "form",
         "forms",
+        "form-state",
+        "form-management",
         "state-management",
         "typescript",
         "react-hooks",
@@ -40,7 +42,12 @@
         "material-ui",
         "dot-notation",
         "nested-objects",
-        "global-state"
+        "global-state",
+        "multi-step",
+        "form-validation",
+        "react-form",
+        "subscription",
+        "react19"
     ],
     "author": {
         "name": "KIM YOUNG JIN",

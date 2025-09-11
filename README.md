@@ -2,7 +2,10 @@
 
 # Forma
 
-**고급 React 폼 상태 관리 라이브러리** | \*\*Advanced R## 📚 문서 | Documentation
+**Advanced React form state management library**
+고급 React 폼 상태 관리 라이브러리
+
+## 📚 Documentation | 문서
 
 ### 한국어 | Korean
 

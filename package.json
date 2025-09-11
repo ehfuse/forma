@@ -1,0 +1,71 @@
+{
+    "name": "@ehfuse/forma",
+    "version": "1.0.0",
+    "description": "고급 React 폼 상태 관리 라이브러리 - 개별 필드 구독과 글로벌 상태 관리 지원",
+    "main": "dist/index.js",
+    "module": "dist/index.esm.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "npm run clean && npm run build:cjs && npm run build:esm && npm run build:types",
+        "build:cjs": "tsc -p tsconfig.build.json",
+        "build:esm": "tsc -p tsconfig.build.json --module esnext --outDir dist/esm",
+        "build:types": "tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --outDir dist",
+        "clean": "rm -rf dist",
+        "prepublishOnly": "npm run build",
+        "test": "echo \"Tests will be added\" && exit 0",
+        "lint": "eslint . --ext .ts,.tsx",
+        "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    },
+    "keywords": [
+        "react",
+        "form",
+        "forms",
+        "state-management",
+        "typescript",
+        "react-hooks",
+        "performance",
+        "mui",
+        "material-ui",
+        "dot-notation",
+        "nested-objects",
+        "global-state"
+    ],
+    "author": {
+        "name": "KIM YOUNG JIN",
+        "email": "ehfuse@gmail.com"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ehfuse/forma.git"
+    },
+    "bugs": {
+        "url": "https://github.com/ehfuse/forma/issues"
+    },
+    "homepage": "https://github.com/ehfuse/elim_crm/tree/main/src/forma#readme",
+    "peerDependencies": {
+        "react": ">=18.0.0"
+    },
+    "devDependencies": {
+        "@mui/material": "^7.3.2",
+        "@mui/system": "^7.3.2",
+        "@mui/x-date-pickers": "^8.11.2",
+        "@types/react": "^18.0.0",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "react": "^19.1.1",
+        "typescript": "^5.0.0"
+    },
+    "engines": {
+        "node": ">=16.0.0",
+        "npm": ">=7.0.0"
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}

@@ -1,0 +1,9 @@
+# NPM 배포 제외 파일들
+examples/
+docs/
+components/FormaTestForm.tsx
+*.test.ts
+*.test.tsx
+tsconfig.build.json
+.gitignore
+.codacy

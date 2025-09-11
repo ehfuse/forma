@@ -1,10 +1,17 @@
 {
     "name": "@ehfuse/forma",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "description": "Advanced React form state management library with individual field subscriptions and global state support",
     "main": "dist/index.js",
-    "module": "dist/index.esm.js",
+    "module": "dist/esm/index.js",
     "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/esm/index.js",
+            "require": "./dist/index.js"
+        }
+    },
     "files": [
         "dist",
         "README.md",
@@ -48,24 +55,15 @@
         "url": "https://github.com/ehfuse/forma/issues"
     },
     "homepage": "https://github.com/ehfuse/forma#readme",
-    "peerDependencies": {
-        "react": ">=18.0.0"
-    },
-    "devDependencies": {
-        "@mui/material": "^7.3.2",
-        "@mui/system": "^7.3.2",
-        "@mui/x-date-pickers": "^8.11.2",
-        "@types/react": "^18.0.0",
-        "eslint": "^8.0.0",
-        "prettier": "^3.0.0",
-        "react": "^19.1.1",
-        "typescript": "^5.0.0"
-    },
     "engines": {
         "node": ">=16.0.0",
         "npm": ">=7.0.0"
     },
     "publishConfig": {
         "access": "public"
+    },
+    "devDependencies": {
+        "@types/react": "^19.1.12",
+        "typescript": "^5.9.2"
     }
 }

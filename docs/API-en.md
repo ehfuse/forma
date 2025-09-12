@@ -4,22 +4,134 @@ This document provides detailed reference for all APIs in the Forma library.
 
 ## Table of Contents
 
-- [Hooks](#hooks)
-    - [useForm](#useform)
-    - [useGlobalForm](#useglobalform)
-    - [useRegisterGlobalForm](#useregisterglobalform)
-- [Components](#components)
-    - [GlobalFormProvider](#globalformprovider)
-- [Core Classes](#core-classes)
-    - [FieldStore](#fieldstore)
-- [Utilities](#utilities)
-    - [getNestedValue](#getnestedvalue)
-    - [setNestedValue](#setnestedvalue)
-- [TypeScript Types](#typescript-types)
+-   [Hooks](#hooks)
+    -   [useFieldState](#usefieldstate)
+    -   [useForm](#useform)
+    -   [useGlobalForm](#useglobalform)
+    -   [useRegisterGlobalForm](#useregisterglobalform)
+-   [Components](#components)
+    -   [GlobalFormProvider](#globalformprovider)
+-   [Core Classes](#core-classes)
+    -   [FieldStore](#fieldstore)
+-   [Utilities](#utilities)
+    -   [getNestedValue](#getnestedvalue)
+    -   [setNestedValue](#setnestedvalue)
+-   [TypeScript Types](#typescript-types)
 
 ---
 
 ## Hooks
+
+### useFieldState
+
+A foundational hook for general state management of arrays, objects, and other data structures. Optimizes performance through individual field subscriptions.
+
+#### Signature
+
+```typescript
+function useFieldState<T extends Record<string, any>>(
+    initialValues: T,
+    options?: UseFieldStateOptions<T>
+): UseFieldStateReturn<T>;
+```
+
+#### Parameters
+
+```typescript
+interface UseFieldStateOptions<T> {
+    /** Optional callback when state changes */
+    onChange?: (values: T) => void;
+    /** Enable deep equality checking for better performance */
+    deepEquals?: boolean;
+    /** External FieldStore instance for shared state */
+    _externalStore?: FieldStore<T>;
+}
+```
+
+#### Return Value
+
+```typescript
+interface UseFieldStateReturn<T> {
+    /** Subscribe to a specific field value with dot notation */
+    useValue: <K extends string>(path: K) => any;
+    /** Set a specific field value with dot notation */
+    setValue: <K extends string>(path: K, value: any) => void;
+    /** Get all current values (non-reactive) */
+    getValues: () => T;
+    /** Set all values at once */
+    setValues: (values: Partial<T>) => void;
+    /** Reset to initial values */
+    reset: () => void;
+    /** Handle standard input change events */
+    handleChange: (
+        event: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+    ) => void;
+    /** Direct access to the internal store for advanced usage */
+    _store: FieldStore<T>;
+    /** Current values (reactive) */
+    values: T;
+}
+```
+
+#### Example
+
+```typescript
+import { useFieldState } from "forma";
+
+// Basic usage
+function MyComponent() {
+    const state = useFieldState({
+        user: { name: "", email: "" },
+        settings: { theme: "light", notifications: true },
+    });
+
+    // Individual field subscription (re-renders only when this field changes)
+    const userName = state.useValue("user.name");
+    const theme = state.useValue("settings.theme");
+
+    return (
+        <div>
+            <input
+                value={userName}
+                onChange={(e) => state.setValue("user.name", e.target.value)}
+            />
+            <button onClick={() => state.setValue("settings.theme", "dark")}>
+                Dark Mode
+            </button>
+        </div>
+    );
+}
+
+// Array state management
+function TodoList() {
+    const state = useFieldState({
+        todos: [
+            { id: 1, text: "Learn React", completed: false },
+            { id: 2, text: "Build app", completed: false },
+        ],
+    });
+
+    // Subscribe to specific todo item
+    const firstTodo = state.useValue("todos.0.text");
+
+    const addTodo = () => {
+        const todos = state.getValues().todos;
+        state.setValue("todos", [
+            ...todos,
+            { id: Date.now(), text: "New todo", completed: false },
+        ]);
+    };
+
+    return (
+        <div>
+            <p>First todo: {firstTodo}</p>
+            <button onClick={addTodo}>Add Todo</button>
+        </div>
+    );
+}
+```
 
 ### useForm
 
@@ -173,34 +285,34 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 ```typescript
 // Step 1 Component
 function Step1() {
-  const form = useGlobalForm({
-    formId: "user-registration",
-    initialValues: { name: "", email: "", phone: "" }
-  });
+    const form = useGlobalForm({
+        formId: "user-registration",
+        initialValues: { name: "", email: "", phone: "" },
+    });
 
-  return (
-    <TextField
-      name="name"
-      value={form.useFormValue("name")}
-      onChange={form.handleFormChange}
-    />
-  );
+    return (
+        <TextField
+            name="name"
+            value={form.useFormValue("name")}
+            onChange={form.handleFormChange}
+        />
+    );
 }
 
 // Step 2 Component (shares same form state)
 function Step2() {
-  const form = useGlobalForm({
-    formId: "user-registration", // Same ID
-    initialValues: { name: "", email: "", phone: "" }
-  });
+    const form = useGlobalForm({
+        formId: "user-registration", // Same ID
+        initialValues: { name: "", email: "", phone: "" },
+    });
 
-  return (
-    <TextField
-      name="email"
-      value={form.useFormValue("email")}
-      onChange={form.handleFormChange}
-    />
-  );
+    return (
+        <TextField
+            name="email"
+            value={form.useFormValue("email")}
+            onChange={form.handleFormChange}
+        />
+    );
 }
 ```
 
@@ -218,33 +330,33 @@ function useRegisterGlobalForm<T>(formId: string, form: UseFormReturn<T>): void;
 
 #### Parameters
 
-- `formId`: Unique identifier for the global form
-- `form`: useForm instance to register
+-   `formId`: Unique identifier for the global form
+-   `form`: useForm instance to register
 
 #### Features
 
-- **Global Sharing**: Converts local forms to global state
-- **Auto Sync**: Registered forms are accessible from other components
-- **Type Safety**: Complete type inference through TypeScript
+-   **Global Sharing**: Converts local forms to global state
+-   **Auto Sync**: Registered forms are accessible from other components
+-   **Type Safety**: Complete type inference through TypeScript
 
 #### Example
 
 ```typescript
-import { useForm, useRegisterGlobalForm } from '@ehfuse/forma';
+import { useForm, useRegisterGlobalForm } from "@ehfuse/forma";
 
 function MyComponent() {
     // Create local form
     const form = useForm<{ name: string; email: string }>({
-        initialValues: { name: '', email: '' },
-        onSubmit: async (values) => console.log(values)
+        initialValues: { name: "", email: "" },
+        onSubmit: async (values) => console.log(values),
     });
 
     // Register as global form
-    useRegisterGlobalForm('shared-form', form);
+    useRegisterGlobalForm("shared-form", form);
 
     return (
         <input
-            value={form.useFormValue('name')}
+            value={form.useFormValue("name")}
             onChange={form.handleFormChange}
             name="name"
         />
@@ -254,10 +366,10 @@ function MyComponent() {
 // Access from another component
 function AnotherComponent() {
     const form = useGlobalForm<{ name: string; email: string }>({
-        formId: 'shared-form'
+        formId: "shared-form",
     });
 
-    return <p>Name: {form.useFormValue('name')}</p>;
+    return <p>Name: {form.useFormValue("name")}</p>;
 }
 ```
 
@@ -282,16 +394,16 @@ function GlobalFormProvider({ children }: { children: ReactNode }): JSX.Element;
 import { GlobalFormProvider } from "@/forma";
 
 function App() {
-  return (
-    <GlobalFormProvider>
-      <Router>
-        <Routes>
-          <Route path="/step1" element={<Step1 />} />
-          <Route path="/step2" element={<Step2 />} />
-        </Routes>
-      </Router>
-    </GlobalFormProvider>
-  );
+    return (
+        <GlobalFormProvider>
+            <Router>
+                <Routes>
+                    <Route path="/step1" element={<Step1 />} />
+                    <Route path="/step2" element={<Step2 />} />
+                </Routes>
+            </Router>
+        </GlobalFormProvider>
+    );
 }
 ```
 
@@ -391,8 +503,8 @@ function getNestedValue(obj: any, path: string): any;
 
 #### Parameters
 
-- `obj`: Target object
-- `path`: Access path (e.g., "user.profile.name")
+-   `obj`: Target object
+-   `path`: Access path (e.g., "user.profile.name")
 
 #### Example
 
@@ -422,9 +534,9 @@ function setNestedValue(obj: any, path: string, value: any): any;
 
 #### Parameters
 
-- `obj`: Target object
-- `path`: Path to set (e.g., "user.profile.name")
-- `value`: Value to set
+-   `obj`: Target object
+-   `path`: Path to set (e.g., "user.profile.name")
+-   `value`: Value to set
 
 #### Returns
 
@@ -535,8 +647,8 @@ interface GlobalFormContextType {
 2. **Conditional Subscriptions**
     ```typescript
     function ConditionalField({ showField }) {
-      const value = showField ? form.useFormValue("field") : "";
-      return showField ? <TextField value={value} /> : null;
+        const value = showField ? form.useFormValue("field") : "";
+        return showField ? <TextField value={value} /> : null;
     }
     ```
 

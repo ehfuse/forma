@@ -1,7 +1,7 @@
 {
     "name": "@ehfuse/forma",
-    "version": "1.0.4",
-    "description": "Advanced React form state management library with individual field subscriptions and global state support",
+    "version": "1.1.0",
+    "description": "Advanced React state management library with individual field subscriptions - supports both forms and general state management",
     "main": "dist/index.js",
     "module": "dist/esm/index.js",
     "types": "dist/index.d.ts",

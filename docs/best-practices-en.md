@@ -58,21 +58,125 @@ function ExpensiveValidation() {
 
 ## 📝 Recommended Patterns
 
-### useForm vs useGlobalForm
+### useForm vs useGlobalForm vs useFieldState
 
 ```tsx
-// ✅ Single component → useForm
+// ✅ Single component form → useForm
 function ContactForm() {
     const form = useForm({
         initialValues: { name: "", email: "" },
     });
 }
 
-// ✅ Multiple components/pages → useGlobalForm
+// ✅ Multiple components/pages form → useGlobalForm
 function MultiStepForm() {
     const form = useGlobalForm({
         formId: "user-registration",
     });
+}
+
+// ✅ General state management (non-form) → useFieldState
+function TodoApp() {
+    const state = useFieldState({
+        todos: [],
+        filter: "all",
+        searchTerm: "",
+    });
+}
+
+// ✅ Complex array/object state → useFieldState
+function DataTable() {
+    const state = useFieldState({
+        data: [],
+        sorting: { field: "name", direction: "asc" },
+        pagination: { page: 1, size: 10 },
+    });
+}
+```
+
+### useFieldState Optimization Patterns
+
+```tsx
+// ✅ Maintain immutability when updating arrays
+function TodoList() {
+    const state = useFieldState({ todos: [] });
+
+    const addTodo = (text: string) => {
+        const currentTodos = state.getValues().todos;
+        state.setValue("todos", [
+            ...currentTodos,
+            { id: Date.now(), text, completed: false },
+        ]);
+    };
+
+    const updateTodo = (id: number, updates: Partial<Todo>) => {
+        const currentTodos = state.getValues().todos;
+        state.setValue(
+            "todos",
+            currentTodos.map((todo) =>
+                todo.id === id ? { ...todo, ...updates } : todo
+            )
+        );
+    };
+}
+
+// ✅ Individual field subscription for nested objects
+function UserProfile() {
+    const state = useFieldState({
+        user: { name: "", email: "" },
+        preferences: { theme: "light", notifications: true },
+    });
+
+    // Subscribe to each field individually - optimal performance
+    const userName = state.useValue("user.name");
+    const theme = state.useValue("preferences.theme");
+
+    return (
+        <div>
+            <input
+                value={userName}
+                onChange={(e) => state.setValue("user.name", e.target.value)}
+            />
+            <select
+                value={theme}
+                onChange={(e) =>
+                    state.setValue("preferences.theme", e.target.value)
+                }
+            >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+    );
+}
+
+// ✅ Subscribe to individual array elements (performance optimized)
+function OptimizedTodoList() {
+    const state = useFieldState({ todos: [] });
+
+    // ❌ Subscribe to entire array (inefficient)
+    // const todos = state.useValue("todos");
+
+    // ✅ Subscribe only to array length
+    const todosLength = state.useValue("todos.length");
+
+    // ✅ Subscribe to specific fields of individual elements
+    const firstTodoText = state.useValue("todos.0.text");
+    const secondTodoCompleted = state.useValue("todos.1.completed");
+
+    return (
+        <div>
+            <p>Total todos: {todosLength}</p>
+            <p>First todo: {firstTodoText}</p>
+            <input
+                type="checkbox"
+                checked={secondTodoCompleted}
+                onChange={(e) =>
+                    state.setValue("todos.1.completed", e.target.checked)
+                }
+            />
+        </div>
+    );
 }
 ```
 
@@ -93,10 +197,10 @@ function UserEmailField() {
 
 ## ❌ Patterns to Avoid
 
-- Direct `form.values` access (full subscription)
-- Unconditional subscriptions for conditional fields
-- Creating separate useForm instances per component
-- Creating new objects/arrays on every render
+-   Direct `form.values` access (full subscription)
+-   Unconditional subscriptions for conditional fields
+-   Creating separate useForm instances per component
+-   Creating new objects/arrays on every render
 
 ## 🔧 Debugging
 
@@ -584,20 +688,20 @@ function PerformanceBenchmark() {
 
 ### ✅ Recommended Practices
 
-- [ ] Use `useFormValue` for individual field subscriptions
-- [ ] Apply conditional subscriptions for conditional rendering
-- [ ] Memoize complex calculations with `useMemo`
-- [ ] Apply virtualization for large lists
-- [ ] Use single Form instance instead of multiple instances
-- [ ] Avoid unnecessary full object subscriptions
+-   [ ] Use `useFormValue` for individual field subscriptions
+-   [ ] Apply conditional subscriptions for conditional rendering
+-   [ ] Memoize complex calculations with `useMemo`
+-   [ ] Apply virtualization for large lists
+-   [ ] Use single Form instance instead of multiple instances
+-   [ ] Avoid unnecessary full object subscriptions
 
 ### ❌ Patterns to Avoid
 
-- [ ] Direct access to `form.values` (full subscription)
-- [ ] Creating new objects/arrays on every render
-- [ ] Unconditional subscriptions for conditional fields
-- [ ] Creating separate Form instances per component
-- [ ] Running complex calculations on every render
+-   [ ] Direct access to `form.values` (full subscription)
+-   [ ] Creating new objects/arrays on every render
+-   [ ] Unconditional subscriptions for conditional fields
+-   [ ] Creating separate Form instances per component
+-   [ ] Running complex calculations on every render
 
 ## 🔧 Debugging Tools
 

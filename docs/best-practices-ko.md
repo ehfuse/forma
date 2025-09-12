@@ -58,21 +58,125 @@ function ExpensiveValidation() {
 
 ## 📝 권장 패턴
 
-### useForm vs useGlobalForm
+### useForm vs useGlobalForm vs useFieldState
 
 ```tsx
-// ✅ 단일 컴포넌트 → useForm
+// ✅ 단일 컴포넌트 폼 → useForm
 function ContactForm() {
     const form = useForm({
         initialValues: { name: "", email: "" },
     });
 }
 
-// ✅ 다중 컴포넌트/페이지 → useGlobalForm
+// ✅ 다중 컴포넌트/페이지 폼 → useGlobalForm
 function MultiStepForm() {
     const form = useGlobalForm({
         formId: "user-registration",
     });
+}
+
+// ✅ 일반 상태 관리 (폼 아님) → useFieldState
+function TodoApp() {
+    const state = useFieldState({
+        todos: [],
+        filter: "all",
+        searchTerm: "",
+    });
+}
+
+// ✅ 복잡한 배열/객체 상태 → useFieldState
+function DataTable() {
+    const state = useFieldState({
+        data: [],
+        sorting: { field: "name", direction: "asc" },
+        pagination: { page: 1, size: 10 },
+    });
+}
+```
+
+### useFieldState 최적화 패턴
+
+```tsx
+// ✅ 배열 업데이트 시 불변성 유지
+function TodoList() {
+    const state = useFieldState({ todos: [] });
+
+    const addTodo = (text: string) => {
+        const currentTodos = state.getValues().todos;
+        state.setValue("todos", [
+            ...currentTodos,
+            { id: Date.now(), text, completed: false },
+        ]);
+    };
+
+    const updateTodo = (id: number, updates: Partial<Todo>) => {
+        const currentTodos = state.getValues().todos;
+        state.setValue(
+            "todos",
+            currentTodos.map((todo) =>
+                todo.id === id ? { ...todo, ...updates } : todo
+            )
+        );
+    };
+}
+
+// ✅ 중첩 객체의 개별 필드 구독
+function UserProfile() {
+    const state = useFieldState({
+        user: { name: "", email: "" },
+        preferences: { theme: "light", notifications: true },
+    });
+
+    // 각 필드별로 구독 - 최적의 성능
+    const userName = state.useValue("user.name");
+    const theme = state.useValue("preferences.theme");
+
+    return (
+        <div>
+            <input
+                value={userName}
+                onChange={(e) => state.setValue("user.name", e.target.value)}
+            />
+            <select
+                value={theme}
+                onChange={(e) =>
+                    state.setValue("preferences.theme", e.target.value)
+                }
+            >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+    );
+}
+
+// ✅ 배열의 개별 요소 구독 (성능 최적화)
+function OptimizedTodoList() {
+    const state = useFieldState({ todos: [] });
+
+    // ❌ 전체 배열 구독 (비효율적)
+    // const todos = state.useValue("todos");
+
+    // ✅ 배열 길이만 구독
+    const todosLength = state.useValue("todos.length");
+
+    // ✅ 개별 요소의 특정 필드만 구독
+    const firstTodoText = state.useValue("todos.0.text");
+    const secondTodoCompleted = state.useValue("todos.1.completed");
+
+    return (
+        <div>
+            <p>총 할 일: {todosLength}개</p>
+            <p>첫 번째: {firstTodoText}</p>
+            <input
+                type="checkbox"
+                checked={secondTodoCompleted}
+                onChange={(e) =>
+                    state.setValue("todos.1.completed", e.target.checked)
+                }
+            />
+        </div>
+    );
 }
 ```
 
@@ -93,10 +197,10 @@ function UserEmailField() {
 
 ## ❌ 피해야 할 패턴
 
-- `form.values` 직접 접근 (전체 구독)
-- 조건부 필드에서 무조건 구독
-- 컴포넌트마다 별도 useForm 생성
-- 매 렌더링마다 새 객체/배열 생성
+-   `form.values` 직접 접근 (전체 구독)
+-   조건부 필드에서 무조건 구독
+-   컴포넌트마다 별도 useForm 생성
+-   매 렌더링마다 새 객체/배열 생성
 
 ## 🔧 디버깅
 

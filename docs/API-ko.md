@@ -4,22 +4,134 @@
 
 ## Table of Contents
 
-- [Hooks](#hooks)
-    - [useForm](#useform)
-    - [useGlobalForm](#useglobalform)
-    - [useRegisterGlobalForm](#useregisterglobalform)
-- [Components](#components)
-    - [GlobalFormProvider](#globalformprovider)
-- [Core Classes](#core-classes)
-    - [FieldStore](#fieldstore)
-- [Utilities](#utilities)
-    - [getNestedValue](#getnestedvalue)
-    - [setNestedValue](#setnestedvalue)
-- [TypeScript Types](#typescript-types)
+-   [Hooks](#hooks)
+    -   [useFieldState](#usefieldstate)
+    -   [useForm](#useform)
+    -   [useGlobalForm](#useglobalform)
+    -   [useRegisterGlobalForm](#useregisterglobalform)
+-   [Components](#components)
+    -   [GlobalFormProvider](#globalformprovider)
+-   [Core Classes](#core-classes)
+    -   [FieldStore](#fieldstore)
+-   [Utilities](#utilities)
+    -   [getNestedValue](#getnestedvalue)
+    -   [setNestedValue](#setnestedvalue)
+-   [TypeScript Types](#typescript-types)
 
 ---
 
 ## Hooks
+
+### useFieldState
+
+배열, 객체 등의 일반적인 상태 관리를 위한 기본 훅입니다. 개별 필드 구독을 통해 성능을 최적화합니다.
+
+#### Signature
+
+```typescript
+function useFieldState<T extends Record<string, any>>(
+    initialValues: T,
+    options?: UseFieldStateOptions<T>
+): UseFieldStateReturn<T>;
+```
+
+#### Parameters
+
+```typescript
+interface UseFieldStateOptions<T> {
+    /** 상태 변경 시 선택적 콜백 */
+    onChange?: (values: T) => void;
+    /** 성능 향상을 위한 깊은 동등성 검사 활성화 */
+    deepEquals?: boolean;
+    /** 공유 상태를 위한 외부 FieldStore 인스턴스 */
+    _externalStore?: FieldStore<T>;
+}
+```
+
+#### Return Value
+
+```typescript
+interface UseFieldStateReturn<T> {
+    /** dot notation으로 특정 필드 값 구독 */
+    useValue: <K extends string>(path: K) => any;
+    /** dot notation으로 특정 필드 값 설정 */
+    setValue: <K extends string>(path: K, value: any) => void;
+    /** 모든 현재 값 가져오기 (반응형 아님) */
+    getValues: () => T;
+    /** 모든 값을 한 번에 설정 */
+    setValues: (values: Partial<T>) => void;
+    /** 초기값으로 재설정 */
+    reset: () => void;
+    /** 표준 입력 변경 이벤트 처리 */
+    handleChange: (
+        event: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+    ) => void;
+    /** 고급 사용을 위한 내부 스토어 직접 접근 */
+    _store: FieldStore<T>;
+    /** 현재 값들 (반응형) */
+    values: T;
+}
+```
+
+#### Example
+
+```typescript
+import { useFieldState } from "forma";
+
+// 기본 사용법
+function MyComponent() {
+    const state = useFieldState({
+        user: { name: "", email: "" },
+        settings: { theme: "light", notifications: true },
+    });
+
+    // 개별 필드 구독 (해당 필드가 변경될 때만 리렌더링)
+    const userName = state.useValue("user.name");
+    const theme = state.useValue("settings.theme");
+
+    return (
+        <div>
+            <input
+                value={userName}
+                onChange={(e) => state.setValue("user.name", e.target.value)}
+            />
+            <button onClick={() => state.setValue("settings.theme", "dark")}>
+                다크 모드
+            </button>
+        </div>
+    );
+}
+
+// 배열 상태 관리
+function TodoList() {
+    const state = useFieldState({
+        todos: [
+            { id: 1, text: "Learn React", completed: false },
+            { id: 2, text: "Build app", completed: false },
+        ],
+    });
+
+    // 특정 할 일 항목 구독
+    const firstTodo = state.useValue("todos.0.text");
+
+    const addTodo = () => {
+        const todos = state.getValues().todos;
+        state.setValue("todos", [
+            ...todos,
+            { id: Date.now(), text: "New todo", completed: false },
+        ]);
+    };
+
+    return (
+        <div>
+            <p>첫 번째 할 일: {firstTodo}</p>
+            <button onClick={addTodo}>할 일 추가</button>
+        </div>
+    );
+}
+```
 
 ### useForm
 
@@ -173,34 +285,34 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 ```typescript
 // Step 1 Component
 function Step1() {
-  const form = useGlobalForm({
-    formId: "user-registration",
-    initialValues: { name: "", email: "", phone: "" }
-  });
+    const form = useGlobalForm({
+        formId: "user-registration",
+        initialValues: { name: "", email: "", phone: "" },
+    });
 
-  return (
-    <TextField
-      name="name"
-      value={form.useFormValue("name")}
-      onChange={form.handleFormChange}
-    />
-  );
+    return (
+        <TextField
+            name="name"
+            value={form.useFormValue("name")}
+            onChange={form.handleFormChange}
+        />
+    );
 }
 
 // Step 2 Component (같은 폼 상태 공유)
 function Step2() {
-  const form = useGlobalForm({
-    formId: "user-registration", // 같은 ID
-    initialValues: { name: "", email: "", phone: "" }
-  });
+    const form = useGlobalForm({
+        formId: "user-registration", // 같은 ID
+        initialValues: { name: "", email: "", phone: "" },
+    });
 
-  return (
-    <TextField
-      name="email"
-      value={form.useFormValue("email")}
-      onChange={form.handleFormChange}
-    />
-  );
+    return (
+        <TextField
+            name="email"
+            value={form.useFormValue("email")}
+            onChange={form.handleFormChange}
+        />
+    );
 }
 ```
 
@@ -218,33 +330,33 @@ function useRegisterGlobalForm<T>(formId: string, form: UseFormReturn<T>): void;
 
 #### Parameters
 
-- `formId`: 글로벌 폼의 고유 식별자
-- `form`: 등록할 useForm 인스턴스
+-   `formId`: 글로벌 폼의 고유 식별자
+-   `form`: 등록할 useForm 인스턴스
 
 #### 특징
 
-- **글로벌 공유**: 로컬 폼을 글로벌 상태로 변환
-- **자동 동기화**: 등록된 폼은 다른 컴포넌트에서 접근 가능
-- **타입 안전성**: TypeScript를 통한 완전한 타입 추론
+-   **글로벌 공유**: 로컬 폼을 글로벌 상태로 변환
+-   **자동 동기화**: 등록된 폼은 다른 컴포넌트에서 접근 가능
+-   **타입 안전성**: TypeScript를 통한 완전한 타입 추론
 
 #### Example
 
 ```typescript
-import { useForm, useRegisterGlobalForm } from '@ehfuse/forma';
+import { useForm, useRegisterGlobalForm } from "@ehfuse/forma";
 
 function MyComponent() {
     // 로컬 폼 생성
     const form = useForm<{ name: string; email: string }>({
-        initialValues: { name: '', email: '' },
-        onSubmit: async (values) => console.log(values)
+        initialValues: { name: "", email: "" },
+        onSubmit: async (values) => console.log(values),
     });
 
     // 글로벌 폼으로 등록
-    useRegisterGlobalForm('shared-form', form);
+    useRegisterGlobalForm("shared-form", form);
 
     return (
         <input
-            value={form.useFormValue('name')}
+            value={form.useFormValue("name")}
             onChange={form.handleFormChange}
             name="name"
         />
@@ -254,10 +366,10 @@ function MyComponent() {
 // 다른 컴포넌트에서 접근
 function AnotherComponent() {
     const form = useGlobalForm<{ name: string; email: string }>({
-        formId: 'shared-form'
+        formId: "shared-form",
     });
 
-    return <p>이름: {form.useFormValue('name')}</p>;
+    return <p>이름: {form.useFormValue("name")}</p>;
 }
 ```
 
@@ -282,16 +394,16 @@ function GlobalFormProvider({ children }: { children: ReactNode }): JSX.Element;
 import { GlobalFormProvider } from "@/forma";
 
 function App() {
-  return (
-    <GlobalFormProvider>
-      <Router>
-        <Routes>
-          <Route path="/step1" element={<Step1 />} />
-          <Route path="/step2" element={<Step2 />} />
-        </Routes>
-      </Router>
-    </GlobalFormProvider>
-  );
+    return (
+        <GlobalFormProvider>
+            <Router>
+                <Routes>
+                    <Route path="/step1" element={<Step1 />} />
+                    <Route path="/step2" element={<Step2 />} />
+                </Routes>
+            </Router>
+        </GlobalFormProvider>
+    );
 }
 ```
 
@@ -391,8 +503,8 @@ function getNestedValue(obj: any, path: string): any;
 
 #### Parameters
 
-- `obj`: 대상 객체
-- `path`: 접근 경로 (예: "user.profile.name")
+-   `obj`: 대상 객체
+-   `path`: 접근 경로 (예: "user.profile.name")
 
 #### Example
 
@@ -422,9 +534,9 @@ function setNestedValue(obj: any, path: string, value: any): any;
 
 #### Parameters
 
-- `obj`: 대상 객체
-- `path`: 설정할 경로 (예: "user.profile.name")
-- `value`: 설정할 값
+-   `obj`: 대상 객체
+-   `path`: 설정할 경로 (예: "user.profile.name")
+-   `value`: 설정할 값
 
 #### Returns
 
@@ -535,8 +647,8 @@ interface GlobalFormContextType {
 2. **조건부 구독**
     ```typescript
     function ConditionalField({ showField }) {
-      const value = showField ? form.useFormValue("field") : "";
-      return showField ? <TextField value={value} /> : null;
+        const value = showField ? form.useFormValue("field") : "";
+        return showField ? <TextField value={value} /> : null;
     }
     ```
 

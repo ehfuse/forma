@@ -31,6 +31,7 @@
 export { useForm } from "./hooks/useForm";
 export { useGlobalForm } from "./hooks/useGlobalForm";
 export { useRegisterGlobalForm } from "./hooks/useRegisterGlobalForm";
+export { useFieldState } from "./hooks/useFieldState";
 
 // ===== Context & Providers =====
 export {
@@ -49,9 +50,15 @@ export { getNestedValue, setNestedValue } from "./utils/dotNotation";
 export type {
     UseFormProps,
     UseFormReturn,
+    FormValidationResult,
     FormChangeEvent,
-    DatePickerChangeHandler,
 } from "./types/form";
+
+// Field State Types
+export type {
+    UseFieldStateOptions,
+    UseFieldStateReturn,
+} from "./hooks/useFieldState";
 
 // Global Form Types
 export type {

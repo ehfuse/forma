@@ -70,10 +70,214 @@ function UserRegistration() {
                 margin="normal"
             />
 
-            <Button type="submit" variant="contained" disabled={form.isSubmitting} fullWidth sx={{ mt: 2 }}>
+            <Button
+                type="submit"
+                variant="contained"
+                disabled={form.isSubmitting}
+                fullWidth
+                sx={{ mt: 2 }}
+            >
                 {form.isSubmitting ? "제출 중..." : "가입하기"}
             </Button>
         </form>
+    );
+}
+```
+
+## 2.5단계: 일반 상태 관리 (useFieldState)
+
+폼이 아닌 일반적인 상태 관리에도 Forma의 개별 필드 구독 기능을 활용할 수 있습니다.
+
+### 배열 상태 관리 (개선된 예제)
+
+```tsx
+import React from "react";
+import {
+    Button,
+    List,
+    ListItem,
+    ListItemText,
+    TextField,
+    Checkbox,
+} from "@mui/material";
+import { useFieldState } from "@/forma";
+
+interface Todo {
+    id: number;
+    text: string;
+    completed: boolean;
+}
+
+interface AppState {
+    todos: Todo[];
+    filter: "all" | "active" | "completed";
+    newTodoText: string;
+}
+
+// 개별 할 일 항목 컴포넌트 (성능 최적화)
+function TodoItem({ index }: { index: number }) {
+    const state = useFieldState<AppState>({
+        /* 외부에서 주입 */
+    });
+
+    // 개별 할 일 항목의 필드만 구독 (dot notation 활용)
+    const text = state.useValue(`todos.${index}.text`);
+    const completed = state.useValue(`todos.${index}.completed`);
+    const id = state.useValue(`todos.${index}.id`);
+
+    const toggleTodo = () => {
+        state.setValue(`todos.${index}.completed`, !completed);
+    };
+
+    return (
+        <ListItem>
+            <Checkbox checked={completed} onChange={toggleTodo} />
+            <ListItemText
+                primary={text}
+                style={{ textDecoration: completed ? "line-through" : "none" }}
+            />
+        </ListItem>
+    );
+}
+
+function TodoApp() {
+    const state = useFieldState<AppState>({
+        todos: [
+            { id: 1, text: "Learn React", completed: false },
+            { id: 2, text: "Learn Forma", completed: true },
+        ],
+        filter: "all",
+        newTodoText: "",
+    });
+
+    // 개별 필드 구독 - 최적화된 방식
+    const filter = state.useValue("filter");
+    const newTodoText = state.useValue("newTodoText");
+
+    // 배열 길이만 구독 (항목 추가/삭제 시에만 리렌더링)
+    const todosLength = state.useValue("todos.length");
+
+    const addTodo = () => {
+        if (!newTodoText.trim()) return;
+
+        const currentTodos = state.getValues().todos;
+        state.setValue("todos", [
+            ...currentTodos,
+            { id: Date.now(), text: newTodoText, completed: false },
+        ]);
+        state.setValue("newTodoText", "");
+    };
+
+    // 필터링은 계산된 속성으로 처리
+    const getFilteredIndices = () => {
+        const allTodos = state.getValues().todos;
+        return allTodos
+            .map((todo, index) => ({ todo, index }))
+            .filter(({ todo }) => {
+                if (filter === "active") return !todo.completed;
+                if (filter === "completed") return todo.completed;
+                return true;
+            })
+            .map(({ index }) => index);
+    };
+
+    return (
+        <div>
+            <TextField
+                value={newTodoText}
+                onChange={(e) => state.setValue("newTodoText", e.target.value)}
+                placeholder="새 할 일 입력..."
+                onKeyPress={(e) => e.key === "Enter" && addTodo()}
+            />
+            <Button onClick={addTodo}>추가</Button>
+
+            <div>
+                <Button onClick={() => state.setValue("filter", "all")}>
+                    전체
+                </Button>
+                <Button onClick={() => state.setValue("filter", "active")}>
+                    활성
+                </Button>
+                <Button onClick={() => state.setValue("filter", "completed")}>
+                    완료
+                </Button>
+                <span>현재 필터: {filter}</span>
+            </div>
+
+            <List>
+                {getFilteredIndices().map((index) => (
+                    <TodoItem key={index} index={index} />
+                ))}
+            </List>
+
+            <p>총 할 일 개수: {todosLength}</p>
+        </div>
+    );
+}
+```
+
+### 중첩 객체 상태 관리
+
+```tsx
+import { useFieldState } from "@/forma";
+
+interface UserProfile {
+    personal: {
+        name: string;
+        email: string;
+    };
+    settings: {
+        theme: "light" | "dark";
+        notifications: boolean;
+    };
+}
+
+function ProfileSettings() {
+    const state = useFieldState<UserProfile>({
+        personal: { name: "", email: "" },
+        settings: { theme: "light", notifications: true },
+    });
+
+    // Dot notation으로 중첩 필드에 개별 구독
+    const name = state.useValue("personal.name");
+    const theme = state.useValue("settings.theme");
+    const notifications = state.useValue("settings.notifications");
+
+    return (
+        <div>
+            <input
+                value={name}
+                onChange={(e) =>
+                    state.setValue("personal.name", e.target.value)
+                }
+                placeholder="이름"
+            />
+
+            <button
+                onClick={() =>
+                    state.setValue(
+                        "settings.theme",
+                        theme === "light" ? "dark" : "light"
+                    )
+                }
+            >
+                테마: {theme}
+            </button>
+
+            <label>
+                <input
+                    type="checkbox"
+                    checked={notifications}
+                    onChange={(e) =>
+                        state.setValue(
+                            "settings.notifications",
+                            e.target.checked
+                        )
+                    }
+                />
+                알림 받기
+            </label>
+        </div>
     );
 }
 ```
@@ -155,11 +359,26 @@ function DetailedForm() {
 
     return (
         <form onSubmit={form.submit}>
-            <TextField name="personal.name" label="이름" value={name} onChange={form.handleFormChange} />
+            <TextField
+                name="personal.name"
+                label="이름"
+                value={name}
+                onChange={form.handleFormChange}
+            />
 
-            <TextField name="contact.email" label="이메일" value={email} onChange={form.handleFormChange} />
+            <TextField
+                name="contact.email"
+                label="이메일"
+                value={email}
+                onChange={form.handleFormChange}
+            />
 
-            <TextField name="contact.address.city" label="도시" value={city} onChange={form.handleFormChange} />
+            <TextField
+                name="contact.address.city"
+                label="도시"
+                value={city}
+                onChange={form.handleFormChange}
+            />
         </form>
     );
 }
@@ -207,8 +426,16 @@ function Step1() {
     return (
         <div>
             <h2>1단계: 기본 정보</h2>
-            <TextField name="personal.name" value={name} onChange={form.handleFormChange} />
-            <TextField name="personal.email" value={email} onChange={form.handleFormChange} />
+            <TextField
+                name="personal.name"
+                value={name}
+                onChange={form.handleFormChange}
+            />
+            <TextField
+                name="personal.email"
+                value={email}
+                onChange={form.handleFormChange}
+            />
             <Button onClick={() => navigate("/step2")}>다음 단계</Button>
         </div>
     );
@@ -231,7 +458,11 @@ function Step2() {
             <h2>2단계: 선택사항</h2>
             <FormControlLabel
                 control={
-                    <Checkbox name="preferences.newsletter" checked={newsletter} onChange={form.handleFormChange} />
+                    <Checkbox
+                        name="preferences.newsletter"
+                        checked={newsletter}
+                        onChange={form.handleFormChange}
+                    />
                 }
                 label="뉴스레터 구독"
             />
@@ -286,7 +517,13 @@ function FormWithDate() {
 
     const birthDate = form.useFormValue("birthDate");
 
-    return <DatePicker label="생년월일" value={birthDate} onChange={form.handleDatePickerChange("birthDate")} />;
+    return (
+        <DatePicker
+            label="생년월일"
+            value={birthDate}
+            onChange={form.handleDatePickerChange("birthDate")}
+        />
+    );
 }
 ```
 
@@ -303,7 +540,11 @@ function FormWithSelect() {
     const category = form.useFormValue("category");
 
     return (
-        <Select name="category" value={category} onChange={form.handleFormChange}>
+        <Select
+            name="category"
+            value={category}
+            onChange={form.handleFormChange}
+        >
             <MenuItem value="A">카테고리 A</MenuItem>
             <MenuItem value="B">카테고리 B</MenuItem>
             <MenuItem value="C">카테고리 C</MenuItem>

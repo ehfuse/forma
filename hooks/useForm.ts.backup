@@ -34,7 +34,6 @@ import {
     DatePickerChangeHandler,
     UseFormProps,
 } from "../types/form";
-import { useFieldState } from "./useFieldState";
 
 import React, {
     useEffect,
@@ -46,6 +45,27 @@ import React, {
 
 // MUI DatePicker 타입 (선택적 import) / MUI DatePicker type (optional import)
 type PickerChangeHandlerContext<T> = any;
+
+/**
+ * 개별 필드 구독 / Individual field subscription
+ * 특정 필드만 구독하여 해당 필드가 변경될 때만 리렌더링
+ * Subscribe to specific field only, re-render only when that field changes
+ */
+function useFieldValue<T>(store: FieldStore<any>, fieldName: string): T {
+    const [value, setValue] = useState(() => store.getValue(fieldName));
+
+    useEffect(() => {
+        // 구독 설정 / Setup subscription
+        const unsubscribe = store.subscribe(fieldName, () => {
+            const newValue = store.getValue(fieldName);
+            setValue(newValue);
+        });
+
+        return unsubscribe;
+    }, [fieldName]); // store 의존성 제거로 불필요한 재구독 방지 / Remove store dependency to prevent unnecessary re-subscriptions
+
+    return value;
+}
 
 /**
  * Forma 핵심 폼 관리 훅 / Forma core form management hook
@@ -70,20 +90,45 @@ export function useForm<T extends Record<string, any>>({
     onComplete,
     _externalStore,
 }: UseFormProps<T>) {
-    // useFieldState를 기반으로 사용 / Use useFieldState as foundation
-    const fieldState = useFieldState<T>(initialValues, { _externalStore });
+    // Store 인스턴스 (외부 스토어가 있으면 사용, 없으면 로컬 생성)
+    // Store instance (use external store if provided, otherwise create local one)
+    const storeRef = useRef<FieldStore<T> | null>(null);
+    if (_externalStore) {
+        storeRef.current = _externalStore;
+    } else if (!storeRef.current) {
+        storeRef.current = new FieldStore(initialValues);
+    }
+    const store = storeRef.current;
 
-    // 폼 특정 상태 관리 / Form-specific state management
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isValidating, setIsValidating] = useState(false);
+    const [isModified, setIsModified] = useState(false);
 
-    // 폼이 수정되었는지 확인 / Check if form is modified
-    const isModified = useMemo(() => {
-        return fieldState._store.isModified();
-    }, [fieldState.values]); // Use values as dependency for reactivity
+    // 전역 상태 구독 (isModified 추적) / Global state subscription (isModified tracking)
+    useEffect(() => {
+        const checkModified = () => {
+            const modified = store.isModified();
+            setIsModified(modified);
+        };
+
+        checkModified();
+        const unsubscribe = store.subscribeGlobal(checkModified);
+        return unsubscribe;
+    }, [store]);
 
     // 호환성을 위한 values 객체 (비권장) / Values object for compatibility (not recommended)
-    const values = fieldState.values;
+    const [valuesSnapshot, setValuesSnapshot] = useState(() =>
+        store.getValues()
+    );
+
+    useEffect(() => {
+        const unsubscribe = store.subscribeGlobal(() => {
+            setValuesSnapshot(store.getValues());
+        });
+        return unsubscribe;
+    }, [store]);
+
+    const values = valuesSnapshot;
 
     /**
      * 통합 폼 변경 핸들러 / Unified form change handler
@@ -115,9 +160,9 @@ export function useForm<T extends Record<string, any>>({
                 newValue = undefined;
             }
 
-            fieldState.setValue(name, newValue);
+            store.setValue(name, newValue);
         },
-        [fieldState.setValue]
+        [store]
     );
 
     /**
@@ -136,10 +181,10 @@ export function useForm<T extends Record<string, any>>({
                     newValue = undefined;
                 }
 
-                fieldState.setValue(fieldName, newValue);
+                store.setValue(fieldName, newValue);
             };
         },
-        [fieldState.setValue]
+        [store]
     );
 
     /**
@@ -156,9 +201,9 @@ export function useForm<T extends Record<string, any>>({
                 processedValue = undefined;
             }
 
-            fieldState.setValue(name, processedValue);
+            store.setValue(name, processedValue);
         },
-        [fieldState.setValue]
+        [store]
     );
 
     /**
@@ -166,9 +211,9 @@ export function useForm<T extends Record<string, any>>({
      */
     const setFormValues = useCallback(
         (newValues: Partial<T>) => {
-            fieldState.setValues(newValues);
+            store.setValues(newValues);
         },
-        [fieldState.setValues]
+        [store]
     );
 
     /**
@@ -176,9 +221,9 @@ export function useForm<T extends Record<string, any>>({
      */
     const setInitialFormValues = useCallback(
         (newInitialValues: T) => {
-            fieldState._store.setInitialValues(newInitialValues);
+            store.setInitialValues(newInitialValues);
         },
-        [fieldState._store]
+        [store]
     );
 
     /**
@@ -186,17 +231,17 @@ export function useForm<T extends Record<string, any>>({
      */
     const getFormValue = useCallback(
         (fieldName: string): any => {
-            return fieldState._store.getValue(fieldName);
+            return store.getValue(fieldName);
         },
-        [fieldState._store]
+        [store]
     );
 
     /**
      * 모든 폼 값 가져오기 / Get all form values
      */
     const getFormValues = useCallback((): T => {
-        return fieldState.getValues();
-    }, [fieldState.getValues]);
+        return store.getValues();
+    }, [store]);
 
     /**
      * 개별 필드 구독 Hook / Individual field subscription hook
@@ -205,9 +250,9 @@ export function useForm<T extends Record<string, any>>({
      */
     const useFormValue = useCallback(
         (fieldName: string) => {
-            return fieldState.useValue(fieldName);
+            return useFieldValue(store, fieldName);
         },
-        [fieldState.useValue]
+        [store]
     );
 
     /**
@@ -217,7 +262,7 @@ export function useForm<T extends Record<string, any>>({
         async (valuesToValidate?: T) => {
             if (!onValidate) return true;
             setIsValidating(true);
-            const currentValues = valuesToValidate || fieldState.getValues();
+            const currentValues = valuesToValidate || store.getValues();
 
             try {
                 return await onValidate(currentValues);
@@ -228,17 +273,17 @@ export function useForm<T extends Record<string, any>>({
                 setIsValidating(false);
             }
         },
-        [onValidate, fieldState.getValues]
+        [onValidate, store]
     );
 
     /**
      * 폼 초기화 / Reset form
      */
     const resetForm = useCallback(() => {
-        fieldState.reset();
+        store.reset();
         setIsSubmitting(false);
         setIsValidating(false);
-    }, [fieldState.reset]);
+    }, [store]);
 
     /**
      * 폼 제출 / Submit form
@@ -247,7 +292,7 @@ export function useForm<T extends Record<string, any>>({
         async (e?: React.FormEvent): Promise<boolean> => {
             if (e) e.preventDefault();
 
-            const currentValues = fieldState.getValues();
+            const currentValues = store.getValues();
             if (!(await validateForm(currentValues))) {
                 return false;
             }
@@ -271,7 +316,7 @@ export function useForm<T extends Record<string, any>>({
                 setIsSubmitting(false);
             }
         },
-        [onSubmit, onComplete, validateForm, fieldState.getValues]
+        [onSubmit, onComplete, validateForm, store]
     );
 
     return useMemo(
@@ -304,7 +349,7 @@ export function useForm<T extends Record<string, any>>({
             values, // 비권장: 전체 리렌더링 발생 / not recommended: causes full re-renders
 
             // 고급 사용 / Advanced usage
-            _store: fieldState._store, // 직접 store 접근용 / direct store access
+            _store: store, // 직접 store 접근용 / direct store access
         }),
         [
             isSubmitting,

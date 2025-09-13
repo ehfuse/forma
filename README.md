@@ -1,41 +1,36 @@
-<!-- slide -->
-
 # Forma
 
-**Advanced React form state management library**
-고급 React 폼 상태 관리 라이브러리
+**High-performance and developer-friendly React form state management library**  
+고성능이며 개발자 친화적인 React 폼 상태 관리 라이브러리
+
+[![npm version](https://img.shields.io/npm/v/@ehfuse/forma.svg)](https://www.npmjs.com/package/@ehfuse/forma)
+[![npm downloads](https://img.shields.io/npm/dm/@ehfuse/forma.svg)](https://www.npmjs.com/package/@ehfuse/forma)
+[![GitHub license](https://img.shields.io/github/license/ehfuse/forma.svg)](https://github.com/ehfuse/forma/blob/main/LICENSE)
+
+Forma는 React 애플리케이션에서 폼과 상태를 **간편하면서도 강력하게** 관리할 수 있는 고성능 라이브러리입니다. **Zero-Config로 바로 시작**할 수 있으며, 개별 필드 구독을 통한 **선택적 리렌더링**으로 최적의 성능을 제공합니다. 복잡한 설정 없이도 **글로벌 폼 상태 공유**, **Dot Notation 중첩 객체 접근**, **MUI 완전 호환** 등 프로덕션 레벨의 고급 기능들을 손쉽게 사용할 수 있습니다.
+
+_Forma is a high-performance library that makes form and state management in React applications **simple yet powerful**. **Start immediately with Zero-Config**, and achieve optimal performance through **selective re-rendering** via individual field subscriptions. Easily access production-level advanced features like **global form state sharing**, **Dot Notation nested object access**, and **full MUI compatibility** without complex setup._
 
 ## 📚 Documentation | 문서
 
-### 한국어 | K}
+### 한국어 (Korean)
 
-````
-
----
-
-## 📚 문서 | Documentationn
-
--   🚀 **[시작 가이드](./docs/getting-started-ko.md)** - 단계별 튜토리얼과 예제
--   📖 **[완전한 문서](./docs/README-ko.md)** - API 레퍼런스, 사용 사례, 고급 기능
--   📋 **[API 레퍼런스](./docs/API-ko.md)** - 모든 메서드, 타입, 마이그레이션 가이드
--   🔄 **[글로벌 훅 비교 가이드](./docs/global-hooks-comparison-ko.md)** - useGlobalForm vs useGlobalFormaState 비교
--   ⚖️ **[라이브러리 비교 가이드](./docs/library-comparison-ko.md)** - Forma vs 다른 상태 관리 라이브러리 비교
--   ⚡ **[성능 최적화 가이드](./docs/best-practices-ko.md)** - 최고 성능을 위한 모범 사례
--   🏠 **[GitHub](https://github.com/ehfuse/forma)**
+-   🚀 **[시작 가이드](https://github.com/ehfuse/forma/blob/main/docs/getting-started-ko.md)** - 단계별 튜토리얼과 예제
+-   📖 **[완전한 문서](https://github.com/ehfuse/forma/blob/main/docs/README-ko.md)** - API 레퍼런스, 사용 사례, 고급 기능
+-   📋 **[API 레퍼런스](https://github.com/ehfuse/forma/blob/main/docs/API-ko.md)** - 모든 메서드, 타입, 마이그레이션 가이드
+-   ⚡ **[성능 최적화 가이드](https://github.com/ehfuse/forma/blob/main/docs/best-practices-ko.md)** - 최고 성능을 위한 모범 사례
 
 ### English
 
--   🚀 **[Getting Started Guide](./docs/getting-started-en.md)** - Step-by-step tutorial and examples
--   📖 **[Complete Documentation](./docs/README-en.md)** - API reference, use cases, advanced features
--   📋 **[API Reference](./docs/API-en.md)** - All methods, types, migration guide
--   🔄 **[Global Hooks Comparison Guide](./docs/global-hooks-comparison-en.md)** - useGlobalForm vs useGlobalFormaState comparison
--   ⚖️ **[Library Comparison Guide](./docs/library-comparison-en.md)** - Forma vs other state management libraries
--   ⚡ **[Performance Optimization Guide](./docs/best-practices-en.md)** - Best practices for optimal performance
--   🏠 **[GitHub](https://github.com/ehfuse/forma)**
+-   🚀 **[Getting Started Guide](https://github.com/ehfuse/forma/blob/main/docs/getting-started-en.md)** - Step-by-step tutorial and examples
+-   📖 **[Complete Documentation](https://github.com/ehfuse/forma/blob/main/docs/README-en.md)** - API reference, use cases, advanced features
+-   📋 **[API Reference](https://github.com/ehfuse/forma/blob/main/docs/API-en.md)** - All methods, types, migration guide
+-   ⚡ **[Performance Optimization Guide](https://github.com/ehfuse/forma/blob/main/docs/best-practices-en.md)** - Best practices for optimal performance
 
-Forma는 React 애플리케이션에서 폼 상태를 효율적으로 관리하기 위한 고성능 라이브러리입니다. 개별 필드 구독을 통한 선택적 리렌더링과 글로벌 폼 상태 공유 기능을 제공합니다.
+### Links | 링크
 
-_Forma is a high-performance library for efficiently managing form state in React applications. It provides selective re-rendering through individual field subscriptions and global form state sharing capabilities._
+-   🏠 **[GitHub Repository](https://github.com/ehfuse/forma)**
+-   📦 **[NPM Package](https://www.npmjs.com/package/@ehfuse/forma)**
 
 ---
 
@@ -57,7 +52,7 @@ _Forma is a high-performance library for efficiently managing form state in Reac
 
 ```bash
 npm install @ehfuse/forma
-````
+```
 
 ```bash
 yarn add @ehfuse/forma
@@ -192,37 +187,19 @@ function UserDashboard() {
 }
 ```
 
-## � 문서 | Documentation
-
-### 한국어 | Korean
-
--   📖 **[완전한 문서](./docs/README-ko.md)** - API 레퍼런스, 사용 사례, 고급 기능
--   🌐 **[useGlobalForm 사용법](./docs/useGlobalForm-guide-ko.md)** - 글로벌 폼 상태 관리 가이드
--   🔄 **[글로벌 훅 비교 가이드](./docs/global-hooks-comparison-ko.md)** - useGlobalForm vs useGlobalFormaState 비교
--   ⚖️ **[라이브러리 비교 가이드](./docs/library-comparison-ko.md)** - Forma vs 다른 상태 관리 라이브러리 비교
--   ⚡ **[성능 최적화 가이드](./docs/best-practices-ko.md)** - 최고 성능을 위한 모범 사례
-
-### English
-
--   📖 **[Complete Documentation](./docs/README-en.md)** - API reference, use cases, advanced features
--   🌐 **[useGlobalForm Usage Guide](./docs/useGlobalForm-guide-en.md)** - Global form state management guide
--   🔄 **[Global Hooks Comparison Guide](./docs/global-hooks-comparison-en.md)** - useGlobalForm vs useGlobalFormaState comparison
--   ⚖️ **[Library Comparison Guide](./docs/library-comparison-en.md)** - Forma vs other state management libraries
--   ⚡ **[Performance Optimization Guide](./docs/best-practices-en.md)** - Best practices for optimal performance
-
 ---
 
 ## 🎯 When to choose Forma?
 
-언제 Forma를 선택해야 할까요?
+**언제 Forma를 선택해야 할까요?**
 
 Forma is **specialized for form state management** and shines in specific scenarios. Here's when Forma is the perfect choice for your project.
 
-Forma는 **폼 상태 관리에 특화**된 라이브러리로 특정 시나리오에서 빛을 발합니다. 다음은 Forma가 프로젝트에 완벽한 선택이 되는 경우입니다.
+_Forma는 **폼 상태 관리에 특화**된 라이브러리로 특정 시나리오에서 빛을 발합니다. 다음은 Forma가 프로젝트에 완벽한 선택이 되는 경우입니다._
 
 ### ✨ Perfect for these use cases:
 
-이런 경우에 완벽합니다:
+**이런 경우에 완벽합니다:**
 
 **🎨 MUI (Material-UI) Projects**
 **MUI (Material-UI) 프로젝트**
@@ -286,7 +263,7 @@ const userEmail = form.useFormValue("user.email");
 // user.name 변경 시 → userName 필드만 리렌더링 | Only userName field re-renders
 ```
 
-**[성능 최적화 상세 가이드 보기 | View Detailed Performance Guide](./docs/best-practices-ko.md)**
+**[성능 최적화 상세 가이드 보기 | View Detailed Performance Guide](https://github.com/ehfuse/forma/blob/main/docs/best-practices-ko.md)**
 
 ---
 
@@ -294,7 +271,7 @@ const userEmail = form.useFormValue("user.email");
 
 -   **📦 NPM**: [https://www.npmjs.com/package/@ehfuse/forma](https://www.npmjs.com/package/@ehfuse/forma)
 -   **🐙 GitHub**: [https://github.com/ehfuse/forma](https://github.com/ehfuse/forma)
--   **📄 라이선스 | License**: [MIT](./LICENSE)
+-   **📄 라이선스 | License**: [MIT](https://github.com/ehfuse/forma/blob/main/LICENSE)
 
 ---
 

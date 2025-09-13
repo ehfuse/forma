@@ -45,6 +45,7 @@ export { FieldStore } from "./core/FieldStore";
 
 // ===== Utility Functions =====
 export { getNestedValue, setNestedValue } from "./utils/dotNotation";
+export { isDevelopment, devWarn, devError, devLog } from "./utils/environment";
 
 // ===== TypeScript Types =====
 // Form Types

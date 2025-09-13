@@ -41,6 +41,7 @@ _Forma is a high-performance library for efficiently managing form state in Reac
 
 ## 🚀 주요 특징 | Key Features
 
+-   🎯 **완전한 Zero-Config** | **Complete Zero-Config**: 설정 없이 바로 사용 가능한 개발 경험
 -   ✅ **개별 필드 구독** | **Individual Field Subscription**: 필드별 선택적 리렌더링으로 최적화된 성능
 -   ✅ **범용 상태 관리** | **General State Management**: `useFormaState`로 폼 외 일반 상태도 효율적 관리
 -   ✅ **Dot Notation 최적화** | **Dot Notation Optimization**: `user.profile.name` 형태의 중첩 객체 접근
@@ -65,6 +66,55 @@ yarn add @ehfuse/forma
 ---
 
 ## 🎯 빠른 시작 | Quick Start
+
+### 💫 Zero-Config 사용법 | Zero-Config Usage
+
+**설정 없이 바로 시작하세요! | Start immediately without any configuration!**
+
+```tsx
+import { useForm, useFormaState } from "@ehfuse/forma";
+
+function ZeroConfigForm() {
+    // Zero-Config: 매개변수 없이 바로 사용
+    const form = useForm<{ name: string; email: string }>();
+
+    return (
+        <div>
+            <input
+                placeholder="Name"
+                value={form.useFormValue("name")}
+                onChange={(e) => form.setFormValue("name", e.target.value)}
+            />
+            <input
+                placeholder="Email"
+                value={form.useFormValue("email")}
+                onChange={(e) => form.setFormValue("email", e.target.value)}
+            />
+            <button onClick={() => console.log(form.getFormValues())}>
+                Log Values
+            </button>
+        </div>
+    );
+}
+
+function ZeroConfigState() {
+    // Zero-Config: 일반 상태도 설정 없이 사용
+    const state = useFormaState<{ count: number }>();
+
+    return (
+        <div>
+            <p>Count: {state.useValue("count") || 0}</p>
+            <button
+                onClick={() =>
+                    state.setValue("count", (state.getValue("count") || 0) + 1)
+                }
+            >
+                Increment
+            </button>
+        </div>
+    );
+}
+```
 
 ### 폼 상태 관리 | Form State Management
 

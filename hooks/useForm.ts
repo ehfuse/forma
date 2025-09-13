@@ -32,8 +32,11 @@ import {
     FormChangeEvent,
     DatePickerChangeHandler,
     UseFormProps,
+    UseFormPropsOptional,
+    UseFormReturn,
 } from "../types/form";
 import { useFormaState } from "./useFormaState";
+import { devError } from "../utils";
 
 import React, {
     useEffect,
@@ -62,13 +65,34 @@ type PickerChangeHandlerContext<T> = any;
  * @param props 폼 설정 옵션 / Form configuration options
  * @returns 폼 관리 API 객체 / Form management API object
  */
-export function useForm<T extends Record<string, any>>({
-    initialValues,
-    onSubmit,
-    onValidate,
-    onComplete,
-    _externalStore,
-}: UseFormProps<T>) {
+
+// Zero-Config 오버로드: props 없이 사용
+export function useForm<
+    T extends Record<string, any> = Record<string, any>
+>(): UseFormReturn<T>;
+
+// Zero-Config 오버로드: 옵셔널 props를 가진 경우
+export function useForm<T extends Record<string, any> = Record<string, any>>(
+    props?: UseFormPropsOptional<T>
+): UseFormReturn<T>;
+
+// 전체 props를 가진 기본 오버로드
+export function useForm<T extends Record<string, any>>(
+    props: UseFormProps<T>
+): UseFormReturn<T>;
+export function useForm<T extends Record<string, any>>(
+    props:
+        | UseFormProps<T>
+        | UseFormPropsOptional<T> = {} as UseFormPropsOptional<T>
+): UseFormReturn<T> {
+    const {
+        initialValues = {} as T,
+        onSubmit,
+        onValidate,
+        onComplete,
+        _externalStore,
+    } = props;
+
     // useFormaState를 기반으로 사용 / Use useFormaState as foundation
     const fieldState = useFormaState<T>(initialValues, { _externalStore });
 
@@ -152,7 +176,7 @@ export function useForm<T extends Record<string, any>>({
      * 개별 필드 값 설정 / Set individual field value
      */
     const setFormValue = useCallback(
-        (name: string, value: any) => {
+        (name: keyof T | string, value: any) => {
             let processedValue = value;
 
             // DatePicker에서 오는 Dayjs 객체 처리 / Handle Dayjs object from DatePicker
@@ -162,7 +186,7 @@ export function useForm<T extends Record<string, any>>({
                 processedValue = undefined;
             }
 
-            fieldState.setValue(name, processedValue);
+            fieldState.setValue(name as string, processedValue);
         },
         [fieldState.setValue]
     );
@@ -191,8 +215,8 @@ export function useForm<T extends Record<string, any>>({
      * 구독 없이 현재 값만 가져오기 / Get current value without subscription
      */
     const getFormValue = useCallback(
-        (fieldName: string): any => {
-            return fieldState._store.getValue(fieldName);
+        (fieldName: keyof T | string): any => {
+            return fieldState._store.getValue(fieldName as string);
         },
         [fieldState._store]
     );
@@ -210,8 +234,8 @@ export function useForm<T extends Record<string, any>>({
      * Component re-renders only when the specific field changes
      */
     const useFormValue = useCallback(
-        (fieldName: string) => {
-            const value = fieldState.useValue(fieldName);
+        (fieldName: keyof T | string) => {
+            const value = fieldState.useValue(fieldName as string);
             // undefined를 빈 문자열로 변환하여 MUI TextField와 호환성 확보
             return value === undefined ? "" : value;
         },
@@ -230,7 +254,7 @@ export function useForm<T extends Record<string, any>>({
             try {
                 return await onValidate(currentValues);
             } catch (error) {
-                console.error("Validation error:", error);
+                devError("Validation error:", error);
                 return false;
             } finally {
                 setIsValidating(false);
@@ -273,7 +297,7 @@ export function useForm<T extends Record<string, any>>({
 
                 return true;
             } catch (error) {
-                console.error("Form submission error:", error);
+                devError("Form submission error:", error);
                 return false;
             } finally {
                 setIsSubmitting(false);
@@ -307,6 +331,9 @@ export function useForm<T extends Record<string, any>>({
             submit, // 폼 제출 / submit form
             resetForm, // 폼 초기화 / reset form
             validateForm, // 폼 검증 / validate form
+
+            // 호환성 / Compatibility
+            values: fieldState.getValues(), // 호환성을 위한 values 객체 (비권장) / Values object for compatibility (not recommended)
 
             // 고급 사용 / Advanced usage
             _store: fieldState._store, // 직접 store 접근용 / direct store access

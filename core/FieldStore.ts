@@ -93,6 +93,14 @@ export class FieldStore<T extends Record<string, any>> {
             }
             listeners.add(listener);
 
+            // dot notation 필드가 구독될 때 기본값 생성 / Create default value when dot notation field is subscribed
+            const currentValue = this.getValue(fieldNameStr);
+            if (currentValue === undefined) {
+                // 기본값으로 빈 문자열 또는 null 설정 (타입에 따라 결정)
+                // Set default value as empty string or null (determined by type)
+                this.setValue(fieldNameStr, null);
+            }
+
             return () => {
                 const listeners = this.dotNotationListeners.get(fieldNameStr);
                 if (listeners) {
@@ -109,7 +117,7 @@ export class FieldStore<T extends Record<string, any>> {
         if (!field) {
             // 필드가 없으면 생성 / Create field if not exists
             field = {
-                value: undefined,
+                value: null, // undefined 대신 null로 초기화
                 listeners: new Set(),
             };
             this.fields.set(fieldName as keyof T, field);
@@ -314,9 +322,46 @@ export class FieldStore<T extends Record<string, any>> {
      */
     isModified(): boolean {
         const currentValues = this.getValues();
+
+        // Pure Zero-Config의 경우 초기값이 빈 객체일 수 있음
+        // In Pure Zero-Config, initial values might be an empty object
+        const isInitialEmpty = Object.keys(this.initialValues).length === 0;
+
+        if (isInitialEmpty) {
+            // 초기값이 빈 객체인 경우, 현재값에 의미있는 데이터가 있는지 확인
+            // If initial values are empty, check if current values have meaningful data
+            return this.hasNonEmptyValues(currentValues);
+        }
+
         return (
             JSON.stringify(currentValues) !== JSON.stringify(this.initialValues)
         );
+    }
+
+    /**
+     * 객체에 비어있지 않은 값이 있는지 확인 / Check if object has non-empty values
+     */
+    private hasNonEmptyValues(obj: any): boolean {
+        for (const key in obj) {
+            const value = obj[key];
+            if (
+                value !== undefined &&
+                value !== null &&
+                value !== "" &&
+                value !== 0
+            ) {
+                if (typeof value === "object" && value !== null) {
+                    if (Array.isArray(value)) {
+                        if (value.length > 0) return true;
+                    } else {
+                        if (this.hasNonEmptyValues(value)) return true;
+                    }
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -400,7 +445,64 @@ export class FieldStore<T extends Record<string, any>> {
      * 초기값으로 리셋 / Reset to initial values
      */
     reset() {
-        this.setValues(this.initialValues);
+        // Pure Zero-Config 모드인지 확인 (초기값이 빈 객체)
+        const isPureZeroConfig = Object.keys(this.initialValues).length === 0;
+
+        if (isPureZeroConfig) {
+            // Pure Zero-Config 모드: 먼저 구독된 dot notation 필드들의 기본값 설정
+            this.dotNotationListeners.forEach((listeners, path) => {
+                if (listeners.size > 0) {
+                    // 구독자가 있는 dot notation 필드는 빈 문자열로 설정
+                    this.setValue(path, "");
+                }
+            });
+
+            // 일반 필드들 중에서 dot notation과 충돌하지 않는 것들만 기본값으로 설정
+            this.fields.forEach((field, key) => {
+                const keyStr = String(key);
+                // dot notation 필드의 부모가 아닌 경우에만 null로 설정
+                let hasChildDotNotation = false;
+                for (const dotPath of this.dotNotationListeners.keys()) {
+                    if (dotPath.startsWith(keyStr + ".")) {
+                        hasChildDotNotation = true;
+                        break;
+                    }
+                }
+
+                if (!hasChildDotNotation) {
+                    field.value = "";
+                }
+            });
+        } else {
+            // 일반 모드: 초기값으로 재설정
+            this.fields.forEach((field, key) => {
+                const initialValue = this.initialValues[key as keyof T];
+                field.value = initialValue;
+            });
+
+            // 누락된 초기값 필드들 추가
+            Object.keys(this.initialValues).forEach((key) => {
+                if (!this.fields.has(key)) {
+                    this.fields.set(key, {
+                        value: this.initialValues[key as keyof T],
+                        listeners: new Set(),
+                    });
+                }
+            });
+        }
+
+        // 모든 필드 리스너들에게 알림
+        this.fields.forEach((field) => {
+            field.listeners.forEach((listener) => listener());
+        });
+
+        // dot notation 리스너들에게도 알림
+        this.dotNotationListeners.forEach((listeners) => {
+            listeners.forEach((listener) => listener());
+        });
+
+        // 글로벌 리스너들에게도 알림
+        this.globalListeners.forEach((listener) => listener());
     }
 
     /**

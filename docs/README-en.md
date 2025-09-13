@@ -1,8 +1,4 @@
-# Forma - Engli- ✅ **React 19 Optimized**: Leverages latest React features
-
----
-
-## 📦 InstallationDocumentation
+# Forma - English Documentation
 
 **Advanced React Form State Management Library**
 
@@ -12,10 +8,13 @@ Forma is a high-performance library for efficiently managing form state in React
 
 ## 🚀 Key Features
 
+-   🎯 **Complete Zero-Config**: Start using immediately without any configuration
 -   ✅ **Individual Field Subscription**: Optimized performance with field-specific selective re-rendering
--   ✅ **Dot Notation Support**: Nested object access like `user.profile.name`
+-   ✅ **General State Management**: Efficiently manage non-form state with `useFormaState`
+-   ✅ **Dot Notation Optimization**: Nested object access like `user.profile.name`
 -   ✅ **Full MUI Compatibility**: Perfect integration with Material-UI components
 -   ✅ **Global Form State**: Share form state across multiple components
+-   ✅ **Form Registration System**: Register existing forms as global
 -   ✅ **Full TypeScript Support**: Strong type safety
 -   ✅ **React 19 Optimized**: Leverages latest React features
 
@@ -34,6 +33,57 @@ yarn add @ehfuse/forma
 ---
 
 ## 🎯 Quick Start
+
+### 💫 Zero-Config Usage
+
+**Start immediately without any configuration!**
+
+```tsx
+import { useForm, useFormaState } from "@ehfuse/forma";
+
+function ZeroConfigForm() {
+    // Zero-Config: Use without any parameters
+    const form = useForm<{ name: string; email: string }>();
+
+    return (
+        <div>
+            <input
+                placeholder="Name"
+                value={form.useFormValue("name")}
+                onChange={(e) => form.setFormValue("name", e.target.value)}
+            />
+            <input
+                placeholder="Email"
+                value={form.useFormValue("email")}
+                onChange={(e) => form.setFormValue("email", e.target.value)}
+            />
+            <button onClick={() => console.log(form.getFormValues())}>
+                Log Values
+            </button>
+        </div>
+    );
+}
+
+function ZeroConfigState() {
+    // Zero-Config: General state without configuration
+    const state = useFormaState<{ count: number }>();
+
+    return (
+        <div>
+            <p>Count: {state.useValue("count") || 0}</p>
+            <button
+                onClick={() =>
+                    state.setValue("count", (state.getValue("count") || 0) + 1)
+                }
+            >
+                Increment
+            </button>
+        </div>
+    );
+}
+```
+
+### Traditional Usage
 
 ```tsx
 import { useForm } from "@ehfuse/forma";

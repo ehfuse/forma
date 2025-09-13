@@ -77,6 +77,24 @@ export interface UseFormProps<T extends Record<string, any>> {
 }
 
 /**
+ * useForm 훅의 옵셔널 Props 타입 (Zero-Config용) | useForm hook optional Props type (for Zero-Config)
+ */
+export interface UseFormPropsOptional<
+    T extends Record<string, any> = Record<string, any>
+> {
+    /** 폼의 초기값 (선택사항) | Initial form values (optional) */
+    initialValues?: T;
+    /** 폼 제출 핸들러 | Form submission handler */
+    onSubmit?: (values: T) => Promise<void> | void;
+    /** 폼 검증 핸들러 | Form validation handler */
+    onValidate?: (values: T) => Promise<boolean> | boolean;
+    /** 폼 제출 완료 후 콜백 | Callback after form submission completion */
+    onComplete?: (values: T) => void;
+    /** 내부 API - 전역 상태용 외부 스토어 | Internal API - external store for global state */
+    _externalStore?: FieldStore<T>;
+}
+
+/**
  * useForm 훅의 반환 타입 | useForm hook return type
  */
 export interface UseFormReturn<T extends Record<string, any>> {

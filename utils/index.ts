@@ -25,3 +25,4 @@
  */
 
 export { getNestedValue, setNestedValue } from "./dotNotation";
+export { isDevelopment, devWarn, devError, devLog } from "./environment";

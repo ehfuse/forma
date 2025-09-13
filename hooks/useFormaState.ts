@@ -10,7 +10,7 @@
 
 import { useRef, useCallback, useMemo, useState, useEffect } from "react";
 import { FieldStore } from "../core/FieldStore";
-import { getNestedValue, setNestedValue } from "../utils/dotNotation";
+import { getNestedValue, setNestedValue, devWarn } from "../utils";
 
 /**
  * Options for configuring useFormaState hook
@@ -241,7 +241,7 @@ export function useFormaState<T extends Record<string, any>>(
     // Reset to initial values
     // 초기값으로 재설정
     const reset = useCallback(() => {
-        store.setValues(initialValuesRef.current);
+        store.reset();
     }, []); // store 의존성 제거
 
     // Handle standard input change events
@@ -255,7 +255,7 @@ export function useFormaState<T extends Record<string, any>>(
             const { name, value, type } = event.target;
 
             if (!name) {
-                console.warn(
+                devWarn(
                     'useFormaState.handleChange: input element must have a "name" attribute'
                 );
                 return;

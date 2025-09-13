@@ -5,7 +5,7 @@ This document provides detailed reference for all APIs in the Forma library.
 ## Table of Contents
 
 -   [Hooks](#hooks)
-    -   [useFieldState](#usefieldstate)
+    -   [useFormaState](#useformastate)
     -   [useForm](#useform)
     -   [useGlobalForm](#useglobalform)
     -   [useRegisterGlobalForm](#useregisterglobalform)
@@ -22,36 +22,49 @@ This document provides detailed reference for all APIs in the Forma library.
 
 ## Hooks
 
-### useFieldState
+### useFormaState
 
 A foundational hook for general state management of arrays, objects, and other data structures. Optimizes performance through individual field subscriptions.
 
 #### Signature
 
 ```typescript
-function useFieldState<T extends Record<string, any>>(
+// Overload for starting with empty object
+function useFormaState<T extends Record<string, any> = Record<string, any>>(
+    initialValues?: T,
+    options?: UseFormaStateOptions<T>
+): UseFormaStateReturn<T>;
+
+// Overload for explicit type with initial values
+function useFormaState<T extends Record<string, any>>(
     initialValues: T,
-    options?: UseFieldStateOptions<T>
-): UseFieldStateReturn<T>;
+    options?: UseFormaStateOptions<T>
+): UseFormaStateReturn<T>;
 ```
 
 #### Parameters
 
 ```typescript
-interface UseFieldStateOptions<T> {
+interface UseFormaStateOptions<T> {
     /** Optional callback when state changes */
     onChange?: (values: T) => void;
     /** Enable deep equality checking for better performance */
     deepEquals?: boolean;
     /** External FieldStore instance for shared state */
     _externalStore?: FieldStore<T>;
+    /** Error handler for state operations */
+    onError?: (error: Error) => void;
+    /** Enable validation on every change */
+    validateOnChange?: boolean;
+    /** Debounce delay for state updates in milliseconds */
+    debounceMs?: number;
 }
 ```
 
 #### Return Value
 
 ```typescript
-interface UseFieldStateReturn<T> {
+interface UseFormaStateReturn<T> {
     /** Subscribe to a specific field value with dot notation */
     useValue: <K extends string>(path: K) => any;
     /** Set a specific field value with dot notation */
@@ -68,21 +81,65 @@ interface UseFieldStateReturn<T> {
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
     ) => void;
+    /** Check if a field exists */
+    hasField: (path: string) => boolean;
+    /** Remove a field from state */
+    removeField: (path: string) => void;
+    /** Get a single field value (non-reactive) */
+    getValue: (path: string) => any;
+    /** Subscribe to all state changes */
+    subscribe: (callback: (values: T) => void) => () => void;
     /** Direct access to the internal store for advanced usage */
     _store: FieldStore<T>;
-    /** Current values (reactive) */
-    values: T;
 }
+```
+
+#### Declaration Methods
+
+```typescript
+import { useFormaState } from "forma";
+
+// 1. Basic usage with initial values
+const state = useFormaState({
+    user: { name: "", email: "" },
+    settings: { theme: "light", notifications: true },
+});
+
+// 2. Explicit type specification
+interface UserData {
+    name: string;
+    email: string;
+    age?: number;
+}
+
+const userState = useFormaState<{ user: UserData }>({
+    user: { name: "", email: "" },
+});
+
+// 3. Starting with empty object
+const dynamicState = useFormaState<Record<string, any>>();
+
+// 4. With options
+const stateWithOptions = useFormaState(
+    {
+        data: {},
+    },
+    {
+        onChange: (values) => console.log("State changed:", values),
+        debounceMs: 300,
+        validateOnChange: true,
+    }
+);
 ```
 
 #### Example
 
 ```typescript
-import { useFieldState } from "forma";
+import { useFormaState } from "forma";
 
 // Basic usage
 function MyComponent() {
-    const state = useFieldState({
+    const state = useFormaState({
         user: { name: "", email: "" },
         settings: { theme: "light", notifications: true },
     });
@@ -91,6 +148,18 @@ function MyComponent() {
     const userName = state.useValue("user.name");
     const theme = state.useValue("settings.theme");
 
+    // New API methods usage
+    const hasUserEmail = state.hasField("user.email");
+    const userEmailValue = state.getValue("user.email"); // non-reactive
+
+    // Subscribe to global state changes
+    React.useEffect(() => {
+        const unsubscribe = state.subscribe((values) => {
+            console.log("Global state changed:", values);
+        });
+        return unsubscribe;
+    }, [state]);
+
     return (
         <div>
             <input
@@ -98,15 +167,22 @@ function MyComponent() {
                 onChange={(e) => state.setValue("user.name", e.target.value)}
             />
             <button onClick={() => state.setValue("settings.theme", "dark")}>
-                Dark Mode
+                Switch to Dark Theme
             </button>
+            <button onClick={() => state.removeField("user.email")}>
+                Remove Email Field
+            </button>
+            <button onClick={() => state.reset()}>
+                Reset to Initial Values
+            </button>
+            {hasUserEmail && <p>Email field exists</p>}
         </div>
     );
 }
 
 // Array state management
 function TodoList() {
-    const state = useFieldState({
+    const state = useFormaState({
         todos: [
             { id: 1, text: "Learn React", completed: false },
             { id: 2, text: "Build app", completed: false },
@@ -116,20 +192,111 @@ function TodoList() {
     // Subscribe to specific todo item
     const firstTodo = state.useValue("todos.0.text");
 
+    // Subscribe only to array length (re-renders only when items are added/removed)
+    const todoCount = state.useValue("todos.length");
+
     const addTodo = () => {
         const todos = state.getValues().todos;
         state.setValue("todos", [
             ...todos,
             { id: Date.now(), text: "New todo", completed: false },
         ]);
+        // When todos array changes, todos.length subscribers are automatically notified
+    };
+
+    const updateTodo = (index: number, newText: string) => {
+        // Only content changes (same length) - no notification to todos.length subscribers
+        state.setValue(`todos.${index}.text`, newText);
+    };
+
+    const removeTodo = (index: number) => {
+        state.removeField(`todos.${index}`);
     };
 
     return (
         <div>
             <p>First todo: {firstTodo}</p>
+            <p>Total todos: {todoCount}</p>
             <button onClick={addTodo}>Add Todo</button>
+            <button onClick={() => removeTodo(0)}>Remove First Todo</button>
         </div>
     );
+}
+
+// Dynamic field management
+function DynamicForm() {
+    const state = useFormaState<Record<string, any>>({});
+
+    const addField = (fieldName: string, defaultValue: any) => {
+        state.setValue(fieldName, defaultValue);
+    };
+
+    const removeField = (fieldName: string) => {
+        if (state.hasField(fieldName)) {
+            state.removeField(fieldName);
+        }
+    };
+
+    return (
+        <div>
+            <button onClick={() => addField("newField", "")}>
+                Add New Field
+            </button>
+            <button onClick={() => removeField("newField")}>
+                Remove Field
+            </button>
+            {state.hasField("newField") && (
+                <input
+                    value={state.useValue("newField")}
+                    onChange={(e) => state.setValue("newField", e.target.value)}
+                />
+            )}
+        </div>
+    );
+}
+```
+
+#### 🔢 **Array Length Subscription**
+
+`useFormaState` intelligently supports subscribing to array `length` properties:
+
+```typescript
+const state = useFormaState({
+    todos: [
+        { id: 1, text: "Todo 1" },
+        { id: 2, text: "Todo 2" },
+    ],
+});
+
+// Subscribe only to array length - re-renders only when items are added/removed
+const todoCount = state.useValue("todos.length"); // 2
+
+// Add item → notifies todos.length subscribers
+state.setValue("todos", [...state.getValues().todos, newItem]);
+
+// Change item content → no notification to todos.length subscribers (same length)
+state.setValue("todos.0.text", "Updated todo");
+```
+
+**Key Features:**
+
+-   ✅ **Smart Notifications**: Only notifies when array length actually changes
+-   ✅ **Performance Optimized**: Prevents unnecessary re-renders on content changes
+-   ✅ **Automatic Detection**: Auto-notifies `.length` subscribers when arrays change
+
+**Usage Examples:**
+
+```typescript
+// Counter component (re-renders only when length changes)
+function TodoCounter() {
+    const count = state.useValue("todos.length");
+    return <span>Todos: {count}</span>;
+}
+
+// Individual item component (re-renders only when that item changes)
+function TodoItem({ index }) {
+    const text = state.useValue(`todos.${index}.text`);
+    return <div>{text}</div>;
 }
 ```
 

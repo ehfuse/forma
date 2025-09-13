@@ -7,11 +7,18 @@
 
 ## 📚 Documentation | 문서
 
-### 한국어 | Korean
+### 한국어 | K}
+```
+
+---
+
+## 📚 문서 | Documentationn
 
 -   🚀 **[시작 가이드](./docs/getting-started-ko.md)** - 단계별 튜토리얼과 예제
 -   📖 **[완전한 문서](./docs/README-ko.md)** - API 레퍼런스, 사용 사례, 고급 기능
 -   📋 **[API 레퍼런스](./docs/API-ko.md)** - 모든 메서드, 타입, 마이그레이션 가이드
+-   🔄 **[글로벌 훅 비교 가이드](./docs/global-hooks-comparison-ko.md)** - useGlobalForm vs useGlobalFormaState 비교
+-   ⚖️ **[라이브러리 비교 가이드](./docs/library-comparison-ko.md)** - Forma vs 다른 상태 관리 라이브러리 비교
 -   ⚡ **[성능 최적화 가이드](./docs/best-practices-ko.md)** - 최고 성능을 위한 모범 사례
 -   🏠 **[GitHub](https://github.com/ehfuse/forma)**
 
@@ -20,6 +27,8 @@
 -   🚀 **[Getting Started Guide](./docs/getting-started-en.md)** - Step-by-step tutorial and examples
 -   📖 **[Complete Documentation](./docs/README-en.md)** - API reference, use cases, advanced features
 -   📋 **[API Reference](./docs/API-en.md)** - All methods, types, migration guide
+-   🔄 **[Global Hooks Comparison Guide](./docs/global-hooks-comparison-en.md)** - useGlobalForm vs useGlobalFormaState comparison
+-   ⚖️ **[Library Comparison Guide](./docs/library-comparison-en.md)** - Forma vs other state management libraries
 -   ⚡ **[Performance Optimization Guide](./docs/best-practices-en.md)** - Best practices for optimal performance
 -   🏠 **[GitHub](https://github.com/ehfuse/forma)**
 
@@ -27,16 +36,20 @@ Forma는 React 애플리케이션에서 폼 상태를 효율적으로 관리하�
 
 _Forma is a high-performance library for efficiently managing form state in React applications. It provides selective re-rendering through individual field subscriptions and global form state sharing capabilities._
 
+---
+
 ## 🚀 주요 특징 | Key Features
 
 -   ✅ **개별 필드 구독** | **Individual Field Subscription**: 필드별 선택적 리렌더링으로 최적화된 성능
--   ✅ **범용 상태 관리** | **General State Management**: `useFieldState`로 폼 외 일반 상태도 효율적 관리
+-   ✅ **범용 상태 관리** | **General State Management**: `useFormaState`로 폼 외 일반 상태도 효율적 관리
 -   ✅ **Dot Notation 최적화** | **Dot Notation Optimization**: `user.profile.name` 형태의 중첩 객체 접근
 -   ✅ **MUI 완전 호환** | **Full MUI Compatibility**: Material-UI 컴포넌트와 완벽한 통합
 -   ✅ **글로벌 폼 상태** | **Global Form State**: 여러 컴포넌트 간 폼 상태 공유
 -   ✅ **폼 등록 시스템** | **Form Registration System**: 기존 폼을 글로벌로 등록 가능
 -   ✅ **TypeScript 완전 지원** | **Full TypeScript Support**: 강력한 타입 안전성
 -   ✅ **React 19 최적화** | **React 19 Optimized**: 최신 React 기능 활용
+
+---
 
 ## 📦 설치 | Installation
 
@@ -47,6 +60,8 @@ npm install @ehfuse/forma
 ```bash
 yarn add @ehfuse/forma
 ```
+
+---
 
 ## 🎯 빠른 시작 | Quick Start
 
@@ -84,10 +99,10 @@ function MyForm() {
 ### 일반 상태 관리 | General State Management
 
 ```tsx
-import { useFieldState } from "@ehfuse/forma";
+import { useFormaState } from "@ehfuse/forma";
 
-function TodoApp() {
-    const state = useFieldState({
+function UserDashboard() {
+    const state = useFormaState({
         todos: [
             { id: 1, text: "Learn React", completed: false },
             { id: 2, text: "Build app", completed: false },
@@ -132,13 +147,19 @@ function TodoApp() {
 
 -   📖 **[완전한 문서](./docs/README-ko.md)** - API 레퍼런스, 사용 사례, 고급 기능
 -   🌐 **[useGlobalForm 사용법](./docs/useGlobalForm-guide-ko.md)** - 글로벌 폼 상태 관리 가이드
+-   🔄 **[글로벌 훅 비교 가이드](./docs/global-hooks-comparison-ko.md)** - useGlobalForm vs useGlobalFormaState 비교
+-   ⚖️ **[라이브러리 비교 가이드](./docs/library-comparison-ko.md)** - Forma vs 다른 상태 관리 라이브러리 비교
 -   ⚡ **[성능 최적화 가이드](./docs/best-practices-ko.md)** - 최고 성능을 위한 모범 사례
 
 ### English
 
 -   📖 **[Complete Documentation](./docs/README-en.md)** - API reference, use cases, advanced features
 -   🌐 **[useGlobalForm Usage Guide](./docs/useGlobalForm-guide-en.md)** - Global form state management guide
+-   🔄 **[Global Hooks Comparison Guide](./docs/global-hooks-comparison-en.md)** - useGlobalForm vs useGlobalFormaState comparison
+-   ⚖️ **[Library Comparison Guide](./docs/library-comparison-en.md)** - Forma vs other state management libraries
 -   ⚡ **[Performance Optimization Guide](./docs/best-practices-en.md)** - Best practices for optimal performance
+
+---
 
 ## 🎯 When to choose Forma?
 
@@ -202,6 +223,8 @@ Forma는 **폼 상태 관리에 특화**된 라이브러리로 특정 시나리�
 -   Dynamic validation rules
     동적 검증 규칙
 
+---
+
 ## 🎯 핵심 성능 원칙 | Core Performance Principles
 
 ```tsx
@@ -214,11 +237,15 @@ const userEmail = form.useFormValue("user.email");
 
 **[성능 최적화 상세 가이드 보기 | View Detailed Performance Guide](./docs/best-practices-ko.md)**
 
+---
+
 ## 🌐 링크 | Links
 
 -   **📦 NPM**: [https://www.npmjs.com/package/@ehfuse/forma](https://www.npmjs.com/package/@ehfuse/forma)
 -   **🐙 GitHub**: [https://github.com/ehfuse/forma](https://github.com/ehfuse/forma)
 -   **📄 라이선스 | License**: [MIT](./LICENSE)
+
+---
 
 ## 📞 연락처 | Contact
 

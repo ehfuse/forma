@@ -31,7 +31,8 @@
 export { useForm } from "./hooks/useForm";
 export { useGlobalForm } from "./hooks/useGlobalForm";
 export { useRegisterGlobalForm } from "./hooks/useRegisterGlobalForm";
-export { useFieldState } from "./hooks/useFieldState";
+export { useFormaState, useFieldSubscription } from "./hooks/useFormaState";
+export { useGlobalFormaState } from "./hooks/useGlobalFormaState";
 
 // ===== Context & Providers =====
 export {
@@ -56,14 +57,16 @@ export type {
 
 // Field State Types
 export type {
-    UseFieldStateOptions,
-    UseFieldStateReturn,
-} from "./hooks/useFieldState";
+    UseFormaStateOptions,
+    UseFormaStateReturn,
+} from "./hooks/useFormaState";
 
 // Global Form Types
 export type {
     UseGlobalFormProps,
     UseGlobalFormReturn,
+    UseGlobalFormaStateProps,
+    UseGlobalFormaStateReturn,
     GlobalFormProviderProps,
     GlobalFormContextType,
     GlobalFormStoreMap,

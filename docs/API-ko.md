@@ -5,7 +5,7 @@
 ## Table of Contents
 
 -   [Hooks](#hooks)
-    -   [useFieldState](#usefieldstate)
+    -   [useFormaState](#useformastate)
     -   [useForm](#useform)
     -   [useGlobalForm](#useglobalform)
     -   [useRegisterGlobalForm](#useregisterglobalform)
@@ -22,36 +22,49 @@
 
 ## Hooks
 
-### useFieldState
+### useFormaState
 
 배열, 객체 등의 일반적인 상태 관리를 위한 기본 훅입니다. 개별 필드 구독을 통해 성능을 최적화합니다.
 
 #### Signature
 
 ```typescript
-function useFieldState<T extends Record<string, any>>(
+// 빈 객체로 시작하는 경우를 위한 오버로드
+function useFormaState<T extends Record<string, any> = Record<string, any>>(
+    initialValues?: T,
+    options?: UseFormaStateOptions<T>
+): UseFormaStateReturn<T>;
+
+// 명시적 타입을 가진 경우를 위한 오버로드
+function useFormaState<T extends Record<string, any>>(
     initialValues: T,
-    options?: UseFieldStateOptions<T>
-): UseFieldStateReturn<T>;
+    options?: UseFormaStateOptions<T>
+): UseFormaStateReturn<T>;
 ```
 
 #### Parameters
 
 ```typescript
-interface UseFieldStateOptions<T> {
+interface UseFormaStateOptions<T> {
     /** 상태 변경 시 선택적 콜백 */
     onChange?: (values: T) => void;
     /** 성능 향상을 위한 깊은 동등성 검사 활성화 */
     deepEquals?: boolean;
     /** 공유 상태를 위한 외부 FieldStore 인스턴스 */
     _externalStore?: FieldStore<T>;
+    /** 상태 작업을 위한 에러 핸들러 */
+    onError?: (error: Error) => void;
+    /** 모든 변경에 대한 유효성 검사 활성화 */
+    validateOnChange?: boolean;
+    /** 상태 업데이트를 위한 디바운스 지연 시간 (밀리초) */
+    debounceMs?: number;
 }
 ```
 
 #### Return Value
 
 ```typescript
-interface UseFieldStateReturn<T> {
+interface UseFormaStateReturn<T> {
     /** dot notation으로 특정 필드 값 구독 */
     useValue: <K extends string>(path: K) => any;
     /** dot notation으로 특정 필드 값 설정 */
@@ -68,21 +81,65 @@ interface UseFieldStateReturn<T> {
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
     ) => void;
+    /** 필드 존재 여부 확인 */
+    hasField: (path: string) => boolean;
+    /** 상태에서 필드 제거 */
+    removeField: (path: string) => void;
+    /** 단일 필드 값 가져오기 (반응형 아님) */
+    getValue: (path: string) => any;
+    /** 모든 상태 변경에 구독 */
+    subscribe: (callback: (values: T) => void) => () => void;
     /** 고급 사용을 위한 내부 스토어 직접 접근 */
     _store: FieldStore<T>;
-    /** 현재 값들 (반응형) */
-    values: T;
 }
+```
+
+#### 선언 방법
+
+```typescript
+import { useFormaState } from "forma";
+
+// 1. 기본 사용법 - 초기값과 함께
+const state = useFormaState({
+    user: { name: "", email: "" },
+    settings: { theme: "light", notifications: true },
+});
+
+// 2. 타입 명시적 지정
+interface UserData {
+    name: string;
+    email: string;
+    age?: number;
+}
+
+const userState = useFormaState<{ user: UserData }>({
+    user: { name: "", email: "" },
+});
+
+// 3. 빈 객체로 시작
+const dynamicState = useFormaState<Record<string, any>>();
+
+// 4. 옵션과 함께 사용
+const stateWithOptions = useFormaState(
+    {
+        data: {},
+    },
+    {
+        onChange: (values) => console.log("State changed:", values),
+        debounceMs: 300,
+        validateOnChange: true,
+    }
+);
 ```
 
 #### Example
 
 ```typescript
-import { useFieldState } from "forma";
+import { useFormaState } from "forma";
 
 // 기본 사용법
 function MyComponent() {
-    const state = useFieldState({
+    const state = useFormaState({
         user: { name: "", email: "" },
         settings: { theme: "light", notifications: true },
     });
@@ -91,6 +148,18 @@ function MyComponent() {
     const userName = state.useValue("user.name");
     const theme = state.useValue("settings.theme");
 
+    // 새로운 API 메서드 사용
+    const hasUserEmail = state.hasField("user.email");
+    const userEmailValue = state.getValue("user.email"); // 반응형 아님
+
+    // 전역 상태 변경 구독
+    React.useEffect(() => {
+        const unsubscribe = state.subscribe((values) => {
+            console.log("전체 상태가 변경되었습니다:", values);
+        });
+        return unsubscribe;
+    }, [state]);
+
     return (
         <div>
             <input
@@ -98,15 +167,20 @@ function MyComponent() {
                 onChange={(e) => state.setValue("user.name", e.target.value)}
             />
             <button onClick={() => state.setValue("settings.theme", "dark")}>
-                다크 모드
+                다크 테마로 변경
             </button>
+            <button onClick={() => state.removeField("user.email")}>
+                이메일 필드 제거
+            </button>
+            <button onClick={() => state.reset()}>초기값으로 리셋</button>
+            {hasUserEmail && <p>이메일 필드가 존재합니다</p>}
         </div>
     );
 }
 
 // 배열 상태 관리
 function TodoList() {
-    const state = useFieldState({
+    const state = useFormaState({
         todos: [
             { id: 1, text: "Learn React", completed: false },
             { id: 2, text: "Build app", completed: false },
@@ -116,20 +190,109 @@ function TodoList() {
     // 특정 할 일 항목 구독
     const firstTodo = state.useValue("todos.0.text");
 
+    // 배열 길이만 구독 (항목 추가/삭제 시에만 리렌더링)
+    const todoCount = state.useValue("todos.length");
+
     const addTodo = () => {
         const todos = state.getValues().todos;
         state.setValue("todos", [
             ...todos,
             { id: Date.now(), text: "New todo", completed: false },
         ]);
+        // todos 배열이 변경되면 todos.length 구독자에게도 자동으로 알림이 갑니다
+    };
+
+    const updateTodo = (index: number, newText: string) => {
+        // 배열 내용만 변경 (길이는 동일) - todos.length 구독자에게는 알림이 가지 않음
+        state.setValue(`todos.${index}.text`, newText);
+    };
+
+    const removeTodo = (index: number) => {
+        state.removeField(`todos.${index}`);
     };
 
     return (
         <div>
             <p>첫 번째 할 일: {firstTodo}</p>
+            <p>총 할 일 개수: {todoCount}</p>
             <button onClick={addTodo}>할 일 추가</button>
+            <button onClick={() => removeTodo(0)}>첫 번째 할 일 제거</button>
         </div>
     );
+}
+
+// 동적 필드 관리
+function DynamicForm() {
+    const state = useFormaState<Record<string, any>>({});
+
+    const addField = (fieldName: string, defaultValue: any) => {
+        state.setValue(fieldName, defaultValue);
+    };
+
+    const removeField = (fieldName: string) => {
+        if (state.hasField(fieldName)) {
+            state.removeField(fieldName);
+        }
+    };
+
+    return (
+        <div>
+            <button onClick={() => addField("newField", "")}>
+                새 필드 추가
+            </button>
+            <button onClick={() => removeField("newField")}>필드 제거</button>
+            {state.hasField("newField") && (
+                <input
+                    value={state.useValue("newField")}
+                    onChange={(e) => state.setValue("newField", e.target.value)}
+                />
+            )}
+        </div>
+    );
+}
+```
+
+#### 🔢 **배열 길이 구독 (Array Length Subscription)**
+
+`useFormaState`는 배열의 `length` 속성을 지능적으로 구독할 수 있습니다:
+
+```typescript
+const state = useFormaState({
+    todos: [
+        { id: 1, text: "할 일 1" },
+        { id: 2, text: "할 일 2" },
+    ],
+});
+
+// 배열 길이만 구독 - 항목 추가/삭제 시에만 리렌더링
+const todoCount = state.useValue("todos.length"); // 2
+
+// 항목 추가 → todos.length 구독자에게 알림
+state.setValue("todos", [...state.getValues().todos, newItem]);
+
+// 항목 내용 변경 → todos.length 구독자에게는 알림 없음 (길이가 동일하므로)
+state.setValue("todos.0.text", "수정된 할 일");
+```
+
+**주요 특징:**
+
+-   ✅ **스마트 알림**: 배열 길이가 실제로 변경될 때만 알림
+-   ✅ **성능 최적화**: 배열 내용 변경 시 불필요한 리렌더링 방지
+-   ✅ **자동 감지**: 배열 변경 시 `.length` 구독자에게 자동 알림
+
+**사용 예시:**
+
+```typescript
+// 카운터 컴포넌트 (길이 변경 시에만 리렌더링)
+function TodoCounter() {
+    const count = state.useValue("todos.length");
+    return <span>할 일: {count}개</span>;
+}
+
+// 개별 항목 컴포넌트 (해당 항목 변경 시에만 리렌더링)
+function TodoItem({ index }) {
+    const text = state.useValue(`todos.${index}.text`);
+    return <div>{text}</div>;
 }
 ```
 

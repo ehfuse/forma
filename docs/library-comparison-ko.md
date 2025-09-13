@@ -1,0 +1,303 @@
+# Forma vs 다른 상태 관리 라이브러리 비교
+
+## 📋 개요
+
+Forma는 폼 관리에 특화된 React 상태 관리 라이브러리입니다. 이 문서에서는 Forma와 다른 인기 있는 상태 관리 라이브러리들을 비교하여 각각의 장단점과 적절한 사용 시나리오를 설명합니다.
+
+## 🎯 Forma의 핵심 특징
+
+### 1. 폼 특화 설계 🎨
+- 폼 관리에 최적화된 API
+- 검증, 제출, 에러 처리 내장
+- Material-UI(MUI)와 완벽한 통합
+
+### 2. 개별 필드 구독 ⚡
+- 필드별 선택적 리렌더링
+- 대규모 폼에서 뛰어난 성능
+- Dot notation 네이티브 지원
+
+### 3. TypeScript 우선 설계 📝
+- 강력한 타입 추론
+- IDE 자동완성 최적화
+- 컴파일 타임 에러 방지
+
+## 🔍 주요 라이브러리 비교
+
+### vs React Hook Form 📋
+
+#### 코드 비교
+```typescript
+// React Hook Form
+const { register, handleSubmit, watch } = useForm();
+const name = watch("name"); // 전체 폼 리렌더링 위험
+
+// Forma
+const form = useForm();
+const name = form.useFormValue("name"); // 해당 필드만 리렌더링
+```
+
+#### 장단점 비교
+
+| 특징 | Forma | React Hook Form |
+|------|-------|-----------------|
+| **성능** | ✅ 개별 필드 구독 | ⚠️ watch 사용 시 리렌더링 |
+| **TypeScript** | ✅ 강력한 타입 추론 | ✅ 좋은 타입 지원 |
+| **MUI 통합** | ✅ 완벽한 통합 | ⚠️ 추가 설정 필요 |
+| **생태계** | ⚠️ 신규 라이브러리 | ✅ 큰 커뮤니티 |
+| **번들 크기** | ✅ 중간 크기 | ✅ 가벼움 |
+| **학습 곡선** | ✅ 직관적 | ✅ 쉬움 |
+
+**Forma가 더 좋은 경우:**
+- 복잡한 폼에서 성능이 중요할 때
+- MUI를 주로 사용하는 프로젝트
+- TypeScript 프로젝트에서 강력한 타입 지원이 필요할 때
+
+**React Hook Form이 더 좋은 경우:**
+- 검증된 안정성이 중요할 때
+- 풍부한 생태계와 커뮤니티 지원이 필요할 때
+- uncontrolled 방식을 선호할 때
+
+### vs Formik 📝
+
+#### 코드 비교
+```typescript
+// Formik
+<Formik>
+  {({ values, setFieldValue }) => (
+    <Field name="user.name" /> // 전체 폼 리렌더링
+  )}
+</Formik>
+
+// Forma
+const userName = form.useFormValue("user.name"); // 필드만 리렌더링
+<TextField name="user.name" value={userName} onChange={form.handleFormChange} />
+```
+
+#### 장단점 비교
+
+| 특징 | Forma | Formik |
+|------|-------|--------|
+| **성능** | ✅ 최적화된 리렌더링 | ❌ 빈번한 리렌더링 |
+| **API 복잡도** | ✅ 간단한 API | ⚠️ 복잡한 render props |
+| **TypeScript** | ✅ 뛰어난 지원 | ⚠️ 제한적 지원 |
+| **유지보수** | ✅ 활발한 개발 | ⚠️ 유지보수 모드 |
+| **번들 크기** | ✅ 중간 크기 | ✅ 중간 크기 |
+
+**Forma가 더 좋은 경우:**
+- 성능이 중요한 대규모 폼
+- 현대적인 개발 환경
+- TypeScript 프로젝트
+
+**Formik이 더 좋은 경우:**
+- 기존 Formik 프로젝트의 마이그레이션 비용이 큰 경우
+- render props 패턴에 익숙한 팀
+
+### vs Zustand/Redux 🏪
+
+#### 역할 차이
+```typescript
+// Zustand (일반 상태 관리)
+const name = useStore(state => state.user.name);
+// 폼 검증, 제출 로직을 직접 구현해야 함
+
+// Forma (폼 특화)
+const form = useForm({ 
+  validation: { name: 'required' }, 
+  onSubmit: async (values) => { /* 제출 로직 */ } 
+});
+const name = form.useFormValue("user.name");
+```
+
+#### 장단점 비교
+
+| 특징 | Forma | Zustand | Redux |
+|------|-------|---------|-------|
+| **폼 관리** | ✅ 전용 기능 | ⚠️ 직접 구현 | ⚠️ 직접 구현 |
+| **범용 상태** | ⚠️ 제한적 | ✅ 뛰어남 | ✅ 뛰어남 |
+| **성능** | ✅ 폼에 최적화 | ✅ 좋음 | ✅ 좋음 |
+| **개발 도구** | ⚠️ 제한적 | ✅ 간단함 | ✅ Redux DevTools |
+| **학습 곡선** | ✅ 쉬움 | ✅ 쉬움 | ⚠️ 복잡함 |
+
+**역할이 다름:**
+- **Zustand/Redux**: 범용 상태 관리
+- **Forma**: 폼 전용 상태 관리
+
+### vs TanStack Form 🆕
+
+#### 코드 비교
+```typescript
+// TanStack Form
+const form = useForm({
+  defaultValues: { name: '' },
+  onSubmit: async ({ value }) => { /* submit */ }
+});
+
+// Forma
+const form = useForm({
+  initialValues: { name: '' },
+  onSubmit: async (values) => { /* submit */ }
+});
+```
+
+#### 장단점 비교
+
+| 특징 | Forma | TanStack Form |
+|------|-------|---------------|
+| **성능** | ✅ 개별 필드 구독 | ✅ 최적화됨 |
+| **TypeScript** | ✅ 강력한 지원 | ✅ 강력한 지원 |
+| **MUI 통합** | ✅ 완벽한 통합 | ⚠️ 추가 설정 |
+| **성숙도** | ⚠️ 신규 | ⚠️ 신규 |
+| **크기** | ✅ 중간 | ✅ 작음 |
+
+## 📊 성능 비교
+
+### 대규모 폼 시나리오 (50개 필드)
+
+```
+1개 필드 변경 시 리렌더링 컴포넌트 수:
+
+┌─────────────────┬─────────────────┐
+│ 라이브러리      │ 리렌더링 수     │
+├─────────────────┼─────────────────┤
+│ Formik          │ 50개 (전체)     │
+│ RHF + watch     │ 10-20개         │
+│ Forma           │ 1개 (해당 필드) │
+│ TanStack Form   │ 1-2개           │
+└─────────────────┴─────────────────┘
+```
+
+### 메모리 사용량
+- **Forma**: 중간 수준 (개별 구독자 관리)
+- **RHF**: 낮음 (uncontrolled 방식)
+- **Formik**: 높음 (전체 상태 관리)
+
+## 🎯 선택 가이드
+
+### Forma를 선택해야 하는 경우 ✅
+
+1. **폼 중심 애플리케이션**
+   - 설문조사 플랫폼
+   - 양식 관리 시스템
+   - 복잡한 다단계 폼
+
+2. **성능이 중요한 폼**
+   - 50개 이상의 필드
+   - 실시간 업데이트가 빈번
+   - 모바일 환경 최적화
+
+3. **MUI 프로젝트**
+   - Material-UI 기반 디자인 시스템
+   - MUI 컴포넌트 중심 개발
+
+4. **TypeScript 프로젝트**
+   - 강력한 타입 안전성 필요
+   - IDE 자동완성 중요
+
+### 다른 라이브러리를 고려해야 하는 경우 ⚠️
+
+1. **React Hook Form 선택:**
+   - 생태계와 플러그인이 중요
+   - 커뮤니티 지원이 중요한 프로젝트
+   - 검증된 안정성 우선
+
+2. **범용 상태 관리 필요:**
+   - 폼 외에도 복잡한 전역 상태 관리
+   - Redux DevTools 등 디버깅 도구 중요
+   - 서버 상태 관리도 함께 필요
+
+3. **기존 프로젝트:**
+   - 이미 다른 라이브러리 사용 중
+   - 마이그레이션 비용이 큰 경우
+
+## 🚀 마이그레이션 가이드
+
+### From React Hook Form
+
+```typescript
+// Before (RHF)
+const { register, handleSubmit, watch } = useForm();
+const name = watch("name");
+
+// After (Forma)
+const form = useForm({ initialValues: { name: "" } });
+const name = form.useFormValue("name");
+```
+
+### From Formik
+
+```typescript
+// Before (Formik)
+<Formik initialValues={{ name: "" }}>
+  {({ values, setFieldValue }) => (
+    <input value={values.name} onChange={e => setFieldValue("name", e.target.value)} />
+  )}
+</Formik>
+
+// After (Forma)
+const form = useForm({ initialValues: { name: "" } });
+const name = form.useFormValue("name");
+return <input name="name" value={name} onChange={form.handleFormChange} />;
+```
+
+## 📈 성능 최적화 팁
+
+### Forma에서 최고 성능 얻기
+
+1. **개별 필드 구독 사용**
+```typescript
+// ✅ 좋음
+const name = form.useFormValue("name");
+const email = form.useFormValue("email");
+
+// ❌ 피하기
+const allValues = form.getValues(); // 전체 상태 구독
+```
+
+2. **조건부 구독**
+```typescript
+// ✅ 조건부 렌더링 시 조건부 구독
+{showAdvanced && form.useFormValue("advanced.option")}
+```
+
+3. **메모이제이션 활용**
+```typescript
+const expensiveValue = useMemo(() => {
+  return computeExpensiveValue(form.useFormValue("input"));
+}, [form.useFormValue("input")]);
+```
+
+## 🔮 미래 전망
+
+### Forma의 로드맵
+- React Server Components 지원
+- 더 많은 UI 라이브러리 통합
+- 성능 최적화 고도화
+
+### 생태계 트렌드
+- 폼 라이브러리들의 성능 최적화 경쟁
+- TypeScript 지원 강화
+- React 19+ 새로운 기능 활용
+
+## 📞 결론
+
+**Forma는 다음과 같은 경우에 최적의 선택입니다:**
+
+- 폼이 애플리케이션의 핵심인 경우
+- 성능 최적화가 중요한 복잡한 폼
+- MUI를 사용하는 TypeScript 프로젝트
+- 새로운 기술 도입이 가능한 초기 단계 프로젝트
+
+**하지만 다음과 같은 경우에는 다른 라이브러리가 더 나을 수 있습니다:**
+
+- 검증된 안정성이 가장 중요한 경우
+- 기존 팀의 경험과 학습 곡선을 고려해야 하는 경우
+- 폼보다는 범용 상태 관리가 더 중요한 경우
+
+**선택의 핵심은 프로젝트의 요구사항과 팀 상황에 맞는 적절한 도구를 고르는 것입니다.**
+
+---
+
+📚 **관련 문서**
+- [Forma 시작 가이드](./getting-started-ko.md)
+- [글로벌 훅 비교 가이드](./global-hooks-comparison-ko.md)
+- [성능 최적화 가이드](./best-practices-ko.md)

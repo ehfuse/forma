@@ -28,13 +28,12 @@
  * SOFTWARE.
  */
 
-import { FieldStore } from "../core/FieldStore";
 import {
     FormChangeEvent,
     DatePickerChangeHandler,
     UseFormProps,
 } from "../types/form";
-import { useFieldState } from "./useFieldState";
+import { useFormaState } from "./useFormaState";
 
 import React, {
     useEffect,
@@ -70,20 +69,27 @@ export function useForm<T extends Record<string, any>>({
     onComplete,
     _externalStore,
 }: UseFormProps<T>) {
-    // useFieldState를 기반으로 사용 / Use useFieldState as foundation
-    const fieldState = useFieldState<T>(initialValues, { _externalStore });
+    // useFormaState를 기반으로 사용 / Use useFormaState as foundation
+    const fieldState = useFormaState<T>(initialValues, { _externalStore });
 
     // 폼 특정 상태 관리 / Form-specific state management
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isValidating, setIsValidating] = useState(false);
 
     // 폼이 수정되었는지 확인 / Check if form is modified
-    const isModified = useMemo(() => {
-        return fieldState._store.isModified();
-    }, [fieldState.values]); // Use values as dependency for reactivity
+    // Store의 변경 사항을 추적하여 효율적으로 감지
+    const [isModified, setIsModified] = useState(false);
 
-    // 호환성을 위한 values 객체 (비권장) / Values object for compatibility (not recommended)
-    const values = fieldState.values;
+    useEffect(() => {
+        const unsubscribe = fieldState._store.subscribeGlobal(() => {
+            setIsModified(fieldState._store.isModified());
+        });
+
+        // 초기 상태 설정
+        setIsModified(fieldState._store.isModified());
+
+        return unsubscribe;
+    }, [fieldState._store]);
 
     /**
      * 통합 폼 변경 핸들러 / Unified form change handler
@@ -205,7 +211,9 @@ export function useForm<T extends Record<string, any>>({
      */
     const useFormValue = useCallback(
         (fieldName: string) => {
-            return fieldState.useValue(fieldName);
+            const value = fieldState.useValue(fieldName);
+            // undefined를 빈 문자열로 변환하여 MUI TextField와 호환성 확보
+            return value === undefined ? "" : value;
         },
         [fieldState.useValue]
     );
@@ -300,9 +308,6 @@ export function useForm<T extends Record<string, any>>({
             resetForm, // 폼 초기화 / reset form
             validateForm, // 폼 검증 / validate form
 
-            // 호환성 / Compatibility
-            values, // 비권장: 전체 리렌더링 발생 / not recommended: causes full re-renders
-
             // 고급 사용 / Advanced usage
             _store: fieldState._store, // 직접 store 접근용 / direct store access
         }),
@@ -321,7 +326,7 @@ export function useForm<T extends Record<string, any>>({
             submit,
             resetForm,
             validateForm,
-            values,
+            fieldState._store, // Store 의존성으로 대체
         ]
     );
 }

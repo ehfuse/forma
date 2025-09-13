@@ -159,6 +159,7 @@ export class FieldStore<T extends Record<string, any>> {
                 this.fields.set(rootField, field);
             }
 
+            const oldRootValue = field.value;
             const newRootValue = setNestedValue(
                 field.value || {},
                 remainingPath,
@@ -178,6 +179,22 @@ export class FieldStore<T extends Record<string, any>> {
                     (listeners, subscribedPath) => {
                         if (subscribedPath === fieldNameStr) {
                             listeners.forEach((listener) => listener());
+                        }
+                        // 배열 필드가 변경되었을 때 해당 .length 구독자들에게도 알림
+                        // Notify .length subscribers when array field changes
+                        else if (
+                            subscribedPath === `${rootFieldStr}.length` &&
+                            Array.isArray(newRootValue)
+                        ) {
+                            // 길이가 실제로 변경되었는지 확인
+                            // Check if length actually changed
+                            const oldLength = Array.isArray(oldRootValue)
+                                ? oldRootValue.length
+                                : 0;
+                            const newLength = newRootValue.length;
+                            if (oldLength !== newLength) {
+                                listeners.forEach((listener) => listener());
+                            }
                         }
                     }
                 );
@@ -199,6 +216,7 @@ export class FieldStore<T extends Record<string, any>> {
         }
 
         if (field.value !== value) {
+            const oldValue = field.value;
             field.value = value;
             const fieldStr = fieldName as string;
 
@@ -211,6 +229,22 @@ export class FieldStore<T extends Record<string, any>> {
             this.dotNotationListeners.forEach((listeners, subscribedPath) => {
                 if (subscribedPath === fieldStr) {
                     listeners.forEach((listener) => listener());
+                }
+                // 배열 필드가 변경되었을 때 해당 .length 구독자들에게도 알림
+                // Notify .length subscribers when array field changes
+                else if (
+                    subscribedPath === `${fieldStr}.length` &&
+                    Array.isArray(value)
+                ) {
+                    // 길이가 실제로 변경되었는지 확인
+                    // Check if length actually changed
+                    const oldLength = Array.isArray(oldValue)
+                        ? oldValue.length
+                        : 0;
+                    const newLength = value.length;
+                    if (oldLength !== newLength) {
+                        listeners.forEach((listener) => listener());
+                    }
                 }
             });
 
@@ -286,6 +320,83 @@ export class FieldStore<T extends Record<string, any>> {
     }
 
     /**
+     * 특정 필드가 존재하는지 확인 / Check if a specific field exists
+     * @param path 필드 경로 (dot notation 지원) / Field path (supports dot notation)
+     * @returns 필드 존재 여부 / Whether the field exists
+     */
+    hasField(path: string): boolean {
+        const currentValues = this.getValues();
+        try {
+            const value = getNestedValue(currentValues, path);
+            return value !== undefined;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * 특정 필드를 제거 / Remove a specific field
+     * @param path 필드 경로 (dot notation 지원) / Field path (supports dot notation)
+     */
+    removeField(path: string): void {
+        const currentValues = this.getValues();
+        const pathParts = path.split(".");
+
+        if (pathParts.length === 1) {
+            // 루트 레벨 필드 제거 / Remove root level field
+            delete currentValues[pathParts[0]];
+            this.fields.delete(pathParts[0]);
+        } else {
+            // 중첩된 필드 제거 / Remove nested field
+            const parentPath = pathParts.slice(0, -1).join(".");
+            const fieldName = pathParts[pathParts.length - 1];
+            const parent = getNestedValue(currentValues, parentPath);
+
+            if (parent && typeof parent === "object") {
+                if (Array.isArray(parent)) {
+                    const index = parseInt(fieldName, 10);
+                    if (!isNaN(index) && index >= 0 && index < parent.length) {
+                        parent.splice(index, 1);
+                    }
+                } else {
+                    delete parent[fieldName];
+                }
+            }
+        }
+
+        this.setValues(currentValues);
+
+        // 해당 필드의 구독자들에게 알림 / Notify subscribers of this field
+        this.dotNotationListeners.forEach((listeners, subscribedPath) => {
+            if (subscribedPath === path) {
+                listeners.forEach((listener) => listener());
+            }
+        });
+
+        // 전역 구독자들 알림 / Notify global subscribers
+        if (this.globalListeners.size > 0) {
+            this.globalListeners.forEach((listener) => listener());
+        }
+    }
+
+    /**
+     * 전역 상태 변경에 구독 / Subscribe to global state changes
+     * @param callback 상태 변경 시 실행될 콜백 / Callback to execute on state change
+     * @returns 구독 해제 함수 / Unsubscribe function
+     */
+    subscribeToAll(callback: (values: T) => void): () => void {
+        const wrappedCallback = () => {
+            callback(this.getValues());
+        };
+
+        this.globalListeners.add(wrappedCallback);
+
+        return () => {
+            this.globalListeners.delete(wrappedCallback);
+        };
+    }
+
+    /**
      * 초기값으로 리셋 / Reset to initial values
      */
     reset() {
@@ -298,5 +409,6 @@ export class FieldStore<T extends Record<string, any>> {
     destroy() {
         this.fields.clear();
         this.globalListeners.clear();
+        this.dotNotationListeners.clear();
     }
 }

@@ -84,11 +84,230 @@ function UserRegistration() {
 }
 ```
 
-## 2.5단계: 일반 상태 관리 (useFieldState)
+## 2.5단계: 일반 상태 관리 (useFormaState)
 
 폼이 아닌 일반적인 상태 관리에도 Forma의 개별 필드 구독 기능을 활용할 수 있습니다.
 
-### 배열 상태 관리 (개선된 예제)
+### useFormaState 선언 방법
+
+```tsx
+import { useFormaState } from "@/forma";
+
+// 1. 기본 사용법 - 초기값과 함께
+const state = useFormaState({
+    user: { name: "", email: "" },
+    settings: { theme: "light" },
+});
+
+// 2. 타입 명시적 지정
+interface AppData {
+    count: number;
+    message: string;
+}
+
+const typedState = useFormaState<AppData>({
+    count: 0,
+    message: "Hello",
+});
+
+// 3. 빈 객체로 시작 (동적 필드 추가)
+const dynamicState = useFormaState<Record<string, any>>();
+
+// 4. 옵션과 함께 사용
+const stateWithOptions = useFormaState(
+    {
+        data: {},
+    },
+    {
+        onChange: (values) => console.log("상태 변경:", values),
+        debounceMs: 300,
+    }
+);
+```
+
+### 새로운 API 메서드 활용
+
+```tsx
+function StateManager() {
+    const state = useFormaState<Record<string, any>>({});
+
+    // 필드 동적 관리
+    const addField = (name: string, value: any) => {
+        state.setValue(name, value);
+    };
+
+    const removeField = (name: string) => {
+        if (state.hasField(name)) {
+            state.removeField(name);
+        }
+    };
+
+    // 상태 변경 구독
+    React.useEffect(() => {
+        const unsubscribe = state.subscribe((values) => {
+            console.log("전체 상태 변경:", values);
+        });
+        return unsubscribe;
+    }, [state]);
+
+    return (
+        <div>
+            <button onClick={() => addField("newField", "초기값")}>
+                필드 추가
+            </button>
+            <button onClick={() => removeField("newField")}>필드 제거</button>
+
+            {state.hasField("newField") && (
+                <input
+                    value={state.useValue("newField")}
+                    onChange={(e) => state.setValue("newField", e.target.value)}
+                />
+            )}
+
+            <button onClick={() => state.reset()}>초기값으로 리셋</button>
+        </div>
+    );
+}
+```
+
+### 배열 상태 관리와 길이 구독
+
+````tsx
+import React from "react";
+import { useFormaState } from "@/forma";
+
+interface Todo {
+    id: number;
+    text: string;
+    completed: boolean;
+}
+
+function TodoApp() {
+    const state = useFormaState({
+        todos: [
+            { id: 1, text: "Learn React", completed: false },
+            { id: 2, text: "Learn Forma", completed: true },
+        ],
+        filter: "all" as "all" | "active" | "completed",
+        newTodoText: "",
+    });
+
+    // 🔥 핵심: 배열 길이만 구독 (항목 추가/삭제 시에만 리렌더링)
+    const todoCount = state.useValue("todos.length");
+
+    // 개별 필드 구독
+    const newTodoText = state.useValue("newTodoText");
+    const filter = state.useValue("filter");
+
+    const addTodo = () => {
+        if (!newTodoText.trim()) return;
+
+        const todos = state.getValues().todos;
+        state.setValue("todos", [
+            ...todos,
+            { id: Date.now(), text: newTodoText, completed: false }
+        ]);
+        // ✅ todos 배열이 변경되면 todos.length 구독자에게 자동 알림!
+
+        state.setValue("newTodoText", "");
+    };
+
+    const toggleTodo = (index: number) => {
+        const todo = state.getValue(`todos.${index}`);
+        state.setValue(`todos.${index}.completed`, !todo.completed);
+        // ✅ 배열 내용만 변경 (길이 동일) - todos.length에는 알림 안 감
+    };
+
+    return (
+        <div>
+            <h2>할 일 관리 ({todoCount}개)</h2>
+
+            <div>
+                <input
+                    value={newTodoText}
+                    onChange={(e) => state.setValue("newTodoText", e.target.value)}
+                    placeholder="새 할 일 입력"
+                />
+                <button onClick={addTodo}>추가</button>
+            </div>
+
+            <div>
+                <label>
+                    <input
+                        type="radio"
+                        checked={filter === "all"}
+                        onChange={() => state.setValue("filter", "all")}
+                    />
+                    전체
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        checked={filter === "active"}
+                        onChange={() => state.setValue("filter", "active")}
+                    />
+                    진행 중
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        checked={filter === "completed"}
+                        onChange={() => state.setValue("filter", "completed")}
+                    />
+                    완료
+                </label>
+            </div>
+
+            <TodoList state={state} filter={filter} onToggle={toggleTodo} />
+        </div>
+    );
+}
+
+// 성능 최적화된 할 일 목록 컴포넌트
+function TodoList({ state, filter, onToggle }) {
+    const todos = state.getValues().todos;
+
+    return (
+        <ul>
+            {todos
+                .filter(todo => {
+                    if (filter === "active") return !todo.completed;
+                    if (filter === "completed") return todo.completed;
+                    return true;
+                })
+                .map((todo, index) => (
+                    <TodoItem
+                        key={todo.id}
+                        index={index}
+                        state={state}
+                        onToggle={onToggle}
+                    />
+                ))}
+        </ul>
+    );
+}
+
+// 개별 할 일 항목 컴포넌트 (해당 항목 변경 시에만 리렌더링)
+function TodoItem({ index, state, onToggle }) {
+    // 개별 필드만 구독하여 성능 최적화
+    const text = state.useValue(`todos.${index}.text`);
+    const completed = state.useValue(`todos.${index}.completed`);
+
+    return (
+        <li>
+            <input
+                type="checkbox"
+                checked={completed}
+                onChange={() => onToggle(index)}
+            />
+            <span style={{
+                textDecoration: completed ? "line-through" : "none"
+            }}>
+                {text}
+            </span>
+        </li>
+    );
+}
 
 ```tsx
 import React from "react";
@@ -100,7 +319,7 @@ import {
     TextField,
     Checkbox,
 } from "@mui/material";
-import { useFieldState } from "@/forma";
+import { useFormaState } from "@/forma";
 
 interface Todo {
     id: number;
@@ -116,18 +335,28 @@ interface AppState {
 
 // 개별 할 일 항목 컴포넌트 (성능 최적화)
 function TodoItem({ index }: { index: number }) {
-    const state = useFieldState<AppState>({
+    const state = useFormaState<AppState>({
         /* 외부에서 주입 */
     });
 
-    // 개별 할 일 항목의 필드만 구독 (dot notation 활용)
+    // 개별 필드만 구독 (dot notation 활용)
     const text = state.useValue(`todos.${index}.text`);
     const completed = state.useValue(`todos.${index}.completed`);
-    const id = state.useValue(`todos.${index}.id`);
+    const filter = state.useValue("filter");
 
     const toggleTodo = () => {
         state.setValue(`todos.${index}.completed`, !completed);
     };
+
+    // 필터링 조건 확인 (렌더링 여부 결정)
+    const shouldShow = () => {
+        if (filter === "active") return !completed;
+        if (filter === "completed") return completed;
+        return true; // "all"
+    };
+
+    // 필터 조건에 맞지 않으면 렌더링하지 않음
+    if (!shouldShow()) return null;
 
     return (
         <ListItem>
@@ -141,7 +370,7 @@ function TodoItem({ index }: { index: number }) {
 }
 
 function TodoApp() {
-    const state = useFieldState<AppState>({
+    const state = useFormaState<AppState>({
         todos: [
             { id: 1, text: "Learn React", completed: false },
             { id: 2, text: "Learn Forma", completed: true },
@@ -153,13 +382,12 @@ function TodoApp() {
     // 개별 필드 구독 - 최적화된 방식
     const filter = state.useValue("filter");
     const newTodoText = state.useValue("newTodoText");
-
-    // 배열 길이만 구독 (항목 추가/삭제 시에만 리렌더링)
     const todosLength = state.useValue("todos.length");
 
     const addTodo = () => {
         if (!newTodoText.trim()) return;
 
+        // getValues()는 구독이 아닌 일회성 값 조회이므로 괜찮음
         const currentTodos = state.getValues().todos;
         state.setValue("todos", [
             ...currentTodos,
@@ -168,17 +396,13 @@ function TodoApp() {
         state.setValue("newTodoText", "");
     };
 
-    // 필터링은 계산된 속성으로 처리
-    const getFilteredIndices = () => {
-        const allTodos = state.getValues().todos;
-        return allTodos
-            .map((todo, index) => ({ todo, index }))
-            .filter(({ todo }) => {
-                if (filter === "active") return !todo.completed;
-                if (filter === "completed") return todo.completed;
-                return true;
-            })
-            .map(({ index }) => index);
+    // ✅ 개별 인덱스로 렌더링 (성능 최적화)
+    const renderTodoItems = () => {
+        const items = [];
+        for (let i = 0; i < todosLength; i++) {
+            items.push(<TodoItem key={i} index={i} />);
+        }
+        return items;
     };
 
     return (
@@ -204,22 +428,18 @@ function TodoApp() {
                 <span>현재 필터: {filter}</span>
             </div>
 
-            <List>
-                {getFilteredIndices().map((index) => (
-                    <TodoItem key={index} index={index} />
-                ))}
-            </List>
+            <List>{renderTodoItems()}</List>
 
             <p>총 할 일 개수: {todosLength}</p>
         </div>
     );
 }
-```
+````
 
 ### 중첩 객체 상태 관리
 
 ```tsx
-import { useFieldState } from "@/forma";
+import { useFormaState } from "@/forma";
 
 interface UserProfile {
     personal: {
@@ -233,7 +453,7 @@ interface UserProfile {
 }
 
 function ProfileSettings() {
-    const state = useFieldState<UserProfile>({
+    const state = useFormaState<UserProfile>({
         personal: { name: "", email: "" },
         settings: { theme: "light", notifications: true },
     });

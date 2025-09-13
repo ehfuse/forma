@@ -1,17 +1,23 @@
-# Forma - English Documentation
+# Forma - Engli- ✅ **React 19 Optimized**: Leverages latest React features
+
+---
+
+## 📦 InstallationDocumentation
 
 **Advanced React Form State Management Library**
 
 Forma is a high-performance library for efficiently managing form state in React applications. It provides selective re-rendering through individual field subscriptions and global form state sharing capabilities.
 
+---
+
 ## 🚀 Key Features
 
-- ✅ **Individual Field Subscription**: Optimized performance with field-specific selective re-rendering
-- ✅ **Dot Notation Support**: Nested object access like `user.profile.name`
-- ✅ **Full MUI Compatibility**: Perfect integration with Material-UI components
-- ✅ **Global Form State**: Share form state across multiple components
-- ✅ **Full TypeScript Support**: Strong type safety
-- ✅ **React 19 Optimized**: Leverages latest React features
+-   ✅ **Individual Field Subscription**: Optimized performance with field-specific selective re-rendering
+-   ✅ **Dot Notation Support**: Nested object access like `user.profile.name`
+-   ✅ **Full MUI Compatibility**: Perfect integration with Material-UI components
+-   ✅ **Global Form State**: Share form state across multiple components
+-   ✅ **Full TypeScript Support**: Strong type safety
+-   ✅ **React 19 Optimized**: Leverages latest React features
 
 ## 📦 Installation
 
@@ -24,6 +30,8 @@ or
 ```bash
 yarn add @ehfuse/forma
 ```
+
+---
 
 ## 🎯 Quick Start
 
@@ -49,9 +57,19 @@ function MyForm() {
 
     return (
         <form onSubmit={form.submit}>
-            <TextField name="name" value={name} onChange={form.handleFormChange} />
-            <TextField name="email" value={email} onChange={form.handleFormChange} />
-            <Button type="submit" disabled={form.isSubmitting}>Submit</Button>
+            <TextField
+                name="name"
+                value={name}
+                onChange={form.handleFormChange}
+            />
+            <TextField
+                name="email"
+                value={email}
+                onChange={form.handleFormChange}
+            />
+            <Button type="submit" disabled={form.isSubmitting}>
+                Submit
+            </Button>
         </form>
     );
 }
@@ -59,11 +77,18 @@ function MyForm() {
 
 📖 **[View Detailed Getting Started Guide](./getting-started-en.md)** - Step-by-step tutorial, validation, advanced features
 
+🔄 **[View Global Hooks Comparison Guide](./global-hooks-comparison-en.md)** - useGlobalForm vs useGlobalFormaState comparison and usage patterns
+
+⚖️ **[View Library Comparison Guide](./library-comparison-en.md)** - Detailed comparison of Forma vs other state management libraries
+
+---
+
 ## 📚 API Reference
 
 ### Core Hooks
 
 #### useForm
+
 Basic hook for managing local form state.
 
 ```tsx
@@ -75,6 +100,7 @@ const form = useForm<T>({
 ```
 
 #### useGlobalForm
+
 Extended hook for managing global form state.
 
 ```tsx
@@ -86,6 +112,8 @@ const form = useGlobalForm<T>({
 ```
 
 📖 **[View Complete API Reference](./API-en.md)** - All methods, types, examples, migration guide
+
+🔄 **[View Global Hooks Comparison Guide](./global-hooks-comparison-en.md)** - useGlobalForm vs useGlobalFormaState differences and usage scenarios
 
 ### Dot Notation Support
 
@@ -109,7 +137,11 @@ const form = useForm({
 const name = form.useFormValue("user.profile.name");
 const theme = form.useFormValue("user.profile.settings.theme");
 
-<TextField name="user.profile.name" value={name} onChange={form.handleFormChange} />;
+<TextField
+    name="user.profile.name"
+    value={name}
+    onChange={form.handleFormChange}
+/>;
 ```
 
 ## 🎨 MUI Component Support
@@ -119,13 +151,21 @@ Forma is fully compatible with all Material-UI form components:
 ### TextField
 
 ```tsx
-<TextField name="email" value={form.useFormValue("email")} onChange={form.handleFormChange} />
+<TextField
+    name="email"
+    value={form.useFormValue("email")}
+    onChange={form.handleFormChange}
+/>
 ```
 
 ### Select
 
 ```tsx
-<Select name="category" value={form.useFormValue("category")} onChange={form.handleFormChange}>
+<Select
+    name="category"
+    value={form.useFormValue("category")}
+    onChange={form.handleFormChange}
+>
     <MenuItem value="A">Category A</MenuItem>
     <MenuItem value="B">Category B</MenuItem>
 </Select>
@@ -134,20 +174,27 @@ Forma is fully compatible with all Material-UI form components:
 ### DatePicker
 
 ```tsx
-<DatePicker value={form.useFormValue("birthDate")} onChange={form.handleDatePickerChange("birthDate")} />
+<DatePicker
+    value={form.useFormValue("birthDate")}
+    onChange={form.handleDatePickerChange("birthDate")}
+/>
 ```
 
 ### Checkbox
 
 ```tsx
-<Checkbox name="agree" checked={form.useFormValue("agree")} onChange={form.handleFormChange} />
+<Checkbox
+    name="agree"
+    checked={form.useFormValue("agree")}
+    onChange={form.handleFormChange}
+/>
 ```
 
 ## ⚡ Performance Optimization
 
 ### Individual Field Subscription
 
-```tsx
+````tsx
 ## ⚡ Performance Optimization
 
 Forma provides optimized performance through individual field subscriptions. For detailed performance optimization guide, see [Performance Optimization Documentation](./best-practices-en.md).
@@ -170,10 +217,11 @@ return (
         {/* When user.name changes → Only userName TextField re-renders */}
     </div>
 );
-```
+````
 
 📖 **[View Detailed Performance Optimization Guide](./best-practices-en.md)**
-```
+
+````
 
 ### Conditional Subscription
 
@@ -184,7 +232,7 @@ function ConditionalField({ showField }: { showField: boolean }) {
 
     return showField ? <TextField name="conditionalField" value={value} onChange={form.handleFormChange} /> : null;
 }
-```
+````
 
 ### Component Structure Optimization
 
@@ -194,35 +242,41 @@ function CardList() {
     const cards = [
         { id: 1, name: "", email: "" },
         { id: 2, name: "", email: "" },
-        { id: 3, name: "", email: "" }
+        { id: 3, name: "", email: "" },
     ];
 
     return (
         <div>
-            {cards.map(card => (
+            {cards.map((card) => (
                 <UserCard key={card.id} cardId={card.id} initialData={card} />
             ))}
         </div>
     );
 }
 
-function UserCard({ cardId, initialData }: { cardId: number; initialData: any }) {
+function UserCard({
+    cardId,
+    initialData,
+}: {
+    cardId: number;
+    initialData: any;
+}) {
     // ❌ Each card creates separate form instance (memory inefficient)
     const form = useForm({
-        initialValues: initialData
+        initialValues: initialData,
     });
 
     return (
         <Card>
-            <TextField 
-                name={`user.${cardId}.name`} 
-                value={form.useFormValue("name")} 
-                onChange={form.handleFormChange} 
+            <TextField
+                name={`user.${cardId}.name`}
+                value={form.useFormValue("name")}
+                onChange={form.handleFormChange}
             />
-            <TextField 
-                name={`user.${cardId}.email`} 
-                value={form.useFormValue("email")} 
-                onChange={form.handleFormChange} 
+            <TextField
+                name={`user.${cardId}.email`}
+                value={form.useFormValue("email")}
+                onChange={form.handleFormChange}
             />
         </Card>
     );
@@ -235,21 +289,25 @@ function CardList() {
             users: [
                 { name: "", email: "" },
                 { name: "", email: "" },
-                { name: "", email: "" }
-            ]
-        }
+                { name: "", email: "" },
+            ],
+        },
     });
 
     return (
         <div>
             {form.useFormValue("users").map((user: any, index: number) => (
-                <UserCard 
+                <UserCard
                     key={index}
                     index={index}
                     name={form.useFormValue(`users.${index}.name`)}
                     email={form.useFormValue(`users.${index}.email`)}
-                    onNameChange={(value) => form.setFormValue(`users.${index}.name`, value)}
-                    onEmailChange={(value) => form.setFormValue(`users.${index}.email`, value)}
+                    onNameChange={(value) =>
+                        form.setFormValue(`users.${index}.name`, value)
+                    }
+                    onEmailChange={(value) =>
+                        form.setFormValue(`users.${index}.email`, value)
+                    }
                 />
             ))}
         </div>
@@ -263,15 +321,15 @@ function CardListAlternative() {
             users: [
                 { name: "", email: "" },
                 { name: "", email: "" },
-                { name: "", email: "" }
-            ]
-        }
+                { name: "", email: "" },
+            ],
+        },
     });
 
     return (
         <div>
             {form.useFormValue("users").map((user: any, index: number) => (
-                <UserCardWithFunction 
+                <UserCardWithFunction
                     key={index}
                     index={index}
                     useFormValue={form.useFormValue}
@@ -290,16 +348,22 @@ interface UserCardProps {
     onEmailChange: (value: string) => void;
 }
 
-function UserCard({ index, name, email, onNameChange, onEmailChange }: UserCardProps) {
+function UserCard({
+    index,
+    name,
+    email,
+    onNameChange,
+    onEmailChange,
+}: UserCardProps) {
     return (
         <Card>
-            <TextField 
-                value={name} 
-                onChange={(e) => onNameChange(e.target.value)} 
+            <TextField
+                value={name}
+                onChange={(e) => onNameChange(e.target.value)}
             />
-            <TextField 
-                value={email} 
-                onChange={(e) => onEmailChange(e.target.value)} 
+            <TextField
+                value={email}
+                onChange={(e) => onEmailChange(e.target.value)}
             />
         </Card>
     );
@@ -312,19 +376,27 @@ interface UserCardWithFunctionProps {
     setFormValue: (field: string, value: any) => void;
 }
 
-function UserCardWithFunction({ index, useFormValue, setFormValue }: UserCardWithFunctionProps) {
+function UserCardWithFunction({
+    index,
+    useFormValue,
+    setFormValue,
+}: UserCardWithFunctionProps) {
     const name = useFormValue(`users.${index}.name`);
     const email = useFormValue(`users.${index}.email`);
 
     return (
         <Card>
-            <TextField 
-                value={name} 
-                onChange={(e) => setFormValue(`users.${index}.name`, e.target.value)} 
+            <TextField
+                value={name}
+                onChange={(e) =>
+                    setFormValue(`users.${index}.name`, e.target.value)
+                }
             />
-            <TextField 
-                value={email} 
-                onChange={(e) => setFormValue(`users.${index}.email`, e.target.value)} 
+            <TextField
+                value={email}
+                onChange={(e) =>
+                    setFormValue(`users.${index}.email`, e.target.value)
+                }
             />
         </Card>
     );
@@ -395,7 +467,9 @@ interface ComplexForm {
 
 // Array element access is also possible
 const firstEmployeeName = form.useFormValue("company.employees.0.name");
-const firstEmployeeEmail = form.useFormValue("company.employees.0.contact.email");
+const firstEmployeeEmail = form.useFormValue(
+    "company.employees.0.contact.email"
+);
 ```
 
 ## 🌟 Use Cases
@@ -412,8 +486,16 @@ function Step1() {
 
     return (
         <>
-            <TextField name="name" value={form.useFormValue("name")} onChange={form.handleFormChange} />
-            <TextField name="email" value={form.useFormValue("email")} onChange={form.handleFormChange} />
+            <TextField
+                name="name"
+                value={form.useFormValue("name")}
+                onChange={form.handleFormChange}
+            />
+            <TextField
+                name="email"
+                value={form.useFormValue("email")}
+                onChange={form.handleFormChange}
+            />
         </>
     );
 }
@@ -425,7 +507,13 @@ function Step2() {
         initialValues: { name: "", email: "", phone: "" },
     });
 
-    return <TextField name="phone" value={form.useFormValue("phone")} onChange={form.handleFormChange} />;
+    return (
+        <TextField
+            name="phone"
+            value={form.useFormValue("phone")}
+            onChange={form.handleFormChange}
+        />
+    );
 }
 ```
 
@@ -441,8 +529,16 @@ function FormWithPreview() {
         <Grid container spacing={2}>
             <Grid item xs={6}>
                 {/* Input form */}
-                <TextField name="title" value={form.useFormValue("title")} onChange={form.handleFormChange} />
-                <TextField name="content" value={form.useFormValue("content")} onChange={form.handleFormChange} />
+                <TextField
+                    name="title"
+                    value={form.useFormValue("title")}
+                    onChange={form.handleFormChange}
+                />
+                <TextField
+                    name="content"
+                    value={form.useFormValue("content")}
+                    onChange={form.handleFormChange}
+                />
             </Grid>
             <Grid item xs={6}>
                 {/* Real-time preview */}
@@ -481,7 +577,11 @@ function ConditionalForm() {
 
     return (
         <>
-            <Select name="accountType" value={accountType} onChange={form.handleFormChange}>
+            <Select
+                name="accountType"
+                value={accountType}
+                onChange={form.handleFormChange}
+            >
                 <MenuItem value="personal">Personal</MenuItem>
                 <MenuItem value="business">Business</MenuItem>
             </Select>
@@ -522,7 +622,10 @@ const value = form.useFormValue("name"); // With subscription
 
 ```tsx
 // ✅ Use DatePicker specific handler
-<DatePicker value={form.useFormValue("date")} onChange={form.handleDatePickerChange("date")} />
+<DatePicker
+    value={form.useFormValue("date")}
+    onChange={form.handleDatePickerChange("date")}
+/>
 ```
 
 **Q: Cannot access nested objects**
@@ -531,7 +634,11 @@ const value = form.useFormValue("name"); // With subscription
 // ✅ Use dot notation
 const cityValue = form.useFormValue("address.city");
 
-<TextField name="address.city" value={cityValue} onChange={form.handleFormChange} />;
+<TextField
+    name="address.city"
+    value={cityValue}
+    onChange={form.handleFormChange}
+/>;
 ```
 
 ### Performance Optimization Tips
@@ -542,19 +649,19 @@ const cityValue = form.useFormValue("address.city");
 
 ## 📞 Contact
 
-- **Developer**: KIM YOUNG JIN (김영진)
-- **Email**: ehfuse@gmail.com
-- **GitHub**: https://github.com/ehfuse/forma
+-   **Developer**: KIM YOUNG JIN (김영진)
+-   **Email**: ehfuse@gmail.com
+-   **GitHub**: https://github.com/ehfuse/forma
 
 ## 🔄 Version History
 
 ### v1.0.0 (2025-01-07)
 
-- Initial release
-- Provided useForm, useGlobalForm hooks
-- Dot notation support
-- Full MUI compatibility
-- Full TypeScript support
+-   Initial release
+-   Provided useForm, useGlobalForm hooks
+-   Dot notation support
+-   Full MUI compatibility
+-   Full TypeScript support
 
 ---
 

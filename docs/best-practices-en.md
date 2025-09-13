@@ -4,7 +4,10 @@ Essential patterns for efficient Forma usage.
 
 ## 🚀 Core Principles
 
-### 1. Use Individual Field Subscriptions
+### 1. Use Individual Field Subsc// ✅ Subscribe to individual array elements (performance optimization)
+
+function OptimizedTodoList() {
+const state = useFormaState({ todos: [] });tions
 
 ```tsx
 // ❌ Full object subscription - all fields re-render on any change
@@ -40,7 +43,43 @@ function ConditionalField({ showField }: { showField: boolean }) {
 }
 ```
 
-### 3. Memoize Complex Calculations
+### 3. Performance Optimization with Array Length Subscription
+
+```tsx
+// ✅ Subscribe only to array length for performance optimization
+function TodoCounter() {
+    const todoCount = state.useValue("todos.length");
+    const completedCount = state.useValue("completedTodos.length");
+
+    return (
+        <div>
+            {completedCount} of {todoCount} todos completed
+        </div>
+    );
+    // Re-renders only when items are added/removed
+    // No re-render when array content changes (e.g., todo.completed)
+}
+
+// ✅ Smart notification system
+function ShoppingCart() {
+    const itemCount = state.useValue("cart.length");
+
+    const addItem = (item) => {
+        const cart = state.getValues().cart;
+        state.setValue("cart", [...cart, item]);
+        // ✅ Array length changed - notify cart.length subscribers
+    };
+
+    const updateQuantity = (index, quantity) => {
+        state.setValue(`cart.${index}.quantity`, quantity);
+        // ✅ Array length unchanged - no notification to cart.length subscribers
+    };
+
+    return <span>Cart ({itemCount})</span>;
+}
+```
+
+### 4. Memoize Complex Calculations
 
 ```tsx
 // ✅ Use useMemo for expensive operations
@@ -58,7 +97,7 @@ function ExpensiveValidation() {
 
 ## 📝 Recommended Patterns
 
-### useForm vs useGlobalForm vs useFieldState
+### useForm vs useGlobalForm vs useFormaState
 
 ```tsx
 // ✅ Single component form → useForm
@@ -75,31 +114,64 @@ function MultiStepForm() {
     });
 }
 
-// ✅ General state management (non-form) → useFieldState
-function TodoApp() {
-    const state = useFieldState({
-        todos: [],
-        filter: "all",
-        searchTerm: "",
+// ✅ General state management (non-form) → useFormaState
+function UserDashboard() {
+    const state = useFormaState({
+        user: { name: "John Doe", status: "online" },
+        theme: "dark",
     });
+
+    const userName = state.useValue("user.name");
+    const theme = state.useValue("theme");
+
+    return (
+        <div>
+            Hello, {userName}! Theme: {theme}
+        </div>
+    );
 }
 
-// ✅ Complex array/object state → useFieldState
-function DataTable() {
-    const state = useFieldState({
-        data: [],
-        sorting: { field: "name", direction: "asc" },
-        pagination: { page: 1, size: 10 },
+// ✅ Complex array/object state → useFormaState (individual subscription)
+function TodoManager() {
+    const state = useFormaState({
+        todos: [
+            { id: 1, text: "Learn React", completed: false },
+            { id: 2, text: "Try Forma", completed: true },
+        ],
+        filter: "all",
     });
+
+    // ❌ Subscribe to entire array - re-renders on any todo change
+    // const todos = state.useValue("todos");
+
+    // ✅ Subscribe to individual todo items (performance optimization)
+    const firstTodo = state.useValue("todos.0.text");
+    const secondCompleted = state.useValue("todos.1.completed");
+
+    return (
+        <div>
+            <div>First todo: {firstTodo}</div>
+            <label>
+                <input
+                    type="checkbox"
+                    checked={secondCompleted}
+                    onChange={(e) =>
+                        state.setValue("todos.1.completed", e.target.checked)
+                    }
+                />
+                Complete second todo
+            </label>
+        </div>
+    );
 }
 ```
 
-### useFieldState Optimization Patterns
+### useFormaState Optimization Patterns
 
 ```tsx
 // ✅ Maintain immutability when updating arrays
 function TodoList() {
-    const state = useFieldState({ todos: [] });
+    const state = useFormaState({ todos: [] });
 
     const addTodo = (text: string) => {
         const currentTodos = state.getValues().todos;
@@ -121,8 +193,9 @@ function TodoList() {
 }
 
 // ✅ Individual field subscription for nested objects
+// ✅ Subscribe to individual fields in nested objects
 function UserProfile() {
-    const state = useFieldState({
+    const state = useFormaState({
         user: { name: "", email: "" },
         preferences: { theme: "light", notifications: true },
     });
@@ -150,15 +223,12 @@ function UserProfile() {
     );
 }
 
-// ✅ Subscribe to individual array elements (performance optimized)
+// ✅ Subscribe to individual array elements (performance optimization)
 function OptimizedTodoList() {
-    const state = useFieldState({ todos: [] });
+    const state = useFormaState({ todos: [] });
 
     // ❌ Subscribe to entire array (inefficient)
     // const todos = state.useValue("todos");
-
-    // ✅ Subscribe only to array length
-    const todosLength = state.useValue("todos.length");
 
     // ✅ Subscribe to specific fields of individual elements
     const firstTodoText = state.useValue("todos.0.text");
@@ -166,7 +236,6 @@ function OptimizedTodoList() {
 
     return (
         <div>
-            <p>Total todos: {todosLength}</p>
             <p>First todo: {firstTodoText}</p>
             <input
                 type="checkbox"
@@ -208,6 +277,107 @@ function UserEmailField() {
 // Check performance in development
 if (process.env.NODE_ENV === "development") {
     console.log("Form Values:", form.getFormValues());
+}
+```
+
+## 🆕 Using New API Methods
+
+### Dynamic Field Management
+
+```tsx
+// ✅ Check field existence before safe access
+function DynamicField({ fieldName }: { fieldName: string }) {
+    const state = useFormaState<Record<string, any>>({});
+
+    // Check field existence
+    const hasField = state.hasField(fieldName);
+
+    // Safe value access (non-reactive)
+    const value = hasField ? state.getValue(fieldName) : "";
+
+    return hasField ? (
+        <input
+            value={state.useValue(fieldName)} // Reactive subscription
+            onChange={(e) => state.setValue(fieldName, e.target.value)}
+        />
+    ) : (
+        <button onClick={() => state.setValue(fieldName, "")}>
+            Add {fieldName} field
+        </button>
+    );
+}
+```
+
+### Global State Subscription Optimization
+
+```tsx
+// ✅ Subscribe globally only under specific conditions
+function GlobalStateWatcher() {
+    const state = useFormaState({ data: {} });
+    const [isWatching, setIsWatching] = useState(false);
+
+    useEffect(() => {
+        if (!isWatching) return;
+
+        const unsubscribe = state.subscribe((values) => {
+            console.log("Global state changed:", values);
+            // Logging, analytics, auto-save, etc.
+        });
+
+        return unsubscribe;
+    }, [state, isWatching]);
+
+    return (
+        <button onClick={() => setIsWatching(!isWatching)}>
+            {isWatching ? "Stop Watching" : "Start Watching"}
+        </button>
+    );
+}
+```
+
+### Safe Field Removal with Cleanup
+
+```tsx
+// ✅ Cleanup work before field removal
+function removeFieldSafely(state: any, fieldPath: string) {
+    if (state.hasField(fieldPath)) {
+        // Cleanup related data
+        const value = state.getValue(fieldPath);
+        if (value && typeof value === "object") {
+            // Clean up resources for objects or arrays
+            console.log(`Cleaning up field: ${fieldPath}`, value);
+        }
+
+        // Remove field
+        state.removeField(fieldPath);
+    }
+}
+```
+
+### Performance Monitoring
+
+```tsx
+// ✅ Monitor state change frequency
+function PerformanceMonitor() {
+    const state = useFormaState({ counters: {} });
+    const [changeCount, setChangeCount] = useState(0);
+
+    useEffect(() => {
+        const unsubscribe = state.subscribe(() => {
+            setChangeCount((prev) => prev + 1);
+        });
+
+        return unsubscribe;
+    }, [state]);
+
+    return (
+        <div>
+            <p>State changes: {changeCount}</p>
+            <button onClick={() => state.reset()}>
+                Reset (change count will also reset)
+            </button>
+        </div>
+    );
 }
 ```
 

@@ -28,6 +28,7 @@
 
 import { FieldStore } from "../core/FieldStore";
 import { UseFormReturn } from "./form";
+import { UseFormaStateReturn } from "../hooks/useFormaState";
 
 /**
  * 전역 폼 컨텍스트 제공자의 Props 타입 | Props type for global form context provider
@@ -48,6 +49,17 @@ export interface UseGlobalFormProps<T extends Record<string, any>> {
 }
 
 /**
+ * useGlobalFormaState 훅의 Props 타입 | useGlobalFormaState hook Props type
+ * 글로벌 FormaState는 개별 필드 구독 기반 전역 상태 관리에 집중 | Global FormaState focuses on global state management with individual field subscriptions
+ */
+export interface UseGlobalFormaStateProps<T extends Record<string, any>> {
+    /** 전역에서 상태를 식별하는 고유 ID | Unique ID to identify state globally */
+    stateId: string;
+    /** 컴포넌트 언마운트 시 자동 정리 여부 | Auto cleanup on component unmount */
+    autoCleanup?: boolean;
+}
+
+/**
  * useGlobalForm 훅의 반환 타입 | useGlobalForm hook return type
  * useForm의 모든 기능에 글로벌 폼 전용 기능 추가 | All useForm features plus global form specific features
  */
@@ -56,6 +68,18 @@ export interface UseGlobalFormReturn<T extends Record<string, any>>
     /** 글로벌 폼 ID | Global form ID */
     formId: string;
     /** 글로벌 스토어 직접 접근 | Direct access to global store */
+    _store: FieldStore<T>;
+}
+
+/**
+ * useGlobalFormaState 훅의 반환 타입 | useGlobalFormaState hook return type
+ * useFormaState의 모든 기능에 글로벌 FormaState 전용 기능 추가 | All useFormaState features plus global FormaState specific features
+ */
+export interface UseGlobalFormaStateReturn<T extends Record<string, any>>
+    extends UseFormaStateReturn<T> {
+    /** 글로벌 FormaState ID | Global FormaState ID */
+    stateId: string;
+    /** 글로벌 스토어 직접 접근 (UseFormaStateReturn에도 있지만 명시적으로 재정의) | Direct access to global store */
     _store: FieldStore<T>;
 }
 

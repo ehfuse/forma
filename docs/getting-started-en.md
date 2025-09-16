@@ -8,7 +8,7 @@ A step-by-step guide for developers new to Forma.
 
 ```tsx
 // Currently for use in local projects
-import { useForm, useGlobalForm, GlobalFormProvider } from "@/forma";
+import { useForm, useGlobalForm, GlobalFormaProvider } from "@/forma";
 ```
 
 ### Future NPM Package Installation (Coming Soon)

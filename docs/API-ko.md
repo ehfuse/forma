@@ -9,8 +9,11 @@
     -   [useForm](#useform)
     -   [useGlobalForm](#useglobalform)
     -   [useRegisterGlobalForm](#useregisterglobalform)
+    -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
+    -   [useUnregisterGlobalForm](#useunregisterglobalform)
+    -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
 -   [Components](#components)
-    -   [GlobalFormProvider](#globalformprovider)
+    -   [GlobalFormaProvider](#globalformaprovider)
 -   [Core Classes](#core-classes)
     -   [FieldStore](#fieldstore)
 -   [Utilities](#utilities)
@@ -538,34 +541,199 @@ function AnotherComponent() {
 
 ---
 
-## Components
+### useRegisterGlobalFormaState
 
-### GlobalFormProvider
-
-글로벌 폼 상태 관리를 위한 Context Provider입니다.
+기존에 생성된 useFormaState 인스턴스를 글로벌 상태로 등록하는 훅입니다.
 
 #### Signature
 
 ```typescript
-function GlobalFormProvider({ children }: { children: ReactNode }): JSX.Element;
+function useRegisterGlobalFormaState<T>(
+    stateId: string,
+    formaState: UseFormaStateReturn<T>
+): void;
+```
+
+#### Parameters
+
+-   `stateId`: 글로벌 상태의 고유 식별자
+-   `formaState`: 등록할 useFormaState 인스턴스
+
+#### 특징
+
+-   **글로벌 공유**: 로컬 FormaState를 글로벌 상태로 변환
+-   **개별 필드 구독**: 등록된 상태는 필드별 구독 지원
+-   **자동 동기화**: 다른 컴포넌트에서 즉시 접근 가능
+
+#### Example
+
+```typescript
+import { useFormaState, useRegisterGlobalFormaState } from "@ehfuse/forma";
+
+function DataProvider() {
+    // 로컬 상태 생성
+    const state = useFormaState({
+        user: { name: "", email: "" },
+        settings: { theme: "light" },
+    });
+
+    // 글로벌 상태로 등록
+    useRegisterGlobalFormaState("app-data", state);
+
+    return <div>데이터 제공자</div>;
+}
+
+// 다른 컴포넌트에서 접근
+function UserProfile() {
+    const state = useGlobalFormaState({
+        stateId: "app-data",
+    });
+
+    return <p>사용자: {state.useValue("user.name")}</p>;
+}
+```
+
+---
+
+### useUnregisterGlobalForm
+
+등록된 글로벌 폼을 제거하는 훅입니다.
+
+#### Signature
+
+```typescript
+function useUnregisterGlobalForm(): {
+    unregisterForm: (formId: string) => boolean;
+    clearForms: () => void;
+};
+```
+
+#### Returns
+
+-   `unregisterForm`: 특정 폼을 제거하는 함수
+-   `clearForms`: 모든 글로벌 폼을 제거하는 함수
+
+#### 특징
+
+-   **메모리 관리**: 불필요한 폼 상태 제거
+-   **선택적 제거**: 특정 폼만 선택해서 제거 가능
+-   **일괄 정리**: 모든 폼을 한번에 정리 가능
+
+#### Example
+
+```typescript
+import { useUnregisterGlobalForm } from "@ehfuse/forma";
+
+function CleanupComponent() {
+    const { unregisterForm, clearForms } = useUnregisterGlobalForm();
+
+    const handleUnregister = () => {
+        const success = unregisterForm("user-form");
+        console.log(`폼 제거 ${success ? "성공" : "실패"}`);
+    };
+
+    const handleClearAll = () => {
+        clearForms();
+        console.log("모든 폼이 제거되었습니다");
+    };
+
+    return (
+        <div>
+            <button onClick={handleUnregister}>특정 폼 제거</button>
+            <button onClick={handleClearAll}>모든 폼 제거</button>
+        </div>
+    );
+}
+```
+
+---
+
+### useUnregisterGlobalFormaState
+
+등록된 글로벌 FormaState를 제거하는 훅입니다.
+
+#### Signature
+
+```typescript
+function useUnregisterGlobalFormaState(): {
+    unregisterState: (stateId: string) => boolean;
+    clearStates: () => void;
+};
+```
+
+#### Returns
+
+-   `unregisterState`: 특정 상태를 제거하는 함수
+-   `clearStates`: 모든 글로벌 상태를 제거하는 함수
+
+#### 특징
+
+-   **메모리 최적화**: 불필요한 상태 정리
+-   **유연한 관리**: 개별 또는 일괄 제거 선택 가능
+-   **안전한 제거**: 구독자 정리 후 안전하게 제거
+
+#### Example
+
+```typescript
+import { useUnregisterGlobalFormaState } from "@ehfuse/forma";
+
+function StateManager() {
+    const { unregisterState, clearStates } = useUnregisterGlobalFormaState();
+
+    const handleLogout = () => {
+        // 로그아웃 시 사용자 관련 상태만 제거
+        unregisterState("user-data");
+        unregisterState("user-preferences");
+    };
+
+    const handleAppReset = () => {
+        // 앱 리셋 시 모든 상태 제거
+        clearStates();
+    };
+
+    return (
+        <div>
+            <button onClick={handleLogout}>로그아웃</button>
+            <button onClick={handleAppReset}>앱 리셋</button>
+        </div>
+    );
+}
+```
+
+---
+
+## Components
+
+### GlobalFormaProvider
+
+글로벌 Forma 상태 관리를 위한 Context Provider입니다.
+
+#### Signature
+
+```typescript
+function GlobalFormaProvider({
+    children,
+}: {
+    children: ReactNode;
+}): JSX.Element;
 ```
 
 #### Usage
 
 ```typescript
 // App.tsx
-import { GlobalFormProvider } from "@/forma";
+import { GlobalFormaProvider } from "@/forma";
 
 function App() {
     return (
-        <GlobalFormProvider>
+        <GlobalFormaProvider>
             <Router>
                 <Routes>
                     <Route path="/step1" element={<Step1 />} />
                     <Route path="/step2" element={<Step2 />} />
                 </Routes>
             </Router>
-        </GlobalFormProvider>
+        </GlobalFormaProvider>
     );
 }
 ```
@@ -778,16 +946,44 @@ interface UseGlobalFormProps<T extends Record<string, any>> {
 }
 ```
 
-### GlobalFormContextType
+### GlobalFormaContextType
 
 글로벌 폼 컨텍스트의 타입입니다.
 
 ```typescript
-interface GlobalFormContextType {
+interface GlobalFormaContextType {
     getOrCreateStore: <T extends Record<string, any>>(
         formId: string,
         initialValues: T
     ) => FieldStore<T>;
+    registerStore: <T extends Record<string, any>>(
+        formId: string,
+        store: FieldStore<T>
+    ) => void;
+    unregisterStore: (formId: string) => boolean;
+    clearStores: () => void;
+}
+```
+
+### UseUnregisterGlobalFormReturn
+
+useUnregisterGlobalForm 훅의 반환 타입입니다.
+
+```typescript
+interface UseUnregisterGlobalFormReturn {
+    unregisterForm: (formId: string) => boolean;
+    clearForms: () => void;
+}
+```
+
+### UseUnregisterGlobalFormaStateReturn
+
+useUnregisterGlobalFormaState 훅의 반환 타입입니다.
+
+```typescript
+interface UseUnregisterGlobalFormaStateReturn {
+    unregisterState: (stateId: string) => boolean;
+    clearStates: () => void;
 }
 ```
 

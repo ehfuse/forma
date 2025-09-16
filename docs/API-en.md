@@ -9,8 +9,11 @@ This document provides detailed reference for all APIs in the Forma library.
     -   [useForm](#useform)
     -   [useGlobalForm](#useglobalform)
     -   [useRegisterGlobalForm](#useregisterglobalform)
+    -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
+    -   [useUnregisterGlobalForm](#useunregisterglobalform)
+    -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
 -   [Components](#components)
-    -   [GlobalFormProvider](#globalformprovider)
+    -   [GlobalFormaProvider](#globalformaprovider)
 -   [Core Classes](#core-classes)
     -   [FieldStore](#fieldstore)
 -   [Utilities](#utilities)
@@ -542,34 +545,199 @@ function AnotherComponent() {
 
 ---
 
-## Components
+### useRegisterGlobalFormaState
 
-### GlobalFormProvider
-
-Context Provider for global form state management.
+Hook to register an existing useFormaState instance as a global state.
 
 #### Signature
 
 ```typescript
-function GlobalFormProvider({ children }: { children: ReactNode }): JSX.Element;
+function useRegisterGlobalFormaState<T>(
+    stateId: string,
+    formaState: UseFormaStateReturn<T>
+): void;
+```
+
+#### Parameters
+
+-   `stateId`: Unique identifier for the global state
+-   `formaState`: useFormaState instance to register
+
+#### Features
+
+-   **Global Sharing**: Convert local FormaState to global state
+-   **Individual Field Subscriptions**: Registered state supports field-level subscriptions
+-   **Auto Sync**: Immediately accessible from other components
+
+#### Example
+
+```typescript
+import { useFormaState, useRegisterGlobalFormaState } from "@ehfuse/forma";
+
+function DataProvider() {
+    // Create local state
+    const state = useFormaState({
+        user: { name: "", email: "" },
+        settings: { theme: "light" },
+    });
+
+    // Register as global state
+    useRegisterGlobalFormaState("app-data", state);
+
+    return <div>Data Provider</div>;
+}
+
+// Access from another component
+function UserProfile() {
+    const state = useGlobalFormaState({
+        stateId: "app-data",
+    });
+
+    return <p>User: {state.useValue("user.name")}</p>;
+}
+```
+
+---
+
+### useUnregisterGlobalForm
+
+Hook to remove registered global forms.
+
+#### Signature
+
+```typescript
+function useUnregisterGlobalForm(): {
+    unregisterForm: (formId: string) => boolean;
+    clearForms: () => void;
+};
+```
+
+#### Returns
+
+-   `unregisterForm`: Function to remove a specific form
+-   `clearForms`: Function to remove all global forms
+
+#### Features
+
+-   **Memory Management**: Remove unnecessary form state
+-   **Selective Removal**: Remove specific forms only
+-   **Batch Cleanup**: Clear all forms at once
+
+#### Example
+
+```typescript
+import { useUnregisterGlobalForm } from "@ehfuse/forma";
+
+function CleanupComponent() {
+    const { unregisterForm, clearForms } = useUnregisterGlobalForm();
+
+    const handleUnregister = () => {
+        const success = unregisterForm("user-form");
+        console.log(`Form removal ${success ? "success" : "failed"}`);
+    };
+
+    const handleClearAll = () => {
+        clearForms();
+        console.log("All forms have been removed");
+    };
+
+    return (
+        <div>
+            <button onClick={handleUnregister}>Remove Specific Form</button>
+            <button onClick={handleClearAll}>Remove All Forms</button>
+        </div>
+    );
+}
+```
+
+---
+
+### useUnregisterGlobalFormaState
+
+Hook to remove registered global FormaState.
+
+#### Signature
+
+```typescript
+function useUnregisterGlobalFormaState(): {
+    unregisterState: (stateId: string) => boolean;
+    clearStates: () => void;
+};
+```
+
+#### Returns
+
+-   `unregisterState`: Function to remove a specific state
+-   `clearStates`: Function to remove all global states
+
+#### Features
+
+-   **Memory Optimization**: Clean up unnecessary state
+-   **Flexible Management**: Choose individual or batch removal
+-   **Safe Removal**: Clean up subscribers before safe removal
+
+#### Example
+
+```typescript
+import { useUnregisterGlobalFormaState } from "@ehfuse/forma";
+
+function StateManager() {
+    const { unregisterState, clearStates } = useUnregisterGlobalFormaState();
+
+    const handleLogout = () => {
+        // Remove only user-related states on logout
+        unregisterState("user-data");
+        unregisterState("user-preferences");
+    };
+
+    const handleAppReset = () => {
+        // Remove all states on app reset
+        clearStates();
+    };
+
+    return (
+        <div>
+            <button onClick={handleLogout}>Logout</button>
+            <button onClick={handleAppReset}>Reset App</button>
+        </div>
+    );
+}
+```
+
+---
+
+## Components
+
+### GlobalFormaProvider
+
+Context Provider for global Forma state management.
+
+#### Signature
+
+```typescript
+function GlobalFormaProvider({
+    children,
+}: {
+    children: ReactNode;
+}): JSX.Element;
 ```
 
 #### Usage
 
 ```typescript
 // App.tsx
-import { GlobalFormProvider } from "@/forma";
+import { GlobalFormaProvider } from "@/forma";
 
 function App() {
     return (
-        <GlobalFormProvider>
+        <GlobalFormaProvider>
             <Router>
                 <Routes>
                     <Route path="/step1" element={<Step1 />} />
                     <Route path="/step2" element={<Step2 />} />
                 </Routes>
             </Router>
-        </GlobalFormProvider>
+        </GlobalFormaProvider>
     );
 }
 ```
@@ -782,16 +950,44 @@ interface UseGlobalFormProps<T extends Record<string, any>> {
 }
 ```
 
-### GlobalFormContextType
+### GlobalFormaContextType
 
 Type for the global form context.
 
 ```typescript
-interface GlobalFormContextType {
+interface GlobalFormaContextType {
     getOrCreateStore: <T extends Record<string, any>>(
         formId: string,
         initialValues: T
     ) => FieldStore<T>;
+    registerStore: <T extends Record<string, any>>(
+        formId: string,
+        store: FieldStore<T>
+    ) => void;
+    unregisterStore: (formId: string) => boolean;
+    clearStores: () => void;
+}
+```
+
+### UseUnregisterGlobalFormReturn
+
+Return type of useUnregisterGlobalForm hook.
+
+```typescript
+interface UseUnregisterGlobalFormReturn {
+    unregisterForm: (formId: string) => boolean;
+    clearForms: () => void;
+}
+```
+
+### UseUnregisterGlobalFormaStateReturn
+
+Return type of useUnregisterGlobalFormaState hook.
+
+```typescript
+interface UseUnregisterGlobalFormaStateReturn {
+    unregisterState: (stateId: string) => boolean;
+    clearStates: () => void;
 }
 ```
 

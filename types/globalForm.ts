@@ -26,15 +26,16 @@
  * SOFTWARE.
  */
 
+import { ReactNode } from "react";
 import { FieldStore } from "../core/FieldStore";
 import { UseFormReturn } from "./form";
 import { UseFormaStateReturn } from "../hooks/useFormaState";
 
 /**
- * 전역 폼 컨텍스트 제공자의 Props 타입 | Props type for global form context provider
+ * 글로벌 Forma Provider Props | Global Forma provider props
  */
-export interface GlobalFormProviderProps {
-    children: React.ReactNode;
+export interface GlobalFormaProviderProps {
+    children: ReactNode;
 }
 
 /**
@@ -81,6 +82,62 @@ export interface UseGlobalFormaStateReturn<T extends Record<string, any>>
     stateId: string;
     /** 글로벌 스토어 직접 접근 (UseFormaStateReturn에도 있지만 명시적으로 재정의) | Direct access to global store */
     _store: FieldStore<T>;
+}
+
+/**
+ * useRegisterGlobalForm Hook Props | useRegisterGlobalForm 훅 Props
+ */
+export interface UseRegisterGlobalFormProps<T extends Record<string, any>> {
+    /** 글로벌 폼 식별자 | Global form identifier */
+    formId: string;
+    /** 등록할 useForm 인스턴스 | useForm instance to register */
+    form: UseFormReturn<T>;
+}
+
+/**
+ * useRegisterGlobalForm Hook Return | useRegisterGlobalForm 훅 반환값
+ */
+export interface UseRegisterGlobalFormReturn {
+    // void hook - 반환값 없음 | void hook - no return value
+}
+
+/**
+ * useRegisterGlobalFormaState Hook Props | useRegisterGlobalFormaState 훅 Props
+ */
+export interface UseRegisterGlobalFormaStateProps<
+    T extends Record<string, any>
+> {
+    /** 글로벌 상태 식별자 | Global state identifier */
+    stateId: string;
+    /** 등록할 useFormaState 인스턴스 | useFormaState instance to register */
+    formaState: UseFormaStateReturn<T>;
+}
+
+/**
+ * useRegisterGlobalFormaState Hook Return | useRegisterGlobalFormaState 훅 반환값
+ */
+export interface UseRegisterGlobalFormaStateReturn {
+    // void hook - 반환값 없음 | void hook - no return value
+}
+
+/**
+ * useUnregisterGlobalForm Hook Return | useUnregisterGlobalForm 훅 반환값
+ */
+export interface UseUnregisterGlobalFormReturn {
+    /** 특정 폼 등록 해제 | Unregister specific form */
+    unregisterForm: (formId: string) => boolean;
+    /** 모든 폼 제거 | Clear all forms */
+    clearForms: () => void;
+}
+
+/**
+ * useUnregisterGlobalFormaState Hook Return | useUnregisterGlobalFormaState 훅 반환값
+ */
+export interface UseUnregisterGlobalFormaStateReturn {
+    /** 특정 상태 등록 해제 | Unregister specific state */
+    unregisterState: (stateId: string) => boolean;
+    /** 모든 상태 제거 | Clear all states */
+    clearStates: () => void;
 }
 
 /**
@@ -306,10 +363,10 @@ export interface GlobalFormMiddleware {
 }
 
 /**
- * 전역 폼 Provider에 확장된 Props
+ * 전역 Forma Provider에 확장된 Props
  */
-export interface ExtendedGlobalFormProviderProps
-    extends GlobalFormProviderProps {
+export interface ExtendedGlobalFormaProviderProps
+    extends GlobalFormaProviderProps {
     /** 전역 폼 설정 */
     config?: GlobalFormConfig;
     /** 미들웨어 목록 */
@@ -319,9 +376,9 @@ export interface ExtendedGlobalFormProviderProps
 }
 
 /**
- * 글로벌 폼 컨텍스트 타입 / Global form context type
+ * 글로벌 Forma 컨텍스트 타입 / Global Forma context type
  */
-export interface GlobalFormContextType {
+export interface GlobalFormaContextType {
     getOrCreateStore: <T extends Record<string, any>>(
         formId: string
     ) => FieldStore<T>;
@@ -329,4 +386,6 @@ export interface GlobalFormContextType {
         formId: string,
         store: FieldStore<T>
     ) => void;
+    unregisterStore: (formId: string) => boolean;
+    clearStores: () => void;
 }

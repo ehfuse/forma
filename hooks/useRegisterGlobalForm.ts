@@ -30,7 +30,7 @@
 
 import { useContext, useEffect } from "react";
 import { UseFormReturn } from "../types/form";
-import { GlobalFormContext } from "../contexts/GlobalFormContext";
+import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 
 /**
  * 기존 useForm을 글로벌 폼으로 등록하는 훅 | Hook to register existing useForm as global form
@@ -59,7 +59,7 @@ export function useRegisterGlobalForm<T extends Record<string, any>>(
     formId: string,
     form: UseFormReturn<T>
 ): void {
-    const { registerStore } = useContext(GlobalFormContext);
+    const { registerStore } = useContext(GlobalFormaContext);
 
     useEffect(() => {
         // useForm의 내부 store를 글로벌에 등록 | Register useForm's internal store globally

@@ -36,10 +36,16 @@ export type {
     FormValidationResult,
 } from "./form";
 
-// 전역 폼 타입들
+// 전역 Forma 타입들
 export type {
-    GlobalFormProviderProps,
+    GlobalFormaProviderProps,
     UseGlobalFormProps,
+    UseRegisterGlobalFormProps,
+    UseRegisterGlobalFormReturn,
+    UseRegisterGlobalFormaStateProps,
+    UseRegisterGlobalFormaStateReturn,
+    UseUnregisterGlobalFormReturn,
+    UseUnregisterGlobalFormaStateReturn,
     GlobalFormStoreMap,
     GlobalFormMetadata,
     GlobalFormLifecycleEvent,
@@ -57,7 +63,7 @@ export type {
     GlobalFormEvent,
     GlobalFormEventListener,
     GlobalFormMiddleware,
-    ExtendedGlobalFormProviderProps,
+    ExtendedGlobalFormaProviderProps,
 } from "./globalForm";
 
 // 에러 클래스

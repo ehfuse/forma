@@ -31,7 +31,7 @@
 import { useContext } from "react";
 import { useForm } from "./useForm";
 import { UseGlobalFormProps, UseGlobalFormReturn } from "../types/globalForm";
-import { GlobalFormContext } from "../contexts/GlobalFormContext";
+import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 
 /**
  * 글로벌 폼 상태 관리 훅 / Global form state management hook
@@ -49,7 +49,7 @@ import { GlobalFormContext } from "../contexts/GlobalFormContext";
 export function useGlobalForm<T extends Record<string, any>>({
     formId,
 }: UseGlobalFormProps<T>): UseGlobalFormReturn<T> {
-    const { getOrCreateStore } = useContext(GlobalFormContext);
+    const { getOrCreateStore } = useContext(GlobalFormaContext);
 
     // 글로벌 스토어 가져오기 또는 생성 / Get or create global store
     const store = getOrCreateStore<T>(formId);

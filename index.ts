@@ -31,14 +31,17 @@
 export { useForm } from "./hooks/useForm";
 export { useGlobalForm } from "./hooks/useGlobalForm";
 export { useRegisterGlobalForm } from "./hooks/useRegisterGlobalForm";
+export { useUnregisterGlobalForm } from "./hooks/useUnregisterGlobalForm";
 export { useFormaState, useFieldSubscription } from "./hooks/useFormaState";
 export { useGlobalFormaState } from "./hooks/useGlobalFormaState";
+export { useRegisterGlobalFormaState } from "./hooks/useRegisterGlobalFormaState";
+export { useUnregisterGlobalFormaState } from "./hooks/useUnregisterGlobalFormaState";
 
 // ===== Context & Providers =====
 export {
-    GlobalFormContext,
-    GlobalFormProvider,
-} from "./contexts/GlobalFormContext";
+    GlobalFormaContext,
+    GlobalFormaProvider,
+} from "./contexts/GlobalFormaContext";
 
 // ===== Core Classes =====
 export { FieldStore } from "./core/FieldStore";
@@ -62,21 +65,27 @@ export type {
     UseFormaStateReturn,
 } from "./hooks/useFormaState";
 
-// Global Form Types
+// Global Forma Types
 export type {
     UseGlobalFormProps,
     UseGlobalFormReturn,
     UseGlobalFormaStateProps,
     UseGlobalFormaStateReturn,
-    GlobalFormProviderProps,
-    GlobalFormContextType,
+    UseRegisterGlobalFormProps,
+    UseRegisterGlobalFormReturn,
+    UseRegisterGlobalFormaStateProps,
+    UseRegisterGlobalFormaStateReturn,
+    UseUnregisterGlobalFormReturn,
+    UseUnregisterGlobalFormaStateReturn,
+    GlobalFormaProviderProps,
+    GlobalFormaContextType,
     GlobalFormStoreMap,
     GlobalFormMetadata,
     GlobalFormEvent,
     GlobalFormEventListener,
     GlobalFormConfig,
     GlobalFormMiddleware,
-    ExtendedGlobalFormProviderProps,
+    ExtendedGlobalFormaProviderProps,
 } from "./types/globalForm";
 
 /**

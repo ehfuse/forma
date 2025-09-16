@@ -1,7 +1,7 @@
 /**
- * GlobalFormContext.tsx
+ * GlobalFormaContext.tsx
  *
- * Forma - 글로벌 폼 상태 관리 컨텍스트 | Global form state management context
+ * Forma - 글로벌 Forma 상태 관리 컨텍스트 | Global Forma state management context
  * 여러 컴포넌트 간 폼 상태 공유를 위한 React Context | React Context for sharing form state across multiple components
  *
  * @license MIT License
@@ -29,29 +29,39 @@
 
 import { createContext, useRef, ReactNode } from "react";
 import { FieldStore } from "../core/FieldStore";
-import { GlobalFormContextType } from "../types/globalForm";
+import { GlobalFormaContextType } from "../types/globalForm";
 
 /**
  * 글로벌 폼 상태 관리를 위한 React Context | React Context for global form state management
  */
-export const GlobalFormContext = createContext<GlobalFormContextType>({
+export const GlobalFormaContext = createContext<GlobalFormaContextType>({
     getOrCreateStore: () => {
         throw new Error(
-            "GlobalFormContext must be used within GlobalFormProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider"
         );
     },
     registerStore: () => {
         throw new Error(
-            "GlobalFormContext must be used within GlobalFormProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
+    unregisterStore: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
+    clearStores: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
         );
     },
 });
 
 /**
- * 글로벌 폼 상태 관리 Provider | Global form state management provider
+ * 글로벌 Forma 상태 관리 Provider | Global Forma state management provider
  *
- * 애플리케이션 최상단에 배치하여 전역 폼 상태 관리를 활성화합니다. | Place at the top of your application to enable global form state management.
- * 각 formId별로 독립적인 FieldStore 인스턴스를 관리합니다. | Manages independent FieldStore instances for each formId.
+ * 애플리케이션 최상단에 배치하여 전역 Forma 상태 관리를 활성화합니다. | Place at the top of your application to enable global Forma state management.
+ * 각 stateId/formId별로 독립적인 FieldStore 인스턴스를 관리합니다. | Manages independent FieldStore instances for each stateId/formId.
  *
  * @param props Provider props
  * @returns 글로벌 폼 컨텍스트 Provider
@@ -59,23 +69,23 @@ export const GlobalFormContext = createContext<GlobalFormContextType>({
  * @example
  * ```typescript
  * // App.tsx
- * import { GlobalFormProvider } from '@/forma';
+ * import { GlobalFormaProvider } from '@/forma';
  *
  * function App() {
  *   return (
- *     <GlobalFormProvider>
+ *     <GlobalFormaProvider>
  *       <Router>
  *         <Routes>
  *           <Route path="/" element={<HomePage />} />
  *           <Route path="/customer" element={<CustomerPage />} />
  *         </Routes>
  *       </Router>
- *     </GlobalFormProvider>
+ *     </GlobalFormaProvider>
  *   );
  * }
  * ```
  */
-export function GlobalFormProvider({ children }: { children: ReactNode }) {
+export function GlobalFormaProvider({ children }: { children: ReactNode }) {
     // formId별 FieldStore 인스턴스들을 관리하는 Map | Map managing FieldStore instances by formId
     const storesRef = useRef<Map<string, FieldStore<any>>>(new Map());
 
@@ -114,14 +124,36 @@ export function GlobalFormProvider({ children }: { children: ReactNode }) {
         stores.set(formId, store);
     };
 
-    const contextValue: GlobalFormContextType = {
+    /**
+     * 글로벌 스토어에서 특정 formId의 FieldStore를 제거합니다. | Remove specific FieldStore from global store.
+     *
+     * @param formId 제거할 폼 식별자 | Form identifier to remove
+     * @returns 제거 성공 여부 | Whether removal was successful
+     */
+    const unregisterStore = (formId: string): boolean => {
+        const stores = storesRef.current;
+        return stores.delete(formId);
+    };
+
+    /**
+     * 모든 글로벌 스토어를 제거합니다. | Clear all global stores.
+     * 메모리 정리나 애플리케이션 리셋 시 사용합니다. | Use for memory cleanup or application reset.
+     */
+    const clearStores = (): void => {
+        const stores = storesRef.current;
+        stores.clear();
+    };
+
+    const contextValue: GlobalFormaContextType = {
         getOrCreateStore,
         registerStore,
+        unregisterStore,
+        clearStores,
     };
 
     return (
-        <GlobalFormContext.Provider value={contextValue}>
+        <GlobalFormaContext.Provider value={contextValue}>
             {children}
-        </GlobalFormContext.Provider>
+        </GlobalFormaContext.Provider>
     );
 }

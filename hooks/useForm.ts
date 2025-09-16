@@ -101,7 +101,9 @@ export function useForm<T extends Record<string, any>>(
     }
 
     // useFormaState를 기반으로 사용 / Use useFormaState as foundation
-    const fieldState = useFormaState<T>(stableInitialValues.current, { _externalStore });
+    const fieldState = useFormaState<T>(stableInitialValues.current, {
+        _externalStore,
+    });
 
     // 폼 특정 상태 관리 / Form-specific state management
     const [isSubmitting, setIsSubmitting] = useState(false);

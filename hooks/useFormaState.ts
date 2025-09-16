@@ -11,6 +11,7 @@
 import { useRef, useCallback, useMemo, useState, useEffect } from "react";
 import { FieldStore } from "../core/FieldStore";
 import { getNestedValue, setNestedValue, devWarn } from "../utils";
+import { FormChangeEvent } from "../types/form";
 
 /**
  * Options for configuring useFormaState hook
@@ -57,11 +58,7 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
     reset: () => void;
 
     /** Handle standard input change events | 표준 입력 변경 이벤트 처리 */
-    handleChange: (
-        event: React.ChangeEvent<
-            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
-    ) => void;
+    handleChange: (event: FormChangeEvent) => void;
 
     /** Check if a field exists | 필드 존재 여부 확인 */
     hasField: (path: string) => boolean;
@@ -247,28 +244,33 @@ export function useFormaState<T extends Record<string, any>>(
     // Handle standard input change events
     // 표준 입력 변경 이벤트 처리
     const handleChange = useCallback(
-        (
-            event: React.ChangeEvent<
-                HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-            >
-        ) => {
-            const { name, value, type } = event.target;
-
-            if (!name) {
+        (event: FormChangeEvent) => {
+            const target = event.target;
+            if (!target || !target.name) {
                 devWarn(
                     'useFormaState.handleChange: input element must have a "name" attribute'
                 );
                 return;
             }
 
-            let processedValue: any = value;
+            const { name, type, value, checked } = target as any;
+            let processedValue = value;
 
-            // Handle different input types
-            // 다양한 입력 타입 처리
-            if (type === "checkbox") {
-                processedValue = (event.target as HTMLInputElement).checked;
-            } else if (type === "number") {
-                processedValue = value === "" ? "" : Number(value);
+            // DatePicker 처리 (Dayjs 객체) / DatePicker handling (Dayjs object)
+            if (value && typeof value === "object" && value.format) {
+                processedValue = value.format("YYYY-MM-DD");
+            }
+            // 체크박스 처리 / Checkbox handling
+            else if (type === "checkbox") {
+                processedValue = checked;
+            }
+            // 숫자 타입 처리 / Number type handling
+            else if (type === "number") {
+                processedValue = Number(value);
+            }
+            // null 값 처리 / Null value handling
+            else if (value === null) {
+                processedValue = undefined;
             }
 
             setValue(name, processedValue);

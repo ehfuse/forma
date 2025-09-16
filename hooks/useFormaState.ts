@@ -57,6 +57,9 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
     /** Reset to initial values | 초기값으로 재설정 */
     reset: () => void;
 
+    /** Set new initial values (for dynamic initialization) | 새 초기값 설정 (동적 초기화용) */
+    setInitialValues: (newInitialValues: T) => void;
+
     /** Handle standard input change events | 표준 입력 변경 이벤트 처리 */
     handleChange: (event: FormChangeEvent) => void;
 
@@ -163,13 +166,20 @@ export function useFormaState<T extends Record<string, any>>(
 ): UseFormaStateReturn<T> {
     const { onChange, deepEquals = false, _externalStore } = options;
 
+    // 초기값 안정화: 첫 번째 렌더링에서만 초기값을 고정
+    // Stabilize initial values: fix initial values only on first render
+    const stableInitialValues = useRef<T | null>(null);
+    if (!stableInitialValues.current) {
+        stableInitialValues.current = initialValues;
+    }
+
     // Create or use external field store instance (persists across renders)
     // 필드 스토어 인스턴스 생성 또는 외부 스토어 사용 (렌더링 간 유지)
     const storeRef = useRef<FieldStore<T> | null>(null);
     if (_externalStore) {
         storeRef.current = _externalStore;
     } else if (!storeRef.current) {
-        storeRef.current = new FieldStore<T>(initialValues);
+        storeRef.current = new FieldStore<T>(stableInitialValues.current);
 
         // Set up global change listener if provided
         // 글로벌 변경 리스너 설정 (제공된 경우)
@@ -181,24 +191,6 @@ export function useFormaState<T extends Record<string, any>>(
     }
 
     const store = storeRef.current;
-
-    // Update initial values when they change (only for non-external stores)
-    // 초기값이 변경되면 업데이트 (외부 스토어가 아닌 경우에만)
-    const initialValuesRef = useRef(initialValues);
-    const initialValuesStringRef = useRef(JSON.stringify(initialValues));
-
-    useEffect(() => {
-        const currentInitialValuesString = JSON.stringify(initialValues);
-        if (
-            !_externalStore &&
-            store &&
-            initialValuesStringRef.current !== currentInitialValuesString
-        ) {
-            store.setInitialValues(initialValues);
-            initialValuesRef.current = initialValues;
-            initialValuesStringRef.current = currentInitialValuesString;
-        }
-    }, [initialValues, _externalStore]); // store 의존성 제거
 
     // Subscribe to a specific field value with dot notation
     // dot notation으로 특정 필드 값 구독
@@ -239,6 +231,13 @@ export function useFormaState<T extends Record<string, any>>(
     // 초기값으로 재설정
     const reset = useCallback(() => {
         store.reset();
+    }, []); // store 의존성 제거
+
+    // Set new initial values (for dynamic initialization)
+    // 새 초기값 설정 (동적 초기화용)
+    const setInitialValues = useCallback((newInitialValues: T) => {
+        stableInitialValues.current = newInitialValues;
+        store.setInitialValues(newInitialValues);
     }, []); // store 의존성 제거
 
     // Handle standard input change events
@@ -284,6 +283,7 @@ export function useFormaState<T extends Record<string, any>>(
         getValues,
         setValues,
         reset,
+        setInitialValues,
         handleChange,
         hasField: useCallback(
             (path: string) => {

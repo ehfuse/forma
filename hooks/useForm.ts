@@ -93,8 +93,15 @@ export function useForm<T extends Record<string, any>>(
         _externalStore,
     } = props;
 
+    // 초기값 안정화: 첫 번째 렌더링에서만 초기값을 고정
+    // Stabilize initial values: fix initial values only on first render
+    const stableInitialValues = useRef<T | null>(null);
+    if (!stableInitialValues.current) {
+        stableInitialValues.current = initialValues;
+    }
+
     // useFormaState를 기반으로 사용 / Use useFormaState as foundation
-    const fieldState = useFormaState<T>(initialValues, { _externalStore });
+    const fieldState = useFormaState<T>(stableInitialValues.current, { _externalStore });
 
     // 폼 특정 상태 관리 / Form-specific state management
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -206,6 +213,7 @@ export function useForm<T extends Record<string, any>>(
      */
     const setInitialFormValues = useCallback(
         (newInitialValues: T) => {
+            stableInitialValues.current = newInitialValues;
             fieldState._store.setInitialValues(newInitialValues);
         },
         [fieldState._store]

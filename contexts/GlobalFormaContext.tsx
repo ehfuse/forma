@@ -123,13 +123,11 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
 
         if (!stores.has(formId)) {
             // 새로운 스토어를 빈 객체로 생성 | Create new store with empty object
-            console.log(`Creating NEW store for formId: ${formId}`);
             const newStore = new FieldStore<T>({} as T);
             stores.set(formId, newStore);
             return newStore;
         }
 
-        console.log(`Using EXISTING store for formId: ${formId}`);
         return stores.get(formId) as FieldStore<T>;
     };
 
@@ -240,13 +238,6 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
                 autoCleanupRefCounts.get(formId) || 0;
             const newAutoCleanupCount = currentAutoCleanupCount + 1;
             autoCleanupRefCounts.set(formId, newAutoCleanupCount);
-            console.log(
-                `📈 Increment ref for ${formId}: total=${currentCount}->${newCount}, autoCleanup=${currentAutoCleanupCount}->${newAutoCleanupCount}`
-            );
-        } else {
-            console.log(
-                `📈 Increment ref for ${formId}: total=${currentCount}->${newCount}, autoCleanup=unchanged (permanent ref)`
-            );
         }
     };
 
@@ -263,9 +254,6 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
 
         // 전체 참조 카운트가 없는 경우 (이미 수동으로 제거됨) 무시 | Ignore if no reference count (already manually removed)
         if (!refCounts.has(formId)) {
-            console.log(
-                `⚠️ No ref count found for ${formId} - already removed`
-            );
             return;
         }
 
@@ -284,17 +272,10 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
             );
             autoCleanupRefCounts.set(formId, newAutoCleanupCount);
 
-            console.log(
-                `📉 Decrement ref for ${formId}: total=${currentCount}->${newCount}, autoCleanup=${currentAutoCleanupCount}->${newAutoCleanupCount}`
-            );
-
             // autoCleanup 참조가 0이 되면 스토어 정리 (autoCleanup: false 컴포넌트가 있어도)
             if (newAutoCleanupCount === 0) {
                 const store = stores.get(formId);
                 if (store) {
-                    console.log(
-                        `🗑️ Destroying store for ${formId} - all autoCleanup components removed (autoCleanup refs: ${currentAutoCleanupCount}->0, total refs: ${newCount})`
-                    );
                     store.destroy();
                     stores.delete(formId);
                     refCounts.delete(formId);
@@ -302,10 +283,6 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
                     autoCleanupSettingsRef.current.delete(formId);
                 }
             }
-        } else {
-            console.log(
-                `📉 Decrement ref for ${formId}: total=${currentCount}->${newCount}, autoCleanup=unchanged (permanent ref removed)`
-            );
         }
 
         // 전체 참조가 0이 되면 카운트 정리 (스토어는 이미 정리되었거나 영구 참조만 남음)

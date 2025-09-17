@@ -8,6 +8,7 @@
     -   [useFormaState](#useformastate)
     -   [useForm](#useform)
     -   [useGlobalForm](#useglobalform)
+    -   [useGlobalFormaState](#useglobalformastate)
     -   [useRegisterGlobalForm](#useregisterglobalform)
     -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
     -   [useUnregisterGlobalForm](#useunregisterglobalform)
@@ -484,6 +485,242 @@ function Step2() {
 
 ---
 
+### useGlobalFormaState
+
+전역으로 공유되는 FormaState를 관리하는 훅입니다. 여러 컴포넌트 간에 상태를 공유하면서도 개별 필드별 구독을 지원합니다.
+
+#### Signature
+
+```typescript
+function useGlobalFormaState<
+    T extends Record<string, any> = Record<string, any>
+>(props: UseGlobalFormaStateProps<T>): UseFormaStateReturn<T>;
+```
+
+#### Parameters
+
+```typescript
+interface UseGlobalFormaStateProps<T> {
+    /** 전역에서 상태를 식별하는 고유 ID */
+    stateId: string;
+    /** 초기값 (최초 생성 시에만 사용) */
+    initialValues?: T;
+    /** 상태 변경 시 선택적 콜백 */
+    onChange?: (values: T) => void;
+    /** 성능 향상을 위한 깊은 동등성 검사 활성화 */
+    deepEquals?: boolean;
+    /** 상태 작업을 위한 에러 핸들러 */
+    onError?: (error: Error) => void;
+    /** 모든 변경에 대한 유효성 검사 활성화 */
+    validateOnChange?: boolean;
+    /** 상태 업데이트를 위한 디바운스 지연 시간 (밀리초) */
+    debounceMs?: number;
+}
+```
+
+#### Return Value
+
+`useFormaState`와 동일한 `UseFormaStateReturn<T>` 인터페이스를 반환합니다.
+
+#### 특징
+
+-   **전역 공유**: 같은 `stateId`를 사용하는 모든 컴포넌트가 상태 공유
+-   **개별 필드 구독**: 필드별로 독립적인 리렌더링 최적화
+-   **자동 생성**: 존재하지 않는 `stateId`의 경우 새로 생성
+-   **타입 안전성**: TypeScript를 통한 완전한 타입 추론
+
+#### Examples
+
+##### 기본 사용법
+
+```typescript
+import { useGlobalFormaState, GlobalFormaProvider } from "@ehfuse/forma";
+
+// App.tsx
+function App() {
+    return (
+        <GlobalFormaProvider>
+            <UserProfile />
+            <UserSettings />
+        </GlobalFormaProvider>
+    );
+}
+
+// 사용자 프로필 컴포넌트
+function UserProfile() {
+    const state = useGlobalFormaState({
+        stateId: "user-data",
+        initialValues: {
+            user: { name: "", email: "" },
+            preferences: { theme: "light", language: "ko" },
+        },
+    });
+
+    const userName = state.useValue("user.name");
+    const userEmail = state.useValue("user.email");
+
+    return (
+        <div>
+            <input
+                value={userName}
+                onChange={(e) => state.setValue("user.name", e.target.value)}
+                placeholder="이름"
+            />
+            <input
+                value={userEmail}
+                onChange={(e) => state.setValue("user.email", e.target.value)}
+                placeholder="이메일"
+            />
+        </div>
+    );
+}
+
+// 사용자 설정 컴포넌트 (같은 상태 공유)
+function UserSettings() {
+    const state = useGlobalFormaState({
+        stateId: "user-data", // 같은 ID로 상태 공유
+        initialValues: {}, // 이미 생성된 상태이므로 무시됨
+    });
+
+    const theme = state.useValue("preferences.theme");
+    const language = state.useValue("preferences.language");
+    const userName = state.useValue("user.name"); // 다른 컴포넌트에서 입력한 값
+
+    return (
+        <div>
+            <p>사용자: {userName}</p>
+            <select
+                value={theme}
+                onChange={(e) =>
+                    state.setValue("preferences.theme", e.target.value)
+                }
+            >
+                <option value="light">라이트</option>
+                <option value="dark">다크</option>
+            </select>
+        </div>
+    );
+}
+```
+
+##### 동적 상태 관리
+
+```typescript
+function DynamicStateManager() {
+    const [stateId, setStateId] = useState("session-1");
+
+    const state = useGlobalFormaState({
+        stateId,
+        initialValues: { data: {}, metadata: { created: Date.now() } },
+    });
+
+    const switchSession = (newId: string) => {
+        setStateId(newId); // 다른 전역 상태로 전환
+    };
+
+    return (
+        <div>
+            <button onClick={() => switchSession("session-1")}>세션 1</button>
+            <button onClick={() => switchSession("session-2")}>세션 2</button>
+            <div>현재 세션: {stateId}</div>
+            {/* 현재 선택된 세션의 상태가 표시됨 */}
+        </div>
+    );
+}
+```
+
+##### 다중 컴포넌트 동기화
+
+```typescript
+// 쇼핑카트 상태 관리
+function ShoppingCart() {
+    const cart = useGlobalFormaState({
+        stateId: "shopping-cart",
+        initialValues: {
+            items: [],
+            total: 0,
+            discount: 0,
+        },
+    });
+
+    const items = cart.useValue("items");
+    const total = cart.useValue("total");
+
+    return (
+        <div>
+            <h2>장바구니 ({items?.length || 0})</h2>
+            <p>총액: {total}원</p>
+        </div>
+    );
+}
+
+// 상품 목록 컴포넌트
+function ProductList() {
+    const cart = useGlobalFormaState({
+        stateId: "shopping-cart", // 같은 장바구니 상태 공유
+    });
+
+    const addToCart = (product) => {
+        const currentItems = cart.getValues().items || [];
+        cart.setValue("items", [...currentItems, product]);
+
+        // 총액 업데이트
+        const newTotal =
+            currentItems.reduce((sum, item) => sum + item.price, 0) +
+            product.price;
+        cart.setValue("total", newTotal);
+    };
+
+    return (
+        <div>
+            <button
+                onClick={() =>
+                    addToCart({ id: 1, name: "상품 1", price: 10000 })
+                }
+            >
+                장바구니에 추가
+            </button>
+        </div>
+    );
+}
+
+// 결제 컴포넌트
+function Checkout() {
+    const cart = useGlobalFormaState({
+        stateId: "shopping-cart", // 같은 장바구니 상태 공유
+    });
+
+    const total = cart.useValue("total");
+    const items = cart.useValue("items");
+
+    const handleCheckout = () => {
+        console.log("결제할 항목:", items);
+        console.log("총액:", total);
+
+        // 결제 후 장바구니 초기화
+        cart.setValues({ items: [], total: 0, discount: 0 });
+    };
+
+    return (
+        <div>
+            <h3>결제</h3>
+            <p>결제 금액: {total}원</p>
+            <button onClick={handleCheckout}>결제하기</button>
+        </div>
+    );
+}
+```
+
+#### 주의사항
+
+1. **GlobalFormaProvider 필수**: 반드시 `GlobalFormaProvider`로 래핑된 컴포넌트 트리 내에서 사용해야 합니다.
+
+2. **초기값 정책**: 같은 `stateId`를 가진 첫 번째 호출에서만 `initialValues`가 적용됩니다.
+
+3. **메모리 관리**: 불필요한 전역 상태는 `useUnregisterGlobalFormaState`로 정리하는 것을 권장합니다.
+
+---
+
 ### useRegisterGlobalForm
 
 기존에 생성된 useForm 인스턴스를 글로벌 폼으로 등록하는 훅입니다.
@@ -943,6 +1180,22 @@ useGlobalForm 훅의 매개변수 타입입니다.
 ```typescript
 interface UseGlobalFormProps<T extends Record<string, any>> {
     formId: string;
+}
+```
+
+### UseGlobalFormaStateProps
+
+useGlobalFormaState 훅의 매개변수 타입입니다.
+
+```typescript
+interface UseGlobalFormaStateProps<T extends Record<string, any>> {
+    stateId: string;
+    initialValues?: T;
+    onChange?: (values: T) => void;
+    deepEquals?: boolean;
+    onError?: (error: Error) => void;
+    validateOnChange?: boolean;
+    debounceMs?: number;
 }
 ```
 

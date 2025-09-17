@@ -8,6 +8,7 @@ This document provides detailed reference for all APIs in the Forma library.
     -   [useFormaState](#useformastate)
     -   [useForm](#useform)
     -   [useGlobalForm](#useglobalform)
+    -   [useGlobalFormaState](#useglobalformastate)
     -   [useRegisterGlobalForm](#useregisterglobalform)
     -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
     -   [useUnregisterGlobalForm](#useunregisterglobalform)
@@ -488,6 +489,246 @@ function Step2() {
 
 ---
 
+### useGlobalFormaState
+
+A hook for managing globally shared FormaState. Enables state sharing across multiple components while maintaining individual field-level subscriptions.
+
+#### Signature
+
+```typescript
+function useGlobalFormaState<
+    T extends Record<string, any> = Record<string, any>
+>(props: UseGlobalFormaStateProps<T>): UseFormaStateReturn<T>;
+```
+
+#### Parameters
+
+```typescript
+interface UseGlobalFormaStateProps<T> {
+    /** Unique ID to identify the state globally */
+    stateId: string;
+    /** Initial values (used only on first creation) */
+    initialValues?: T;
+    /** Optional callback on state change */
+    onChange?: (values: T) => void;
+    /** Enable deep equality checking for performance */
+    deepEquals?: boolean;
+    /** Error handler for state operations */
+    onError?: (error: Error) => void;
+    /** Enable validation on all changes */
+    validateOnChange?: boolean;
+    /** Debounce delay for state updates (milliseconds) */
+    debounceMs?: number;
+}
+```
+
+#### Return Value
+
+Returns the same `UseFormaStateReturn<T>` interface as `useFormaState`.
+
+#### Features
+
+-   **Global Sharing**: All components using the same `stateId` share the state
+-   **Field-level Subscriptions**: Independent re-rendering optimization per field
+-   **Auto Creation**: Creates new state if `stateId` doesn't exist
+-   **Type Safety**: Full TypeScript type inference
+
+#### Examples
+
+##### Basic Usage
+
+```typescript
+import { useGlobalFormaState, GlobalFormaProvider } from "@ehfuse/forma";
+
+// App.tsx
+function App() {
+    return (
+        <GlobalFormaProvider>
+            <UserProfile />
+            <UserSettings />
+        </GlobalFormaProvider>
+    );
+}
+
+// User Profile Component
+function UserProfile() {
+    const state = useGlobalFormaState({
+        stateId: "user-data",
+        initialValues: {
+            user: { name: "", email: "" },
+            preferences: { theme: "light", language: "en" },
+        },
+    });
+
+    const userName = state.useValue("user.name");
+    const userEmail = state.useValue("user.email");
+
+    return (
+        <div>
+            <input
+                value={userName}
+                onChange={(e) => state.setValue("user.name", e.target.value)}
+                placeholder="Name"
+            />
+            <input
+                value={userEmail}
+                onChange={(e) => state.setValue("user.email", e.target.value)}
+                placeholder="Email"
+            />
+        </div>
+    );
+}
+
+// User Settings Component (shares same state)
+function UserSettings() {
+    const state = useGlobalFormaState({
+        stateId: "user-data", // Same ID shares state
+        initialValues: {}, // Ignored since state already exists
+    });
+
+    const theme = state.useValue("preferences.theme");
+    const language = state.useValue("preferences.language");
+    const userName = state.useValue("user.name"); // Value from other component
+
+    return (
+        <div>
+            <p>User: {userName}</p>
+            <select
+                value={theme}
+                onChange={(e) =>
+                    state.setValue("preferences.theme", e.target.value)
+                }
+            >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+    );
+}
+```
+
+##### Dynamic State Management
+
+```typescript
+function DynamicStateManager() {
+    const [stateId, setStateId] = useState("session-1");
+
+    const state = useGlobalFormaState({
+        stateId,
+        initialValues: { data: {}, metadata: { created: Date.now() } },
+    });
+
+    const switchSession = (newId: string) => {
+        setStateId(newId); // Switch to different global state
+    };
+
+    return (
+        <div>
+            <button onClick={() => switchSession("session-1")}>
+                Session 1
+            </button>
+            <button onClick={() => switchSession("session-2")}>
+                Session 2
+            </button>
+            <div>Current Session: {stateId}</div>
+            {/* State from currently selected session is displayed */}
+        </div>
+    );
+}
+```
+
+##### Multi-Component Synchronization
+
+```typescript
+// Shopping Cart State Management
+function ShoppingCart() {
+    const cart = useGlobalFormaState({
+        stateId: "shopping-cart",
+        initialValues: {
+            items: [],
+            total: 0,
+            discount: 0,
+        },
+    });
+
+    const items = cart.useValue("items");
+    const total = cart.useValue("total");
+
+    return (
+        <div>
+            <h2>Cart ({items?.length || 0})</h2>
+            <p>Total: ${total}</p>
+        </div>
+    );
+}
+
+// Product List Component
+function ProductList() {
+    const cart = useGlobalFormaState({
+        stateId: "shopping-cart", // Share same cart state
+    });
+
+    const addToCart = (product) => {
+        const currentItems = cart.getValues().items || [];
+        cart.setValue("items", [...currentItems, product]);
+
+        // Update total
+        const newTotal =
+            currentItems.reduce((sum, item) => sum + item.price, 0) +
+            product.price;
+        cart.setValue("total", newTotal);
+    };
+
+    return (
+        <div>
+            <button
+                onClick={() =>
+                    addToCart({ id: 1, name: "Product 1", price: 100 })
+                }
+            >
+                Add to Cart
+            </button>
+        </div>
+    );
+}
+
+// Checkout Component
+function Checkout() {
+    const cart = useGlobalFormaState({
+        stateId: "shopping-cart", // Share same cart state
+    });
+
+    const total = cart.useValue("total");
+    const items = cart.useValue("items");
+
+    const handleCheckout = () => {
+        console.log("Items to checkout:", items);
+        console.log("Total:", total);
+
+        // Reset cart after checkout
+        cart.setValues({ items: [], total: 0, discount: 0 });
+    };
+
+    return (
+        <div>
+            <h3>Checkout</h3>
+            <p>Amount: ${total}</p>
+            <button onClick={handleCheckout}>Complete Purchase</button>
+        </div>
+    );
+}
+```
+
+#### Important Notes
+
+1. **GlobalFormaProvider Required**: Must be used within a component tree wrapped by `GlobalFormaProvider`.
+
+2. **Initial Values Policy**: `initialValues` are only applied on the first call with a given `stateId`.
+
+3. **Memory Management**: It's recommended to clean up unnecessary global states using `useUnregisterGlobalFormaState`.
+
+---
+
 ### useRegisterGlobalForm
 
 Hook for registering an existing useForm instance as a global form.
@@ -947,6 +1188,22 @@ Parameter type for the useGlobalForm hook.
 ```typescript
 interface UseGlobalFormProps<T extends Record<string, any>> {
     formId: string;
+}
+```
+
+### UseGlobalFormaStateProps
+
+Parameter type for the useGlobalFormaState hook.
+
+```typescript
+interface UseGlobalFormaStateProps<T extends Record<string, any>> {
+    stateId: string;
+    initialValues?: T;
+    onChange?: (values: T) => void;
+    deepEquals?: boolean;
+    onError?: (error: Error) => void;
+    validateOnChange?: boolean;
+    debounceMs?: number;
 }
 ```
 

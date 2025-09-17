@@ -45,6 +45,8 @@ export interface GlobalFormaProviderProps {
 export interface UseGlobalFormProps<T extends Record<string, any>> {
     /** 전역에서 폼을 식별하는 고유 ID | Unique ID to identify form globally */
     formId: string;
+    /** 초기값 | Initial values for the form */
+    initialValues?: Partial<T>;
     /** 컴포넌트 언마운트 시 자동 정리 여부 | Auto cleanup on component unmount */
     autoCleanup?: boolean;
 }
@@ -56,6 +58,8 @@ export interface UseGlobalFormProps<T extends Record<string, any>> {
 export interface UseGlobalFormaStateProps<T extends Record<string, any>> {
     /** 전역에서 상태를 식별하는 고유 ID | Unique ID to identify state globally */
     stateId: string;
+    /** 초기값 | Initial values for the state */
+    initialValues?: Partial<T>;
     /** 컴포넌트 언마운트 시 자동 정리 여부 | Auto cleanup on component unmount */
     autoCleanup?: boolean;
 }
@@ -388,4 +392,13 @@ export interface GlobalFormaContextType {
     ) => void;
     unregisterStore: (formId: string) => boolean;
     clearStores: () => void;
+    /** 스토어 사용 참조를 증가시킵니다 | Increment store usage reference */
+    incrementRef: (formId: string, autoCleanup: boolean) => void;
+    /** 스토어 사용 참조를 감소시키고, autoCleanup 참조가 0이 되면 자동 정리합니다 | Decrement store usage reference and auto cleanup when autoCleanup refs reach 0 */
+    decrementRef: (formId: string, autoCleanup: boolean) => void;
+    /** autoCleanup 설정의 일관성을 검증하고 설정을 저장합니다 | Validate and store autoCleanup setting consistency */
+    validateAndStoreAutoCleanupSetting: (
+        formId: string,
+        autoCleanup: boolean
+    ) => void;
 }

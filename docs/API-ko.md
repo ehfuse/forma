@@ -431,6 +431,10 @@ function useGlobalForm<T extends Record<string, any>>(
 interface UseGlobalFormProps<T> {
     /** 전역에서 폼을 식별하는 고유 ID */
     formId: string;
+    /** 초기값 */
+    initialValues?: Partial<T>;
+    /** 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true) */
+    autoCleanup?: boolean;
 }
 ```
 
@@ -483,6 +487,57 @@ function Step2() {
 }
 ```
 
+#### 🔄 **자동 메모리 정리 (autoCleanup)**
+
+`useGlobalForm`도 **참조 카운팅 기반 자동 정리**를 지원합니다:
+
+```typescript
+// 다단계 폼에서 자동 정리 활용
+function Step1() {
+    const form = useGlobalForm({
+        formId: "wizard-form",
+        autoCleanup: true, // 기본값 - 자동 정리
+    });
+    return <input name="step1Field" />;
+}
+
+function Step2() {
+    const form = useGlobalForm({
+        formId: "wizard-form", // 같은 폼 공유
+        autoCleanup: true,
+    });
+    return <input name="step2Field" />;
+}
+
+// 영구 보존이 필요한 폼
+function PersistentForm() {
+    const form = useGlobalForm({
+        formId: "persistent-form",
+        autoCleanup: false, // 수동 관리
+    });
+    return <input name="importantData" />;
+}
+```
+
+**자동 정리 동작:**
+
+-   Step1 → Step2 이동: 폼 상태 유지 (Step2가 사용중)
+-   Step2 완료 후 컴포넌트 언마운트: 자동으로 폼 정리
+-   `autoCleanup: false`: 수동으로 `useUnregisterGlobalForm` 필요
+
+#### 주의사항 및 권장사항
+
+⚠️ **수동 unregister 사용 시 주의:**
+
+-   `useUnregisterGlobalForm`의 `unregisterForm()` 호출 시 해당 `formId`를 사용하는 모든 컴포넌트에 즉시 영향
+-   다단계 폼에서 중간 단계에서 수동 정리 시 다른 단계의 데이터 손실 가능
+
+✅ **권장사항:**
+
+-   대부분의 경우 `autoCleanup: true` (기본값) 사용 권장
+-   수동 정리는 전체 폼 완료 후나 사용자 취소 시에만 사용
+-   공유 폼의 경우 자동 정리에 의존하여 안전성 확보
+
 ---
 
 ### useGlobalFormaState
@@ -505,6 +560,8 @@ interface UseGlobalFormaStateProps<T> {
     stateId: string;
     /** 초기값 (최초 생성 시에만 사용) */
     initialValues?: T;
+    /** 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true) */
+    autoCleanup?: boolean;
     /** 상태 변경 시 선택적 콜백 */
     onChange?: (values: T) => void;
     /** 성능 향상을 위한 깊은 동등성 검사 활성화 */
@@ -711,13 +768,111 @@ function Checkout() {
 }
 ```
 
+#### 🔄 **자동 메모리 정리 (autoCleanup)**
+
+`useGlobalFormaState`는 **참조 카운팅 기반 자동 정리** 기능을 제공합니다:
+
+```typescript
+// 기본적으로 autoCleanup이 활성화됨
+const state = useGlobalFormaState({
+    stateId: "shared-data",
+    autoCleanup: true, // 기본값
+});
+
+// 자동 정리 비활성화
+const persistentState = useGlobalFormaState({
+    stateId: "persistent-data",
+    autoCleanup: false, // 수동 관리
+});
+```
+
+**동작 방식:**
+
+```typescript
+// Component A 마운트 → 참조 카운트: 1
+function ComponentA() {
+    const state = useGlobalFormaState({
+        stateId: "shared",
+        autoCleanup: true,
+    });
+    return <div>{state.useValue("data")}</div>;
+}
+
+// Component B 마운트 → 참조 카운트: 2
+function ComponentB() {
+    const state = useGlobalFormaState({
+        stateId: "shared", // 같은 ID
+        autoCleanup: true,
+    });
+    return <div>{state.useValue("data")}</div>;
+}
+
+// Component A 언마운트 → 참조 카운트: 1 (상태 유지)
+// Component B 언마운트 → 참조 카운트: 0 → 🗑️ 자동 정리!
+```
+
+**장점:**
+
+-   ✅ **안전한 공유**: 다른 컴포넌트가 사용중인 상태는 보호
+-   ✅ **자동 정리**: 마지막 사용자가 떠나면 메모리 자동 해제
+-   ✅ **메모리 최적화**: 불필요한 상태 누적 방지
+
 #### 주의사항
 
 1. **GlobalFormaProvider 필수**: 반드시 `GlobalFormaProvider`로 래핑된 컴포넌트 트리 내에서 사용해야 합니다.
 
 2. **초기값 정책**: 같은 `stateId`를 가진 첫 번째 호출에서만 `initialValues`가 적용됩니다.
 
-3. **메모리 관리**: 불필요한 전역 상태는 `useUnregisterGlobalFormaState`로 정리하는 것을 권장합니다.
+3. **메모리 관리**:
+
+    - `autoCleanup: true` (기본값): 자동으로 메모리 정리
+    - `autoCleanup: false`: 수동으로 `useUnregisterGlobalFormaState` 사용 필요
+
+4. **수동 unregister 주의사항**:
+
+    ```typescript
+    // 🚨 주의: 수동 unregister는 즉시 모든 참조자에게 영향
+    function ComponentA() {
+        const { unregisterState } = useUnregisterGlobalFormaState();
+        const state = useGlobalFormaState({ stateId: "shared" });
+
+        const handleCleanup = () => {
+            // 이 호출은 ComponentB에도 즉시 영향을 줌!
+            unregisterState("shared");
+        };
+    }
+
+    function ComponentB() {
+        const state = useGlobalFormaState({ stateId: "shared" });
+        // ComponentA에서 수동 제거하면 여기서 에러 가능성
+    }
+    ```
+
+#### 권장사항
+
+1. **기본 설정 사용**: 대부분의 경우 `autoCleanup: true` (기본값) 사용을 권장합니다.
+
+2. **수동 정리 사용 시점**:
+
+    - 애플리케이션 전역 리셋 시
+    - 사용자 로그아웃 시
+    - 메모리 최적화가 중요한 특수 상황
+
+3. **공유 상태 관리**:
+
+    - 여러 컴포넌트가 사용하는 상태는 `autoCleanup`에 의존
+    - 예측 가능한 생명주기를 위해 수동 정리 최소화
+
+4. **디버깅 팁**:
+    ```typescript
+    // 개발 환경에서 상태 추적
+    const state = useGlobalFormaState({
+        stateId: "debug-state",
+        onChange: (values) => {
+            console.log("State changed:", values);
+        },
+    });
+    ```
 
 ---
 
@@ -1180,6 +1335,8 @@ useGlobalForm 훅의 매개변수 타입입니다.
 ```typescript
 interface UseGlobalFormProps<T extends Record<string, any>> {
     formId: string;
+    initialValues?: Partial<T>;
+    autoCleanup?: boolean;
 }
 ```
 
@@ -1191,6 +1348,7 @@ useGlobalFormaState 훅의 매개변수 타입입니다.
 interface UseGlobalFormaStateProps<T extends Record<string, any>> {
     stateId: string;
     initialValues?: T;
+    autoCleanup?: boolean;
     onChange?: (values: T) => void;
     deepEquals?: boolean;
     onError?: (error: Error) => void;

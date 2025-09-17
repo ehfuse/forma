@@ -28,7 +28,7 @@
  * SOFTWARE.
  */
 
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { useForm } from "./useForm";
 import { UseGlobalFormProps, UseGlobalFormReturn } from "../types/globalForm";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
@@ -48,17 +48,77 @@ import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
  */
 export function useGlobalForm<T extends Record<string, any>>({
     formId,
+    initialValues,
+    autoCleanup = true,
 }: UseGlobalFormProps<T>): UseGlobalFormReturn<T> {
-    const { getOrCreateStore } = useContext(GlobalFormaContext);
+    const context = useContext(GlobalFormaContext);
+
+    // Context가 제대로 설정되지 않았을 때 명확한 에러 표시
+    // Show clear error when Context is not properly configured
+    if (!context || !context.getOrCreateStore) {
+        // 페이지에 에러가 표시되도록 컴포넌트 렌더링을 방해하는 에러를 던짐
+        // Throw error that prevents component rendering so error shows on page
+        const errorMessage = `
+🚨 GlobalFormaProvider 설정 오류 | Configuration Error
+
+GlobalFormaProvider가 App.tsx에 설정되지 않았습니다!
+GlobalFormaProvider is not configured in App.tsx!
+
+해결 방법 | Solution:
+1. App.tsx 파일에서 GlobalFormaProvider로 컴포넌트를 감싸주세요.
+2. import { GlobalFormaProvider } from '@/forma';
+3. <GlobalFormaProvider><YourApp /></GlobalFormaProvider>
+
+Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${formId})
+        `.trim();
+
+        throw new Error(errorMessage);
+    }
+
+    const {
+        getOrCreateStore,
+        incrementRef,
+        decrementRef,
+        validateAndStoreAutoCleanupSetting,
+    } = context;
+
+    // autoCleanup 설정 일관성 검증
+    validateAndStoreAutoCleanupSetting(formId, autoCleanup);
 
     // 글로벌 스토어 가져오기 또는 생성 / Get or create global store
     const store = getOrCreateStore<T>(formId);
 
-    // useForm에 외부 스토어 전달 (빈 초기값으로) / Pass external store to useForm (with empty initial values)
+    // useForm에 외부 스토어 전달 / Pass external store to useForm
     const form = useForm<T>({
-        initialValues: {} as T,
+        initialValues: (initialValues as T) || ({} as T),
         _externalStore: store,
     });
+
+    // 초기값이 있고 스토어가 비어있다면 초기값 설정 (올바른 방법으로)
+    // Set initial values if provided and store is empty (using proper method)
+    useEffect(() => {
+        if (initialValues && Object.keys(store.getValues()).length === 0) {
+            form.setInitialFormValues(initialValues as T);
+        }
+    }, [formId, initialValues, store, form]);
+
+    // 참조 카운팅을 통한 자동 정리 관리
+    // Auto cleanup management through reference counting
+    useEffect(() => {
+        if (autoCleanup) {
+            // 컴포넌트 마운트 시 참조 카운트 증가
+            // Increment reference count on component mount
+            incrementRef(formId, autoCleanup);
+
+            return () => {
+                // 컴포넌트 언마운트 시 참조 카운트 감소 (마지막 참조자면 자동 정리)
+                // Decrement reference count on unmount (auto cleanup if last reference)
+                decrementRef(formId, autoCleanup);
+            };
+        }
+
+        return undefined;
+    }, [formId, autoCleanup, incrementRef, decrementRef]);
 
     return {
         ...form,

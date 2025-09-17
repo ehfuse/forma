@@ -8,7 +8,15 @@
  * @license MIT License
  */
 
-import { useRef, useCallback, useMemo, useState, useEffect } from "react";
+import {
+    useRef,
+    useCallback,
+    useMemo,
+    useState,
+    useEffect,
+    useSyncExternalStore,
+    useReducer,
+} from "react";
 import { FieldStore } from "../core/FieldStore";
 import { getNestedValue, setNestedValue, devWarn } from "../utils";
 import { FormChangeEvent } from "../types/form";
@@ -89,20 +97,26 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
  */
 function useFieldValue<T>(store: FieldStore<any>, fieldName: string): T {
     const [value, setValue] = useState(() => store.getValue(fieldName));
+    const [, forceUpdate] = useReducer((x) => x + 1, 0);
 
     useEffect(() => {
+        // 초기값 강제 동기화
+        const currentValue = store.getValue(fieldName);
+        setValue(currentValue);
+
         // 구독 설정 / Setup subscription
         const unsubscribe = store.subscribe(fieldName, () => {
             const newValue = store.getValue(fieldName);
             setValue(newValue);
+            // useReducer를 사용한 강제 리렌더링
+            forceUpdate();
         });
 
         return unsubscribe;
-    }, [fieldName]); // store는 참조가 변경되지 않는다고 가정하고 의존성에서 제거
+    }, [fieldName, store]); // 깔끔한 의존성 배열
 
     return value;
 }
-
 /**
  * Hook for subscribing to a specific field in a FieldStore
  * FieldStore의 특정 필드를 구독하기 위한 Hook
@@ -178,6 +192,17 @@ export function useFormaState<T extends Record<string, any>>(
     const storeRef = useRef<FieldStore<T> | null>(null);
     if (_externalStore) {
         storeRef.current = _externalStore;
+
+        // 외부 스토어 사용 시 초기값이 비어있으면 설정
+        const currentValues = _externalStore.getValues();
+        if (
+            Object.keys(currentValues).length === 0 &&
+            Object.keys(initialValues).length > 0
+        ) {
+            Object.keys(initialValues).forEach((key) => {
+                _externalStore.setValue(key, initialValues[key as keyof T]);
+            });
+        }
     } else if (!storeRef.current) {
         storeRef.current = new FieldStore<T>(stableInitialValues.current);
 
@@ -198,7 +223,7 @@ export function useFormaState<T extends Record<string, any>>(
         <K extends string>(path: K) => {
             return useFieldValue(store, path);
         },
-        [] // store 의존성 제거 - storeRef.current는 안정적인 참조
+        [store] // store 의존성 추가 - 외부 스토어 사용 시 중요
     );
 
     // Set a specific field value with dot notation
@@ -207,14 +232,14 @@ export function useFormaState<T extends Record<string, any>>(
         <K extends string>(path: K, value: any) => {
             store.setValue(path, value);
         },
-        [] // store 의존성 제거
+        [store] // store 의존성 추가
     );
 
     // Get all current values (non-reactive)
     // 모든 현재 값 가져오기 (반응형 아님)
     const getValues = useCallback(() => {
         return store.getValues();
-    }, []); // store 의존성 제거
+    }, [store]); // store 의존성 추가
 
     // Set all values at once
     // 모든 값을 한 번에 설정
@@ -224,21 +249,24 @@ export function useFormaState<T extends Record<string, any>>(
             const newValues = { ...currentValues, ...values };
             store.setValues(newValues as T);
         },
-        [] // store 의존성 제거
+        [store] // store 의존성 추가
     );
 
     // Reset to initial values
     // 초기값으로 재설정
     const reset = useCallback(() => {
         store.reset();
-    }, []); // store 의존성 제거
+    }, [store]); // store 의존성 추가
 
     // Set new initial values (for dynamic initialization)
     // 새 초기값 설정 (동적 초기화용)
-    const setInitialValues = useCallback((newInitialValues: T) => {
-        stableInitialValues.current = newInitialValues;
-        store.setInitialValues(newInitialValues);
-    }, []); // store 의존성 제거
+    const setInitialValues = useCallback(
+        (newInitialValues: T) => {
+            stableInitialValues.current = newInitialValues;
+            store.setInitialValues(newInitialValues);
+        },
+        [store]
+    ); // store 의존성 추가
 
     // Handle standard input change events
     // 표준 입력 변경 이벤트 처리
@@ -289,25 +317,25 @@ export function useFormaState<T extends Record<string, any>>(
             (path: string) => {
                 return store.hasField(path);
             },
-            [] // store 의존성 제거
+            [store] // store 의존성 추가
         ),
         removeField: useCallback(
             (path: string) => {
                 store.removeField(path);
             },
-            [] // store 의존성 제거
+            [store] // store 의존성 추가
         ),
         getValue: useCallback(
             (path: string) => {
                 return store.getValue(path);
             },
-            [] // store 의존성 제거
+            [store] // store 의존성 추가
         ),
         subscribe: useCallback(
             (callback: (values: T) => void) => {
                 return store.subscribeToAll(callback);
             },
-            [] // store 의존성 제거
+            [store] // store 의존성 추가
         ),
         _store: store,
     };

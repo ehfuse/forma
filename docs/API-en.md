@@ -435,6 +435,10 @@ function useGlobalForm<T extends Record<string, any>>(
 interface UseGlobalFormProps<T> {
     /** Unique ID to identify the form globally */
     formId: string;
+    /** Initial values for the form */
+    initialValues?: Partial<T>;
+    /** Auto cleanup on component unmount (default: true) */
+    autoCleanup?: boolean;
 }
 ```
 
@@ -487,6 +491,57 @@ function Step2() {
 }
 ```
 
+#### 🔄 **Auto Memory Cleanup (autoCleanup)**
+
+`useGlobalForm` supports **reference counting-based automatic cleanup**:
+
+```typescript
+// Multi-step form with auto cleanup
+function Step1() {
+    const form = useGlobalForm({
+        formId: "wizard-form",
+        autoCleanup: true, // Default - auto cleanup
+    });
+    return <input name="step1Field" />;
+}
+
+function Step2() {
+    const form = useGlobalForm({
+        formId: "wizard-form", // Same form shared
+        autoCleanup: true,
+    });
+    return <input name="step2Field" />;
+}
+
+// Persistent form requiring manual management
+function PersistentForm() {
+    const form = useGlobalForm({
+        formId: "persistent-form",
+        autoCleanup: false, // Manual management
+    });
+    return <input name="importantData" />;
+}
+```
+
+**Auto cleanup behavior:**
+
+-   Step1 → Step2 navigation: Form state maintained (Step2 is using it)
+-   Step2 completion and unmount: Form automatically cleaned up
+-   `autoCleanup: false`: Manual cleanup via `useUnregisterGlobalForm` required
+
+#### Important Notes & Best Practices
+
+⚠️ **Manual Unregister Caution:**
+
+-   Calling `unregisterForm()` from `useUnregisterGlobalForm` immediately affects all components using that `formId`
+-   Manual cleanup in middle of multi-step form may cause data loss in other steps
+
+✅ **Recommendations:**
+
+-   Use `autoCleanup: true` (default) in most cases
+-   Manual cleanup only after complete form submission or user cancellation
+-   Rely on auto cleanup for shared forms to ensure safety
+
 ---
 
 ### useGlobalFormaState
@@ -509,6 +564,8 @@ interface UseGlobalFormaStateProps<T> {
     stateId: string;
     /** Initial values (used only on first creation) */
     initialValues?: T;
+    /** Auto cleanup on component unmount (default: true) */
+    autoCleanup?: boolean;
     /** Optional callback on state change */
     onChange?: (values: T) => void;
     /** Enable deep equality checking for performance */
@@ -719,13 +776,111 @@ function Checkout() {
 }
 ```
 
+#### 🔄 **Auto Memory Cleanup (autoCleanup)**
+
+`useGlobalFormaState` provides **reference counting-based automatic cleanup**:
+
+```typescript
+// Auto cleanup enabled by default
+const state = useGlobalFormaState({
+    stateId: "shared-data",
+    autoCleanup: true, // Default value
+});
+
+// Disable auto cleanup
+const persistentState = useGlobalFormaState({
+    stateId: "persistent-data",
+    autoCleanup: false, // Manual management
+});
+```
+
+**How it works:**
+
+```typescript
+// Component A mounts → Reference count: 1
+function ComponentA() {
+    const state = useGlobalFormaState({
+        stateId: "shared",
+        autoCleanup: true,
+    });
+    return <div>{state.useValue("data")}</div>;
+}
+
+// Component B mounts → Reference count: 2
+function ComponentB() {
+    const state = useGlobalFormaState({
+        stateId: "shared", // Same ID
+        autoCleanup: true,
+    });
+    return <div>{state.useValue("data")}</div>;
+}
+
+// Component A unmounts → Reference count: 1 (state preserved)
+// Component B unmounts → Reference count: 0 → 🗑️ Auto cleanup!
+```
+
+**Benefits:**
+
+-   ✅ **Safe Sharing**: States in use by other components are protected
+-   ✅ **Auto Cleanup**: Memory automatically freed when last user leaves
+-   ✅ **Memory Optimization**: Prevents unnecessary state accumulation
+
 #### Important Notes
 
 1. **GlobalFormaProvider Required**: Must be used within a component tree wrapped by `GlobalFormaProvider`.
 
 2. **Initial Values Policy**: `initialValues` are only applied on the first call with a given `stateId`.
 
-3. **Memory Management**: It's recommended to clean up unnecessary global states using `useUnregisterGlobalFormaState`.
+3. **Memory Management**:
+
+    - `autoCleanup: true` (default): Automatic memory cleanup
+    - `autoCleanup: false`: Manual cleanup via `useUnregisterGlobalFormaState` required
+
+4. **Manual Unregister Caution**:
+
+    ```typescript
+    // 🚨 Warning: Manual unregister immediately affects all references
+    function ComponentA() {
+        const { unregisterState } = useUnregisterGlobalFormaState();
+        const state = useGlobalFormaState({ stateId: "shared" });
+
+        const handleCleanup = () => {
+            // This call immediately affects ComponentB too!
+            unregisterState("shared");
+        };
+    }
+
+    function ComponentB() {
+        const state = useGlobalFormaState({ stateId: "shared" });
+        // Error possible if ComponentA manually removes the state
+    }
+    ```
+
+#### Best Practices
+
+1. **Use Default Settings**: Recommend using `autoCleanup: true` (default) in most cases.
+
+2. **Manual Cleanup Timing**:
+
+    - Application-wide reset
+    - User logout
+    - Special situations requiring memory optimization
+
+3. **Shared State Management**:
+
+    - Rely on `autoCleanup` for states used by multiple components
+    - Minimize manual cleanup for predictable lifecycle
+
+4. **Debugging Tips**:
+    ```typescript
+    // Track state changes in development
+    const state = useGlobalFormaState({
+        stateId: "debug-state",
+        onChange: (values) => {
+            console.log("State changed:", values);
+        },
+    });
+    ```
 
 ---
 
@@ -1188,6 +1343,8 @@ Parameter type for the useGlobalForm hook.
 ```typescript
 interface UseGlobalFormProps<T extends Record<string, any>> {
     formId: string;
+    initialValues?: Partial<T>;
+    autoCleanup?: boolean;
 }
 ```
 
@@ -1199,6 +1356,7 @@ Parameter type for the useGlobalFormaState hook.
 interface UseGlobalFormaStateProps<T extends Record<string, any>> {
     stateId: string;
     initialValues?: T;
+    autoCleanup?: boolean;
     onChange?: (values: T) => void;
     deepEquals?: boolean;
     onError?: (error: Error) => void;

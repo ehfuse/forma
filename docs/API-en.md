@@ -1224,7 +1224,7 @@ Checks if any field has been modified from its initial value.
 
 ### getNestedValue
 
-Utility function to get values from nested objects.
+Utility function to get values from nested objects. Starting from v1.4.9, provides special handling for `.length` properties.
 
 #### Signature
 
@@ -1236,6 +1236,14 @@ function getNestedValue(obj: any, path: string): any;
 
 -   `obj`: Target object
 -   `path`: Access path (e.g., "user.profile.name")
+
+#### Special Features
+
+-   **`.length` property optimization**: When an array is `undefined`, `.length` returns `0`. Subscription is maintained.
+
+#### Important Notes
+
+-   Do not use fallback code like `|| 0` when subscribing to `.length`. This is already handled internally.
 
 #### Example
 
@@ -1249,6 +1257,13 @@ const user = {
 
 const name = getNestedValue(user, "profile.name"); // "John Doe"
 const theme = getNestedValue(user, "profile.settings.theme"); // "dark"
+
+// Special .length handling
+const data = { items: undefined };
+const length = getNestedValue(data, "items.length"); // 0 (instead of undefined)
+
+const dataWithArray = { items: [1, 2, 3] };
+const actualLength = getNestedValue(dataWithArray, "items.length"); // 3
 ```
 
 ---

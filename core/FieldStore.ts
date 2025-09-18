@@ -182,25 +182,27 @@ export class FieldStore<T extends Record<string, any>> {
                     listener();
                 });
 
-                // Dot notation 경로 구독자들 알림 / Notify dot notation path subscribers
+                // Dot notation 구독자들 알림 / Notify dot notation subscribers
                 this.dotNotationListeners.forEach(
                     (listeners, subscribedPath) => {
                         if (subscribedPath === fieldNameStr) {
                             listeners.forEach((listener) => listener());
                         }
-                        // 배열 필드가 변경되었을 때 해당 .length 구독자들에게도 알림
-                        // Notify .length subscribers when array field changes
-                        else if (
-                            subscribedPath === `${rootFieldStr}.length` &&
-                            Array.isArray(newRootValue)
-                        ) {
-                            // 길이가 실제로 변경되었는지 확인
-                            // Check if length actually changed
+                        // 배열 필드나 .length 구독자들에게 알림
+                        // Notify array field or .length subscribers
+                        else if (subscribedPath === `${rootFieldStr}.length`) {
+                            // 이전 길이와 새 길이 계산
                             const oldLength = Array.isArray(oldRootValue)
                                 ? oldRootValue.length
                                 : 0;
-                            const newLength = newRootValue.length;
-                            if (oldLength !== newLength) {
+                            const newLength = Array.isArray(newRootValue)
+                                ? newRootValue.length
+                                : 0;
+                            // 길이가 변경되었거나 undefined에서 배열로 변경된 경우 알림
+                            if (
+                                oldLength !== newLength ||
+                                (!oldRootValue && newRootValue)
+                            ) {
                                 listeners.forEach((listener) => listener());
                             }
                         }
@@ -238,19 +240,16 @@ export class FieldStore<T extends Record<string, any>> {
                 if (subscribedPath === fieldStr) {
                     listeners.forEach((listener) => listener());
                 }
-                // 배열 필드가 변경되었을 때 해당 .length 구독자들에게도 알림
-                // Notify .length subscribers when array field changes
-                else if (
-                    subscribedPath === `${fieldStr}.length` &&
-                    Array.isArray(value)
-                ) {
-                    // 길이가 실제로 변경되었는지 확인
-                    // Check if length actually changed
+                // 배열 필드나 .length 구독자들에게 알림
+                // Notify array field or .length subscribers
+                else if (subscribedPath === `${fieldStr}.length`) {
+                    // 이전 길이와 새 길이 계산
                     const oldLength = Array.isArray(oldValue)
                         ? oldValue.length
                         : 0;
-                    const newLength = value.length;
-                    if (oldLength !== newLength) {
+                    const newLength = Array.isArray(value) ? value.length : 0;
+                    // 길이가 변경되었거나 undefined에서 배열로 변경된 경우 알림
+                    if (oldLength !== newLength || (!oldValue && value)) {
                         listeners.forEach((listener) => listener());
                     }
                 }

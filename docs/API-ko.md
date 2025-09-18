@@ -1216,7 +1216,7 @@ isModified(): boolean
 
 ### getNestedValue
 
-중첩 객체에서 값을 가져오는 유틸리티 함수입니다.
+중첩 객체에서 값을 가져오는 유틸리티 함수입니다. v1.4.9부터 `.length` 속성에 대한 특별한 처리를 제공합니다.
 
 #### Signature
 
@@ -1228,6 +1228,14 @@ function getNestedValue(obj: any, path: string): any;
 
 -   `obj`: 대상 객체
 -   `path`: 접근 경로 (예: "user.profile.name")
+
+#### 특별한 기능
+
+-   **`.length` 속성 최적화**: 배열이 `undefined`인 경우 `.length`는 `0`을 반환합니다. 구독은 계속 유지됩니다.
+
+#### 주의사항
+
+-   `.length` 구독 시 `|| 0`과 같은 fallback 코드를 사용하면 안됩니다. 이미 내부적으로 처리되어 있습니다.
 
 #### Example
 
@@ -1241,6 +1249,13 @@ const user = {
 
 const name = getNestedValue(user, "profile.name"); // "김영진"
 const theme = getNestedValue(user, "profile.settings.theme"); // "dark"
+
+// .length 특별 처리
+const data = { items: undefined };
+const length = getNestedValue(data, "items.length"); // 0 (undefined 대신)
+
+const dataWithArray = { items: [1, 2, 3] };
+const actualLength = getNestedValue(dataWithArray, "items.length"); // 3
 ```
 
 ---

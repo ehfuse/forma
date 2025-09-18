@@ -47,10 +47,17 @@ export function getNestedValue(obj: any, path: string): any {
     const keys = path.split(".");
     let current = obj;
 
-    for (const key of keys) {
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+
         if (current === null || current === undefined) {
+            // 마지막 키가 'length'이고 이전 값이 undefined인 경우 0 반환
+            if (key === "length" && i === keys.length - 1) {
+                return 0;
+            }
             return undefined;
         }
+
         current = current[key];
     }
 

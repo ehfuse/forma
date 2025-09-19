@@ -441,6 +441,44 @@ export class FieldStore<T extends Record<string, any>> {
     }
 
     /**
+     * 특정 prefix를 가진 모든 필드 구독자들을 새로고침합니다
+     * Refresh all field subscribers with specific prefix
+     * @param prefix 새로고침할 필드 prefix (예: "address")
+     */
+    refreshFields(prefix: string): void {
+        const prefixWithDot = prefix + ".";
+        console.log(`🔄 refreshFields("${prefix}") 시작`);
+
+        // 일반 필드 구독자들 중 prefix와 일치하는 경우 알림
+        this.fields.forEach((field, key) => {
+            const keyStr = String(key);
+            if (keyStr === prefix || keyStr.startsWith(prefixWithDot)) {
+                console.log(
+                    `  ✅ 일반 필드 "${keyStr}" 알림 (구독자 ${field.listeners.size}명)`
+                );
+                field.listeners.forEach((listener) => listener());
+            }
+        });
+
+        // Dot notation 구독자들 중 prefix와 일치하는 경우 알림
+        this.dotNotationListeners.forEach((listeners, subscribedPath) => {
+            if (
+                subscribedPath === prefix ||
+                subscribedPath.startsWith(prefixWithDot)
+            ) {
+                console.log(
+                    `  ✅ Dot notation "${subscribedPath}" 알림 (구독자 ${listeners.size}명)`
+                );
+                listeners.forEach((listener) => listener());
+            }
+        });
+
+        // 전역 구독자들에게는 알림하지 않음 (특정 prefix만 새로고침하기 위함)
+        // this.globalListeners.forEach((listener) => listener());
+        console.log(`🔄 refreshFields("${prefix}") 완료`);
+    }
+
+    /**
      * 초기값으로 리셋 / Reset to initial values
      */
     reset() {

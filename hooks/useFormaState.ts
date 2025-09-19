@@ -83,6 +83,9 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
     /** Subscribe to all state changes | 모든 상태 변경에 구독 */
     subscribe: (callback: (values: T) => void) => () => void;
 
+    /** Refresh all field subscribers with specific prefix | 특정 prefix를 가진 모든 필드 구독자들을 새로고침 */
+    refreshFields: (prefix: string) => void;
+
     /** Direct access to the internal store for advanced usage | 고급 사용을 위한 내부 스토어 직접 접근 */
     _store: FieldStore<T>;
 }
@@ -334,6 +337,12 @@ export function useFormaState<T extends Record<string, any>>(
         subscribe: useCallback(
             (callback: (values: T) => void) => {
                 return store.subscribeToAll(callback);
+            },
+            [store] // store 의존성 추가
+        ),
+        refreshFields: useCallback(
+            (prefix: string) => {
+                store.refreshFields(prefix);
             },
             [store] // store 의존성 추가
         ),

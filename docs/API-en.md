@@ -79,6 +79,8 @@ interface UseFormaStateReturn<T> {
     setValues: (values: Partial<T>) => void;
     /** Reset to initial values */
     reset: () => void;
+    /** Refresh all field subscribers with specific prefix */
+    refreshFields: (prefix: string) => void;
     /** Handle standard input change events */
     handleChange: (
         event: React.ChangeEvent<
@@ -281,6 +283,53 @@ state.setValue("todos", [...state.getValues().todos, newItem]);
 // Change item content → no notification to todos.length subscribers (same length)
 state.setValue("todos.0.text", "Updated todo");
 ```
+
+#### 🔄 **Field Refresh**
+
+Use the `refreshFields` method to force refresh all field subscribers with a specific prefix:
+
+```typescript
+const state = useFormaState({
+    user: { name: "John Doe", email: "john@example.com" },
+    address: { city: "Seoul", street: "Gangnam-daero" },
+    settings: { theme: "light", language: "en" },
+});
+
+// Components subscribing to individual fields
+const userName = state.useValue("user.name");
+const userEmail = state.useValue("user.email");
+const addressCity = state.useValue("address.city");
+
+// Refresh all fields with specific prefix
+const refreshUserFields = () => {
+    // Refresh all fields starting with "user" (user.name, user.email)
+    state.refreshFields("user");
+};
+
+const refreshAddressFields = () => {
+    // Refresh all fields starting with "address" (address.city, address.street)
+    state.refreshFields("address");
+};
+
+// Use case: Sync UI after external data source updates
+const syncWithServer = async () => {
+    // Fetch latest data from server
+    const latestUserData = await fetchUserFromServer();
+
+    // Update state (but subscribers might not re-render if values are the same)
+    state.setValue("user.name", latestUserData.name);
+    state.setValue("user.email", latestUserData.email);
+
+    // Force refresh UI components even if values are identical
+    state.refreshFields("user");
+};
+```
+
+**Key Features:**
+
+-   ✅ **Selective Refresh**: Only refreshes fields matching the prefix
+-   ✅ **Force Updates**: Triggers re-renders even when values haven't changed
+-   ✅ **Performance Conscious**: Doesn't affect unrelated field subscribers
 
 **Key Features:**
 

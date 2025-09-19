@@ -79,6 +79,8 @@ interface UseFormaStateReturn<T> {
     setValues: (values: Partial<T>) => void;
     /** 초기값으로 재설정 */
     reset: () => void;
+    /** 특정 prefix를 가진 모든 필드 구독자들을 새로고침 */
+    refreshFields: (prefix: string) => void;
     /** 표준 입력 변경 이벤트 처리 */
     handleChange: (
         event: React.ChangeEvent<
@@ -276,6 +278,47 @@ state.setValue("todos", [...state.getValues().todos, newItem]);
 
 // 항목 내용 변경 → todos.length 구독자에게는 알림 없음 (길이가 동일하므로)
 state.setValue("todos.0.text", "수정된 할 일");
+```
+
+#### 🔄 **필드 새로고침 (Field Refresh)**
+
+`refreshFields` 메서드를 사용하여 특정 prefix를 가진 모든 필드 구독자들을 강제로 새로고침할 수 있습니다:
+
+```typescript
+const state = useFormaState({
+    user: { name: "김철수", email: "kim@example.com" },
+    address: { city: "서울", street: "강남대로" },
+    settings: { theme: "light", language: "ko" },
+});
+
+// 각 필드를 개별적으로 구독하는 컴포넌트들
+const userName = state.useValue("user.name");
+const userEmail = state.useValue("user.email");
+const addressCity = state.useValue("address.city");
+
+// 특정 prefix의 모든 필드 새로고침
+const refreshUserFields = () => {
+    // "user"로 시작하는 모든 필드 (user.name, user.email) 새로고침
+    state.refreshFields("user");
+};
+
+const refreshAddressFields = () => {
+    // "address"로 시작하는 모든 필드 (address.city, address.street) 새로고침
+    state.refreshFields("address");
+};
+
+// 사용 사례: 외부 데이터 소스에서 업데이트된 후 UI 동기화
+const syncWithServer = async () => {
+    // 서버에서 최신 데이터 가져오기
+    const latestUserData = await fetchUserFromServer();
+
+    // 상태 업데이트 (하지만 이미 같은 값이면 구독자들이 리렌더링되지 않을 수 있음)
+    state.setValue("user.name", latestUserData.name);
+    state.setValue("user.email", latestUserData.email);
+
+    // 값이 동일하더라도 UI 컴포넌트들을 강제로 새로고침
+    state.refreshFields("user");
+};
 ```
 
 **주요 특징:**

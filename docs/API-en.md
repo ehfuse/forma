@@ -103,13 +103,7 @@ interface UseFormaStateReturn<T> {
 ```typescript
 import { useFormaState } from "forma";
 
-// 1. Basic usage with initial values
-const state = useFormaState({
-    user: { name: "", email: "" },
-    settings: { theme: "light", notifications: true },
-});
-
-// 2. Explicit type specification
+// 1. Explicit type specification (Recommended)
 interface UserData {
     name: string;
     email: string;
@@ -118,6 +112,12 @@ interface UserData {
 
 const userState = useFormaState<{ user: UserData }>({
     user: { name: "", email: "" },
+});
+
+// 2. Basic usage with initial values
+const state = useFormaState({
+    user: { name: "", email: "" },
+    settings: { theme: "light", notifications: true },
 });
 
 // 3. Starting with empty object

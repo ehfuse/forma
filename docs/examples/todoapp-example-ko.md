@@ -61,20 +61,23 @@ function TodoApp() {
             <h2>할 일 관리 ({todoCount}개)</h2>
 
             <div>
+                {/* ✅ name 속성이 있는 일반 입력: handleChange 사용 가능 */}
                 <input
+                    name="newTodoText"
                     value={newTodoText}
-                    onChange={(e) =>
-                        state.setValue("newTodoText", e.target.value)
-                    }
+                    onChange={state.handleChange}
                     placeholder="새 할 일 입력"
                 />
                 <button onClick={addTodo}>추가</button>
             </div>
 
             <div>
+                {/* 🔍 라디오 버튼: name은 있지만 고정 값 설정이 필요한 경우 */}
                 <label>
                     <input
                         type="radio"
+                        name="filter"
+                        value="all"
                         checked={filter === "all"}
                         onChange={() => state.setValue("filter", "all")}
                     />
@@ -83,6 +86,8 @@ function TodoApp() {
                 <label>
                     <input
                         type="radio"
+                        name="filter"
+                        value="active"
                         checked={filter === "active"}
                         onChange={() => state.setValue("filter", "active")}
                     />
@@ -91,6 +96,8 @@ function TodoApp() {
                 <label>
                     <input
                         type="radio"
+                        name="filter"
+                        value="completed"
                         checked={filter === "completed"}
                         onChange={() => state.setValue("filter", "completed")}
                     />
@@ -192,7 +199,36 @@ const completed = state.useValue(`todos.${index}.completed`);
 // 결과: 특정 할 일만 체크해도 다른 할 일들은 리렌더링 안 됨!
 ```
 
-### 3. 필터링과 성능
+### 3. 이벤트 핸들링 방식의 선택
+
+```tsx
+// ✅ name 속성이 있는 일반 입력: handleChange 사용
+<input
+    name="newTodoText"
+    value={newTodoText}
+    onChange={state.handleChange} // 자동으로 name으로 필드 식별
+/>
+
+// ✅ 라디오 버튼: 고정 값 설정이 필요한 경우 setValue 직접 사용
+<input
+    type="radio"
+    name="filter"
+    value="active"
+    checked={filter === "active"}
+    onChange={() => state.setValue("filter", "active")} // 명시적 값 설정
+/>
+
+// 🔍 handleChange를 라디오에 사용하면?
+<input
+    type="radio"
+    name="filter"
+    value="active"
+    checked={filter === "active"}
+    onChange={state.handleChange} // "active" 문자열이 아닌 true/false가 설정됨
+/>
+```
+
+### 4. 필터링과 성능
 
 ```tsx
 // ✅ 필터 변경 시에만 TodoList 리렌더링
@@ -221,6 +257,9 @@ const filter = state.useValue("filter");
 1. **`todos.length` 구독**으로 배열 크기 변화만 감지
 2. **`todos.${index}.field` 패턴**으로 개별 항목 구독
 3. **컴포넌트 분할**로 리렌더링 범위 최소화
-4. **필요한 데이터만 구독**하는 원칙 준수
+4. **이벤트 핸들링 방식 선택**:
+    - `handleChange`: name 속성이 있는 일반 입력 (텍스트, 셀렉트 등)
+    - `setValue`: 고정 값 설정이 필요한 경우 (라디오, 커스텀 로직 등)
+5. **필요한 데이터만 구독**하는 원칙 준수
 
-이 예제는 Forma의 핵심 철학인 "필요한 것만 구독하여 성능 최적화"를 보여주는 대표적인 사례입니다.
+이 예제는 Forma의 핵심 철학인 "필요한 것만 구독하여 성능 최적화"와 "상황에 맞는 이벤트 핸들링 방식 선택"을 보여주는 대표적인 사례입니다.

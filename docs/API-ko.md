@@ -103,13 +103,7 @@ interface UseFormaStateReturn<T> {
 ```typescript
 import { useFormaState } from "forma";
 
-// 1. 기본 사용법 - 초기값과 함께
-const state = useFormaState({
-    user: { name: "", email: "" },
-    settings: { theme: "light", notifications: true },
-});
-
-// 2. 타입 명시적 지정
+// 1. 타입 명시적 지정 (권장)
 interface UserData {
     name: string;
     email: string;
@@ -118,6 +112,12 @@ interface UserData {
 
 const userState = useFormaState<{ user: UserData }>({
     user: { name: "", email: "" },
+});
+
+// 2. 기본 사용법 - 초기값과 함께
+const state = useFormaState({
+    user: { name: "", email: "" },
+    settings: { theme: "light", notifications: true },
 });
 
 // 3. 빈 객체로 시작

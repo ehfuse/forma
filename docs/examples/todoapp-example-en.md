@@ -61,20 +61,23 @@ function TodoApp() {
             <h2>Todo Management ({todoCount} items)</h2>
 
             <div>
+                {/* ✅ Regular input with name attribute: handleChange available */}
                 <input
+                    name="newTodoText"
                     value={newTodoText}
-                    onChange={(e) =>
-                        state.setValue("newTodoText", e.target.value)
-                    }
+                    onChange={state.handleChange}
                     placeholder="Enter new todo"
                 />
                 <button onClick={addTodo}>Add</button>
             </div>
 
             <div>
+                {/* 🔍 Radio buttons: name exists but fixed value setting needed */}
                 <label>
                     <input
                         type="radio"
+                        name="filter"
+                        value="all"
                         checked={filter === "all"}
                         onChange={() => state.setValue("filter", "all")}
                     />
@@ -83,6 +86,8 @@ function TodoApp() {
                 <label>
                     <input
                         type="radio"
+                        name="filter"
+                        value="active"
                         checked={filter === "active"}
                         onChange={() => state.setValue("filter", "active")}
                     />
@@ -91,6 +96,8 @@ function TodoApp() {
                 <label>
                     <input
                         type="radio"
+                        name="filter"
+                        value="completed"
                         checked={filter === "completed"}
                         onChange={() => state.setValue("filter", "completed")}
                     />
@@ -192,7 +199,36 @@ const completed = state.useValue(`todos.${index}.completed`);
 // Result: Checking one todo doesn't re-render other todos!
 ```
 
-### 3. Filtering and Performance
+### 3. Event Handling Method Selection
+
+```tsx
+// ✅ Regular input with name attribute: use handleChange
+<input
+    name="newTodoText"
+    value={newTodoText}
+    onChange={state.handleChange} // Automatically identifies field by name
+/>
+
+// ✅ Radio buttons: use setValue directly when fixed value setting is needed
+<input
+    type="radio"
+    name="filter"
+    value="active"
+    checked={filter === "active"}
+    onChange={() => state.setValue("filter", "active")} // Explicit value setting
+/>
+
+// 🔍 What if handleChange is used with radio?
+<input
+    type="radio"
+    name="filter"
+    value="active"
+    checked={filter === "active"}
+    onChange={state.handleChange} // Sets true/false instead of "active" string
+/>
+```
+
+### 4. Filtering and Performance
 
 ```tsx
 // ✅ TodoList re-renders only when filter changes
@@ -221,6 +257,9 @@ const filter = state.useValue("filter");
 1. **`todos.length` subscription** detects only array size changes
 2. **`todos.${index}.field` pattern** for individual item subscription
 3. **Component separation** minimizes re-render scope
-4. **Subscribe only to necessary data** principle adherence
+4. **Event handling method selection**:
+    - `handleChange`: Regular inputs with name attribute (text, select, etc.)
+    - `setValue`: When fixed value setting is needed (radio, custom logic, etc.)
+5. **Subscribe only to necessary data** principle adherence
 
-This example demonstrates Forma's core philosophy: "Subscribe only to what you need for performance optimization".
+This example demonstrates Forma's core philosophy: "Subscribe only to what you need for performance optimization" and "Choose the right event handling method for each situation".

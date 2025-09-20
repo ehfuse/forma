@@ -4,19 +4,23 @@ Forma를 처음 사용하는 개발자를 위한 단계별 가이드입니다.
 
 ## 1단계: 설치 및 설정
 
-### 현재 프로젝트에서 사용
-
-```tsx
-// 현재는 로컬 프로젝트에서 사용
-import { useForm, useGlobalForm, GlobalFormProvider } from "@/forma";
-```
-
-### 향후 NPM 패키지 설치 (준비 중)
+### NPM 패키지 설치
 
 ```bash
 npm install @ehfuse/forma
 # 또는
 yarn add @ehfuse/forma
+```
+
+### 기본 Import
+
+```tsx
+import {
+    useForm,
+    useFormaState,
+    GlobalFormProvider,
+    useGlobalForm,
+} from "@ehfuse/forma";
 ```
 
 ## 2단계: 첫 번째 폼 만들기
@@ -45,7 +49,7 @@ function UserRegistration() {
         },
     });
 
-    // 개별 필드 구독 (성능 최적화)
+    // **개별 필드 구독 (성능 최적화)**
     const name = form.useFormValue("name");
     const email = form.useFormValue("email");
 
@@ -86,7 +90,7 @@ function UserRegistration() {
 
 ## 2.5단계: 일반 상태 관리 (useFormaState)
 
-폼이 아닌 일반적인 상태 관리에도 Forma의 개별 필드 구독 기능을 활용할 수 있습니다.
+폼이 아닌 일반적인 상태 관리에도 Forma의 **개별 필드 구독 기능**을 활용할 수 있습니다.
 
 ### useFormaState 선언 방법
 
@@ -125,143 +129,39 @@ const stateWithOptions = useFormaState(
 );
 ```
 
-### 새로운 API 메서드 활용
-
-```tsx
-function StateManager() {
-    const state = useFormaState<Record<string, any>>({});
-
-    // 필드 동적 관리
-    const addField = (name: string, value: any) => {
-        state.setValue(name, value);
-    };
-
-    const removeField = (name: string) => {
-        if (state.hasField(name)) {
-            state.removeField(name);
-        }
-    };
-
-    // 상태 변경 구독
-    React.useEffect(() => {
-        const unsubscribe = state.subscribe((values) => {
-            console.log("전체 상태 변경:", values);
-        });
-        return unsubscribe;
-    }, [state]);
-
-    return (
-        <div>
-            <button onClick={() => addField("newField", "초기값")}>
-                필드 추가
-            </button>
-            <button onClick={() => removeField("newField")}>필드 제거</button>
-
-            {state.hasField("newField") && (
-                <input
-                    value={state.useValue("newField")}
-                    onChange={(e) => state.setValue("newField", e.target.value)}
-                />
-            )}
-
-            <button onClick={() => state.reset()}>초기값으로 리셋</button>
-        </div>
-    );
-}
-```
-
 ### 배열 상태 관리와 길이 구독
 
-````tsx
-import React from "react";
-import { useFormaState } from "@/forma";
+Forma의 **핵심 기능** 중 하나는 배열의 길이만 구독하여 성능을 최적화하는 것입니다.
 
-interface Todo {
-    id: number;
-    text: string;
-    completed: boolean;
-}
+```tsx
+const state = useFormaState({
+    todos: [
+        { id: 1, text: "Learn React", completed: false },
+        { id: 2, text: "Learn Forma", completed: true },
+    ],
+});
 
-function TodoApp() {
-    const state = useFormaState({
-        todos: [
-            { id: 1, text: "Learn React", completed: false },
-            { id: 2, text: "Learn Forma", completed: true },
-        ],
-        filter: "all" as "all" | "active" | "completed",
-        newTodoText: "",
-    });
+// **🔥 핵심: 배열 길이만 구독 (항목 추가/삭제 시에만 리렌더링)**
+const todoCount = state.useValue("todos.length");
 
-    // 🔥 핵심: 배열 길이만 구독 (항목 추가/삭제 시에만 리렌더링)
-    const todoCount = state.useValue("todos.length");
+// **개별 필드 구독**
+const firstTodoText = state.useValue("todos.0.text");
+const firstTodoCompleted = state.useValue("todos.0.completed");
+```
 
-    // 개별 필드 구독
-    const newTodoText = state.useValue("newTodoText");
-    const filter = state.useValue("filter");
+**주요 특징:**
 
-    const addTodo = () => {
-        if (!newTodoText.trim()) return;
+-   **`todos.length` 구독**: 항목 추가/삭제 시에만 카운터 업데이트
+-   **`todos.${index}.field` 구독**: 특정 항목 변경 시 해당 컴포넌트만 리렌더링
+-   **✅ todos 배열이 변경되면 todos.length 구독자에게 자동 알림!**
+-   **✅ 배열 내용만 변경 (길이 동일) - todos.length에는 알림 안 감**
 
-        const todos = state.getValues().todos;
-        state.setValue("todos", [
-            ...todos,
-            { id: Date.now(), text: newTodoText, completed: false }
-        ]);
-        // ✅ todos 배열이 변경되면 todos.length 구독자에게 자동 알림!
+**📋 자세한 예제와 성능 최적화:**
 
-        state.setValue("newTodoText", "");
-    };
+-   [TodoApp 예제 - 배열 상태 관리](./examples/todoapp-example-ko.md)
+-   [성능 최적화 및 주의사항](./performance-optimization-ko.md)
 
-    const toggleTodo = (index: number) => {
-        const todo = state.getValue(`todos.${index}`);
-        state.setValue(`todos.${index}.completed`, !todo.completed);
-        // ✅ 배열 내용만 변경 (길이 동일) - todos.length에는 알림 안 감
-    };
-
-    return (
-        <div>
-            <h2>할 일 관리 ({todoCount}개)</h2>
-
-            <div>
-                <input
-                    value={newTodoText}
-                    onChange={(e) => state.setValue("newTodoText", e.target.value)}
-                    placeholder="새 할 일 입력"
-                />
-                <button onClick={addTodo}>추가</button>
-            </div>
-
-            <div>
-                <label>
-                    <input
-                        type="radio"
-                        checked={filter === "all"}
-                        onChange={() => state.setValue("filter", "all")}
-                    />
-                    전체
-                </label>
-                <label>
-                    <input
-                        type="radio"
-                        checked={filter === "active"}
-                        onChange={() => state.setValue("filter", "active")}
-                    />
-                    진행 중
-                </label>
-                <label>
-                    <input
-                        type="radio"
-                        checked={filter === "completed"}
-                        onChange={() => state.setValue("filter", "completed")}
-                    />
-                    완료
-                </label>
-            </div>
-
-            <TodoList state={state} filter={filter} onToggle={toggleTodo} />
-        </div>
-    );
-}
+````
 
 // 성능 최적화된 할 일 목록 컴포넌트
 function TodoList({ state, filter, onToggle }) {
@@ -287,9 +187,9 @@ function TodoList({ state, filter, onToggle }) {
     );
 }
 
-// 개별 할 일 항목 컴포넌트 (해당 항목 변경 시에만 리렌더링)
+// **개별 할 일 항목 컴포넌트 (해당 항목 변경 시에만 리렌더링)**
 function TodoItem({ index, state, onToggle }) {
-    // 개별 필드만 구독하여 성능 최적화
+    // **개별 필드만 구독하여 성능 최적화**
     const text = state.useValue(`todos.${index}.text`);
     const completed = state.useValue(`todos.${index}.completed`);
 
@@ -629,6 +529,80 @@ function App() {
 
 ### 다단계 폼 구현
 
+**방법 1: 타입 정의와 함께 사용 (권장)**
+
+```tsx
+// 타입 정의
+interface UserRegistrationData {
+    personal: {
+        name: string;
+        email: string;
+    };
+    preferences: {
+        newsletter: boolean;
+    };
+}
+
+// Step1.tsx
+function Step1() {
+    const form = useGlobalForm<UserRegistrationData>({
+        formId: "user-registration",
+        initialValues: {
+            personal: { name: "", email: "" },
+            preferences: { newsletter: false },
+        },
+    });
+
+    const name = form.useFormValue("personal.name");
+    const email = form.useFormValue("personal.email");
+
+    return (
+        <div>
+            <h2>1단계: 기본 정보</h2>
+            <TextField
+                name="personal.name"
+                value={name}
+                onChange={form.handleFormChange}
+            />
+            <TextField
+                name="personal.email"
+                value={email}
+                onChange={form.handleFormChange}
+            />
+            <Button onClick={() => navigate("/step2")}>다음 단계</Button>
+        </div>
+    );
+}
+
+// Step2.tsx
+function Step2() {
+    const form = useGlobalForm<UserRegistrationData>({
+        formId: "user-registration", // 같은 폼 ID로 상태 공유
+    });
+
+    const newsletter = form.useFormValue("preferences.newsletter");
+
+    return (
+        <div>
+            <h2>2단계: 선택사항</h2>
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        name="preferences.newsletter"
+                        checked={newsletter}
+                        onChange={form.handleFormChange}
+                    />
+                }
+                label="뉴스레터 구독"
+            />
+            <Button onClick={() => navigate("/review")}>검토하기</Button>
+        </div>
+    );
+}
+```
+
+**방법 2: 인라인 초기값 사용**
+
 ```tsx
 // Step1.tsx
 function Step1() {
@@ -695,10 +669,6 @@ function Step2() {
 function ReviewStep() {
     const form = useGlobalForm({
         formId: "user-registration", // 같은 상태 조회
-        initialValues: {
-            personal: { name: "", email: "" },
-            preferences: { newsletter: false },
-        },
         onSubmit: async (values) => {
             await submitRegistration(values);
         },
@@ -723,6 +693,8 @@ function ReviewStep() {
 }
 ```
 
+````
+
 ## 6단계: 고급 기능
 
 ### DatePicker 사용
@@ -745,7 +717,7 @@ function FormWithDate() {
         />
     );
 }
-```
+````
 
 ### Select 사용
 
@@ -775,9 +747,9 @@ function FormWithSelect() {
 
 ## 🎯 다음 단계
 
-1. **[API 레퍼런스](./API.md)** - 모든 API 상세 설명
-2. **[예제 코드](../examples/)** - 더 많은 실제 예제
-3. **[문제 해결](./README.md#문제-해결)** - 자주 발생하는 문제들
+1. **[API 레퍼런스](./API-ko.md)** - 모든 API 상세 설명
+2. **[TodoApp 예제](./examples/todoapp-example-ko.md)** - 배열 상태 관리 실제 예제
+3. **[성능 최적화 가이드](./performance-optimization-ko.md)** - 성능 최적화 및 주의사항
 
 ## 💡 성능 팁
 

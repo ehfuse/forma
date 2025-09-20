@@ -4,19 +4,23 @@ A step-by-step guide for developers new to Forma.
 
 ## Step 1: Installation and Setup
 
-### Using in Current Project
-
-```tsx
-// Currently for use in local projects
-import { useForm, useGlobalForm, GlobalFormaProvider } from "@/forma";
-```
-
-### Future NPM Package Installation (Coming Soon)
+### NPM Package Installation
 
 ```bash
 npm install @ehfuse/forma
 # or
 yarn add @ehfuse/forma
+```
+
+### Basic Import
+
+```tsx
+import {
+    useForm,
+    useFormaState,
+    GlobalFormProvider,
+    useGlobalForm,
+} from "@ehfuse/forma";
 ```
 
 ## Step 2: Creating Your First Form
@@ -45,7 +49,7 @@ function UserRegistration() {
         },
     });
 
-    // Individual field subscription (performance optimization)
+    // **Individual field subscription (performance optimization)**
     const name = form.useFormValue("name");
     const email = form.useFormValue("email");
 
@@ -86,7 +90,7 @@ function UserRegistration() {
 
 ## Step 2.5: General State Management (useFormaState)
 
-You can also leverage Forma's individual field subscription feature for general state management beyond forms.
+You can also leverage Forma's **individual field subscription feature** for general state management beyond forms.
 
 ### useFormaState Declaration Methods
 
@@ -125,151 +129,110 @@ const stateWithOptions = useFormaState(
 );
 ```
 
-### Using New API Methods
-
-```tsx
-function StateManager() {
-    const state = useFormaState<Record<string, any>>({});
-
-    // Dynamic field management
-    const addField = (name: string, value: any) => {
-        state.setValue(name, value);
-    };
-
-    const removeField = (name: string) => {
-        if (state.hasField(name)) {
-            state.removeField(name);
-        }
-    };
-
-    // Subscribe to state changes
-    React.useEffect(() => {
-        const unsubscribe = state.subscribe((values) => {
-            console.log("Global state changed:", values);
-        });
-        return unsubscribe;
-    }, [state]);
-
-    return (
-        <div>
-            <button onClick={() => addField("newField", "initial value")}>
-                Add Field
-            </button>
-            <button onClick={() => removeField("newField")}>
-                Remove Field
-            </button>
-
-            {state.hasField("newField") && (
-                <input
-                    value={state.useValue("newField")}
-                    onChange={(e) => state.setValue("newField", e.target.value)}
-                />
-            )}
-
-            <button onClick={() => state.reset()}>
-                Reset to Initial Values
-            </button>
-        </div>
-    );
-}
-```
-
 ### Array State Management and Length Subscription
 
-````tsx
-import React from "react";
-import { useFormaState } from "@/forma";
+One of Forma's **key features** is optimizing performance by subscribing only to array length.
 
-interface Todo {
-    id: number;
-    text: string;
-    completed: boolean;
-}
+```tsx
+const state = useFormaState({
+    todos: [
+        { id: 1, text: "Learn React", completed: false },
+        { id: 2, text: "Learn Forma", completed: true },
+    ],
+});
 
-function TodoApp() {
-    const state = useFormaState({
-        todos: [
-            { id: 1, text: "Learn React", completed: false },
-            { id: 2, text: "Learn Forma", completed: true },
-        ],
-        filter: "all" as "all" | "active" | "completed",
-        newTodoText: "",
-    });
+// **🔥 Key Feature: Subscribe only to array length (re-renders only when items are added/removed)**
+const todoCount = state.useValue("todos.length");
 
-    // 🔥 Key Feature: Subscribe only to array length (re-renders only when items are added/removed)
-    const todoCount = state.useValue("todos.length");
+// **Subscribe to individual fields**
+const firstTodoText = state.useValue("todos.0.text");
+const firstTodoCompleted = state.useValue("todos.0.completed");
+```
 
-    // Subscribe to individual fields
-    const newTodoText = state.useValue("newTodoText");
-    const filter = state.useValue("filter");
+**Key Features:**
 
-    const addTodo = () => {
-        if (!newTodoText.trim()) return;
+-   **`todos.length` subscription**: Counter updates only when items are added/removed
+-   **`todos.${index}.field` subscription**: Only specific component re-renders when that item changes
+-   **✅ When todos array changes, todos.length subscribers are automatically notified!**
+-   **✅ Only array content changes (same length) - no notification to todos.length**
 
-        const todos = state.getValues().todos;
-        state.setValue("todos", [
-            ...todos,
-            { id: Date.now(), text: newTodoText, completed: false }
-        ]);
-        // ✅ When todos array changes, todos.length subscribers are automatically notified!
+**📋 Detailed Examples and Performance Optimization:**
 
-        state.setValue("newTodoText", "");
-    };
+-   [TodoApp Example - Array State Management](./examples/todoapp-example-en.md)
+-   [Performance Optimization and Best Practices](./performance-optimization-en.md)
 
-    const toggleTodo = (index: number) => {
-        const todo = state.getValue(`todos.${index}`);
-        state.setValue(`todos.${index}.completed`, !todo.completed);
-        // ✅ Only array content changes (same length) - no notification to todos.length
-    };
+        // **Subscribe to individual fields**
+        const newTodoText = state.useValue("newTodoText");
+        const filter = state.useValue("filter");
 
-    return (
-        <div>
-            <h2>Todo Management ({todoCount} items)</h2>
+        const addTodo = () => {
+            if (!newTodoText.trim()) return;
 
+            const todos = state.getValues().todos;
+            state.setValue("todos", [
+                ...todos,
+                { id: Date.now(), text: newTodoText, completed: false }
+            ]);
+            // **✅ When todos array changes, todos.length subscribers are automatically notified!**
+
+            state.setValue("newTodoText", "");
+        };
+
+        const toggleTodo = (index: number) => {
+            const todo = state.getValue(`todos.${index}`);
+            state.setValue(`todos.${index}.completed`, !todo.completed);
+            // **✅ Only array content changes (same length) - no notification to todos.length**
+        };
+
+        return (
             <div>
-                <input
-                    value={newTodoText}
-                    onChange={(e) => state.setValue("newTodoText", e.target.value)}
-                    placeholder="Enter new todo"
-                />
-                <button onClick={addTodo}>Add</button>
-            </div>
+                <h2>Todo Management ({todoCount} items)</h2>
 
-            <div>
-                <label>
+                <div>
                     <input
-                        type="radio"
-                        checked={filter === "all"}
-                        onChange={() => state.setValue("filter", "all")}
+                        value={newTodoText}
+                        onChange={(e) => state.setValue("newTodoText", e.target.value)}
+                        placeholder="Enter new todo"
                     />
-                    All
-                </label>
-                <label>
-                    <input
-                        type="radio"
-                        checked={filter === "active"}
-                        onChange={() => state.setValue("filter", "active")}
-                    />
-                    Active
-                </label>
-                <label>
-                    <input
-                        type="radio"
-                        checked={filter === "completed"}
-                        onChange={() => state.setValue("filter", "completed")}
-                    />
-                    Completed
-                </label>
-            </div>
+                    <button onClick={addTodo}>Add</button>
+                </div>
 
-            <TodoList state={state} filter={filter} onToggle={toggleTodo} />
-        </div>
-    );
-}
+                <div>
+                    <label>
+                        <input
+                            type="radio"
+                            checked={filter === "all"}
+                            onChange={() => state.setValue("filter", "all")}
+                        />
+                        All
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            checked={filter === "active"}
+                            onChange={() => state.setValue("filter", "active")}
+                        />
+                        Active
+                    </label>
+                    <label>
+                        <input
+                            type="radio"
+                            checked={filter === "completed"}
+                            onChange={() => state.setValue("filter", "completed")}
+                        />
+                        Completed
+                    </label>
+                </div>
+
+                <TodoList state={state} filter={filter} onToggle={toggleTodo} />
+            </div>
+        );
+
+    }
 
 // Performance-optimized todo list component
 function TodoList({ state, filter, onToggle }) {
-    const todos = state.getValues().todos;
+const todos = state.getValues().todos;
 
     return (
         <ul>
@@ -289,13 +252,14 @@ function TodoList({ state, filter, onToggle }) {
                 ))}
         </ul>
     );
+
 }
 
-// Individual todo item component (re-renders only when this specific item changes)
+// **Individual todo item component (re-renders only when this specific item changes)**
 function TodoItem({ index, state, onToggle }) {
-    // Subscribe only to individual fields for performance optimization
-    const text = state.useValue(`todos.${index}.text`);
-    const completed = state.useValue(`todos.${index}.completed`);
+// **Subscribe only to individual fields for performance optimization**
+const text = state.useValue(`todos.${index}.text`);
+const completed = state.useValue(`todos.${index}.completed`);
 
     return (
         <li>
@@ -311,6 +275,7 @@ function TodoItem({ index, state, onToggle }) {
             </span>
         </li>
     );
+
 }
 
 ```tsx
@@ -442,7 +407,7 @@ function TodoApp() {
         </div>
     );
 }
-````
+```
 
 ### Nested Object State Management
 
@@ -637,6 +602,80 @@ function App() {
 
 ### Multi-Step Form Implementation
 
+**Method 1: Using Type Definition (Recommended)**
+
+```tsx
+// Type definition
+interface UserRegistrationData {
+    personal: {
+        name: string;
+        email: string;
+    };
+    preferences: {
+        newsletter: boolean;
+    };
+}
+
+// Step1.tsx
+function Step1() {
+    const form = useGlobalForm<UserRegistrationData>({
+        formId: "user-registration",
+        initialValues: {
+            personal: { name: "", email: "" },
+            preferences: { newsletter: false },
+        },
+    });
+
+    const name = form.useFormValue("personal.name");
+    const email = form.useFormValue("personal.email");
+
+    return (
+        <div>
+            <h2>Step 1: Basic Information</h2>
+            <TextField
+                name="personal.name"
+                value={name}
+                onChange={form.handleFormChange}
+            />
+            <TextField
+                name="personal.email"
+                value={email}
+                onChange={form.handleFormChange}
+            />
+            <Button onClick={() => navigate("/step2")}>Next Step</Button>
+        </div>
+    );
+}
+
+// Step2.tsx
+function Step2() {
+    const form = useGlobalForm<UserRegistrationData>({
+        formId: "user-registration", // Share state with same form ID
+    });
+
+    const newsletter = form.useFormValue("preferences.newsletter");
+
+    return (
+        <div>
+            <h2>Step 2: Preferences</h2>
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        name="preferences.newsletter"
+                        checked={newsletter}
+                        onChange={form.handleFormChange}
+                    />
+                }
+                label="Subscribe to Newsletter"
+            />
+            <Button onClick={() => navigate("/review")}>Review</Button>
+        </div>
+    );
+}
+```
+
+**Method 2: Using Inline Initial Values**
+
 ```tsx
 // Step1.tsx
 function Step1() {
@@ -703,10 +742,6 @@ function Step2() {
 function ReviewStep() {
     const form = useGlobalForm({
         formId: "user-registration", // Access same state
-        initialValues: {
-            personal: { name: "", email: "" },
-            preferences: { newsletter: false },
-        },
         onSubmit: async (values) => {
             await submitRegistration(values);
         },
@@ -731,6 +766,15 @@ function ReviewStep() {
 }
 ```
 
+                Complete Registration
+            </Button>
+        </div>
+    );
+
+}
+
+````
+
 ## Step 6: Advanced Features
 
 ### Using DatePicker
@@ -753,7 +797,7 @@ function FormWithDate() {
         />
     );
 }
-```
+````
 
 ### Using Select
 
@@ -783,9 +827,9 @@ function FormWithSelect() {
 
 ## 🎯 Next Steps
 
-1. **[API Reference](./API.md)** - Detailed API documentation
-2. **[Example Code](../examples/)** - More practical examples
-3. **[Troubleshooting](./README-en.md#troubleshooting)** - Common issues and solutions
+1. **[API Reference](./API-en.md)** - Detailed API documentation
+2. **[TodoApp Example](./examples/todoapp-example-en.md)** - Practical array state management example
+3. **[Performance Optimization Guide](./performance-optimization-en.md)** - Performance optimization and best practices
 
 ## 💡 Performance Tips
 

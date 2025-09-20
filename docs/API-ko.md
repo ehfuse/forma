@@ -134,7 +134,7 @@ const todoCount = state.useValue("todos.length"); // 2
 -   ✅ **성능 최적화**: 배열 내용 변경 시 불필요한 리렌더링 방지
 -   ✅ **자동 감지**: 배열 변경 시 `.length` 구독자에게 자동 알림
 
-📚 **[배열 길이 구독 상세 예제 →](./examples-ko.md#배열-길이-구독)**
+� **[배열 길이 구독 상세 가이드 →](./performance-warnings-ko.md#배열-길이-구독-array-length-subscription)**
 
 #### 🔄 **필드 새로고침 (Field Refresh)**
 
@@ -530,58 +530,12 @@ function ProductList() {
 
 � **[배열 길이 구독 상세 가이드 →](./performance-warnings-ko.md#배열-길이-구독-array-length-subscription)**
 🔗 **[성능 최적화 모범 사례 →](./performance-guide-ko.md#성능-최적화)**
-}
 
-````
+---
 
-#### 🔄 **자동 메모리 정리 (autoCleanup)**
+### 📖 **useUnregisterGlobalFormaState**
 
-`useGlobalFormaState`는 **참조 카운팅 기반 자동 정리** 기능을 제공합니다:
-
-```typescript
-// 기본적으로 autoCleanup이 활성화됨
-const state = useGlobalFormaState({
-    stateId: "shared-data",
-    autoCleanup: true, // 기본값
-});
-
-// 자동 정리 비활성화
-const persistentState = useGlobalFormaState({
-    stateId: "persistent-data",
-    autoCleanup: false, // 수동 관리
-});
-```
-
-**동작 방식:**
-
-```typescript
-// Component A 마운트 → 참조 카운트: 1
-function ComponentA() {
-    const state = useGlobalFormaState({
-        stateId: "shared",
-        autoCleanup: true,
-    });
-    return <div>{state.useValue("data")}</div>;
-}
-
-// Component B 마운트 → 참조 카운트: 2
-function ComponentB() {
-    const state = useGlobalFormaState({
-        stateId: "shared", // 같은 ID
-        autoCleanup: true,
-    });
-    return <div>{state.useValue("data")}</div>;
-}
-
-// Component A 언마운트 → 참조 카운트: 1 (상태 유지)
-// Component B 언마운트 → 참조 카운트: 0 → 🗑️ 자동 정리!
-```
-
-**장점:**
-
--   ✅ **안전한 공유**: 다른 컴포넌트가 사용중인 상태는 보호
--   ✅ **자동 정리**: 마지막 사용자가 떠나면 메모리 자동 해제
--   ✅ **메모리 최적화**: 불필요한 상태 누적 방지
+수동으로 글로벌 상태를 정리하는 훅입니다.
 
 #### 주의사항
 
@@ -1107,12 +1061,17 @@ const name = form.useFormValue("name");
 
 ## 관련 문서
 
--   **[API Reference](./API-ko.md)** - 상세한 API 문서
--   **[시작하기 가이드](./getting-started-ko.md)** - 기본 사용법
+-   **[API 레퍼런스](./API-ko.md)** - 모든 API 상세 설명
+-   **[예제 모음](./examples-ko.md)** - 실용적인 사용 예제
 -   **[성능 최적화 가이드](./performance-guide-ko.md)** - 성능 최적화 방법
 -   **[성능 최적화 주의사항](./performance-warnings-ko.md)** - 안티패턴과 주의사항
 -   **[마이그레이션 가이드](./migration-ko.md)** - 다른 라이브러리에서 이전
 -   **[useGlobalForm 가이드](./useGlobalForm-guide-ko.md)** - 글로벌 폼 상태 관리
+-   **[글로벌 훅 비교 가이드](./global-hooks-comparison-ko.md)** - 글로벌 훅들의 차이점
+-   **[라이브러리 비교 가이드](./library-comparison-ko.md)** - 다른 상태 관리 라이브러리와의 비교
 
 추가 질문이나 예제가 필요하시면 언제든 문의해 주세요.
-````
+
+```
+
+```

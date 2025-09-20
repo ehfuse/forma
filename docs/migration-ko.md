@@ -295,7 +295,9 @@ const email = form.useFormValue("email");
 
 // ❌ Formik (values 접근): 어떤 필드든 변경 시 전체 100개 필드 리렌더링
 function FormikLargeFormBad() {
-    const { values } = useFormik({ /* 100개 필드 */ });
+    const { values } = useFormik({
+        /* 100개 필드 */
+    });
 
     return (
         <div>
@@ -323,7 +325,9 @@ function FormikLargeFormGood() {
 
 // ✅ Forma: 기본적으로 개별 필드 구독
 function FormaLargeForm() {
-    const form = useForm({ /* 100개 필드 */ });
+    const form = useForm({
+        /* 100개 필드 */
+    });
 
     return (
         <div>
@@ -334,8 +338,6 @@ function FormaLargeForm() {
             <Field100Component form={form} />
         </div>
     );
-}
-
 }
 
 function Field1Component({ form }) {
@@ -932,13 +934,13 @@ const name = form.useFormValue("name"); // 개별 필드만 리렌더링
 
 ## 관련 문서
 
--   📚 **[실용적인 사용 예제 →](./examples-ko.md)**
--   🚀 **[시작하기 가이드 →](./getting-started-ko.md)**
--   � **[API 레퍼런스 →](./API-ko.md)**
--   📖 **[useGlobalForm 가이드 →](./useGlobalForm-guide-ko.md)**
--   🔄 **[글로벌 훅 비교 가이드 →](./global-hooks-comparison-ko.md)**
--   📊 **[라이브러리 비교 가이드 →](./library-comparison-ko.md)**
--   �💡 **[성능 최적화 가이드 →](./performance-guide-ko.md)**
--   ⚠️ **[성능 최적화 주의사항 →](./performance-warnings-ko.md)**
+-   **[API 레퍼런스](./API-ko.md)** - 모든 API 상세 설명
+-   **[예제 모음](./examples-ko.md)** - 실용적인 사용 예제
+-   **[성능 최적화 가이드](./performance-guide-ko.md)** - 성능 최적화 방법
+-   **[성능 최적화 주의사항](./performance-warnings-ko.md)** - 안티패턴과 주의사항
+-   **[마이그레이션 가이드](./migration-ko.md)** - 다른 라이브러리에서 이전
+-   **[useGlobalForm 가이드](./useGlobalForm-guide-ko.md)** - 글로벌 폼 상태 관리
+-   **[글로벌 훅 비교 가이드](./global-hooks-comparison-ko.md)** - 글로벌 훅들의 차이점
+-   **[라이브러리 비교 가이드](./library-comparison-ko.md)** - 다른 상태 관리 라이브러리와의 비교
 
 마이그레이션 과정에서 궁금한 점이 있으시면 언제든 문의해 주세요!

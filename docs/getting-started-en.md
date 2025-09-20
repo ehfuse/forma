@@ -4,7 +4,17 @@ A step-by-step guide for developers new to Forma.
 
 ## Step 1: Installation and Setup
 
-### NPM Package Installation
+### NPM // 4. Using with options
+
+const stateWithOptions = useFormaState(
+{
+data: {},
+},
+{
+onChange: (values) => console.log("State changed:", values),
+deepEquals: true, // Enable deep equality checking
+}
+);stallation
 
 ```bash
 npm install @ehfuse/forma
@@ -43,9 +53,36 @@ function UserRegistration() {
             name: "",
             email: "",
         },
+        onValidate: async (values) => {
+            // Name validation
+            if (!values.name.trim()) {
+                alert("Please enter your name.");
+                return false;
+            }
+
+            // Email validation
+            if (!values.email.includes("@")) {
+                alert("Please enter a valid email address.");
+                return false;
+            }
+
+            return true; // Validation passed
+        },
         onSubmit: async (values) => {
-            // Send data to server
-            console.log("Submitted data:", values);
+            try {
+                // Send data to server
+                await fetch("/api/users", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(values),
+                });
+
+                alert("Registration completed!");
+                return true; // Success
+            } catch (error) {
+                alert("An error occurred during registration.");
+                return false; // Failure
+            }
         },
     });
 
@@ -97,13 +134,7 @@ You can also leverage Forma's **individual field subscription feature** for gene
 ```tsx
 import { useFormaState } from "@/forma";
 
-// 1. Basic usage with initial values
-const state = useFormaState({
-    user: { name: "", email: "" },
-    settings: { theme: "light" },
-});
-
-// 2. Explicit type specification
+// 1. Explicit type specification (recommended)
 interface AppData {
     count: number;
     message: string;
@@ -111,6 +142,14 @@ interface AppData {
 
 const typedState = useFormaState<AppData>({
     count: 0,
+    message: "Hello",
+});
+
+// 2. Basic usage with initial values
+const state = useFormaState({
+    user: { name: "", email: "" },
+    settings: { theme: "light" },
+});
     message: "Hello",
 });
 
@@ -124,7 +163,7 @@ const stateWithOptions = useFormaState(
     },
     {
         onChange: (values) => console.log("State changed:", values),
-        debounceMs: 300,
+        deepEquals: true, // Enable deep equality checking
     }
 );
 ```
@@ -160,254 +199,6 @@ const firstTodoCompleted = state.useValue("todos.0.completed");
 
 -   [TodoApp Example - Array State Management](./examples/todoapp-example-en.md)
 -   [Performance Optimization and Best Practices](./performance-optimization-en.md)
-
-        // **Subscribe to individual fields**
-        const newTodoText = state.useValue("newTodoText");
-        const filter = state.useValue("filter");
-
-        const addTodo = () => {
-            if (!newTodoText.trim()) return;
-
-            const todos = state.getValues().todos;
-            state.setValue("todos", [
-                ...todos,
-                { id: Date.now(), text: newTodoText, completed: false }
-            ]);
-            // **✅ When todos array changes, todos.length subscribers are automatically notified!**
-
-            state.setValue("newTodoText", "");
-        };
-
-        const toggleTodo = (index: number) => {
-            const todo = state.getValue(`todos.${index}`);
-            state.setValue(`todos.${index}.completed`, !todo.completed);
-            // **✅ Only array content changes (same length) - no notification to todos.length**
-        };
-
-        return (
-            <div>
-                <h2>Todo Management ({todoCount} items)</h2>
-
-                <div>
-                    <input
-                        value={newTodoText}
-                        onChange={(e) => state.setValue("newTodoText", e.target.value)}
-                        placeholder="Enter new todo"
-                    />
-                    <button onClick={addTodo}>Add</button>
-                </div>
-
-                <div>
-                    <label>
-                        <input
-                            type="radio"
-                            checked={filter === "all"}
-                            onChange={() => state.setValue("filter", "all")}
-                        />
-                        All
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            checked={filter === "active"}
-                            onChange={() => state.setValue("filter", "active")}
-                        />
-                        Active
-                    </label>
-                    <label>
-                        <input
-                            type="radio"
-                            checked={filter === "completed"}
-                            onChange={() => state.setValue("filter", "completed")}
-                        />
-                        Completed
-                    </label>
-                </div>
-
-                <TodoList state={state} filter={filter} onToggle={toggleTodo} />
-            </div>
-        );
-
-    }
-
-// Performance-optimized todo list component
-function TodoList({ state, filter, onToggle }) {
-const todos = state.getValues().todos;
-
-    return (
-        <ul>
-            {todos
-                .filter(todo => {
-                    if (filter === "active") return !todo.completed;
-                    if (filter === "completed") return todo.completed;
-                    return true;
-                })
-                .map((todo, index) => (
-                    <TodoItem
-                        key={todo.id}
-                        index={index}
-                        state={state}
-                        onToggle={onToggle}
-                    />
-                ))}
-        </ul>
-    );
-
-}
-
-// **Individual todo item component (re-renders only when this specific item changes)**
-function TodoItem({ index, state, onToggle }) {
-// **Subscribe only to individual fields for performance optimization**
-const text = state.useValue(`todos.${index}.text`);
-const completed = state.useValue(`todos.${index}.completed`);
-
-    return (
-        <li>
-            <input
-                type="checkbox"
-                checked={completed}
-                onChange={() => onToggle(index)}
-            />
-            <span style={{
-                textDecoration: completed ? "line-through" : "none"
-            }}>
-                {text}
-            </span>
-        </li>
-    );
-
-}
-
-```tsx
-import React from "react";
-import {
-    Button,
-    List,
-    ListItem,
-    ListItemText,
-    TextField,
-    Checkbox,
-} from "@mui/material";
-import { useFormaState } from "@/forma";
-
-interface Todo {
-    id: number;
-    text: string;
-    completed: boolean;
-}
-
-interface AppState {
-    todos: Todo[];
-    filter: "all" | "active" | "completed";
-    newTodoText: string;
-}
-
-// Individual todo item component (performance optimized)
-function TodoItem({ index }: { index: number }) {
-    const state = useFormaState<AppState>({
-        /* externally injected */
-    });
-
-    // Subscribe only to individual fields (using dot notation)
-    const text = state.useValue(`todos.${index}.text`);
-    const completed = state.useValue(`todos.${index}.completed`);
-    const filter = state.useValue("filter");
-
-    const toggleTodo = () => {
-        state.setValue(`todos.${index}.completed`, !completed);
-    };
-
-    // Check filtering condition (determines whether to render)
-    const shouldShow = () => {
-        if (filter === "active") return !completed;
-        if (filter === "completed") return completed;
-        return true; // "all"
-    };
-
-    // Don't render if filter condition doesn't match
-    if (!shouldShow()) return null;
-
-    return (
-        <ListItem>
-            <Checkbox checked={completed} onChange={toggleTodo} />
-            <ListItemText
-                primary={text}
-                style={{ textDecoration: completed ? "line-through" : "none" }}
-            />
-        </ListItem>
-    );
-        </ListItem>
-    );
-}
-
-function TodoApp() {
-    const state = useFormaState<AppState>({
-        todos: [
-            { id: 1, text: "Learn React", completed: false },
-            { id: 2, text: "Learn Forma", completed: true },
-        ],
-        filter: "all",
-        newTodoText: "",
-    });
-
-    // Individual field subscription - optimized approach
-    const filter = state.useValue("filter");
-    const newTodoText = state.useValue("newTodoText");
-    const todosLength = state.useValue("todos.length");
-
-    const addTodo = () => {
-        if (!newTodoText.trim()) return;
-
-        // getValues() is for one-time value retrieval, not subscription
-        const currentTodos = state.getValues().todos;
-        state.setValue("todos", [
-            ...currentTodos,
-            { id: Date.now(), text: newTodoText, completed: false },
-        ]);
-        state.setValue("newTodoText", "");
-    };
-
-    // ✅ Render with individual indices (performance optimization)
-    const renderTodoItems = () => {
-        const items = [];
-        for (let i = 0; i < todosLength; i++) {
-            items.push(<TodoItem key={i} index={i} />);
-        }
-        return items;
-    };
-
-    return (
-        <div>
-            <TextField
-                value={newTodoText}
-                onChange={(e) => state.setValue("newTodoText", e.target.value)}
-                placeholder="Enter new todo..."
-                onKeyPress={(e) => e.key === "Enter" && addTodo()}
-            />
-            <Button onClick={addTodo}>Add</Button>
-
-            <div>
-                <Button onClick={() => state.setValue("filter", "all")}>
-                    All
-                </Button>
-                <Button onClick={() => state.setValue("filter", "active")}>
-                    Active
-                </Button>
-                <Button onClick={() => state.setValue("filter", "completed")}>
-                    Completed
-                </Button>
-                <span>Current filter: {filter}</span>
-            </div>
-
-            <List>
-                {renderTodoItems()}
-            </List>
-
-            <p>Total todos: {todosLength}</p>
-        </div>
-    );
-}
-```
 
 ### Nested Object State Management
 

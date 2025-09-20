@@ -60,8 +60,6 @@ interface UseFormaStateOptions<T> {
     onError?: (error: Error) => void;
     /** 모든 변경에 대한 유효성 검사 활성화 */
     validateOnChange?: boolean;
-    /** 상태 업데이트를 위한 디바운스 지연 시간 (밀리초) */
-    debounceMs?: number;
 }
 ```
 
@@ -132,7 +130,6 @@ const stateWithOptions = useFormaState(
     },
     {
         onChange: (values) => console.log("State changed:", values),
-        debounceMs: 300,
         validateOnChange: true,
     }
 );
@@ -613,8 +610,6 @@ interface UseGlobalFormaStateProps<T> {
     onError?: (error: Error) => void;
     /** 모든 변경에 대한 유효성 검사 활성화 */
     validateOnChange?: boolean;
-    /** 상태 업데이트를 위한 디바운스 지연 시간 (밀리초) */
-    debounceMs?: number;
 }
 ```
 
@@ -1411,7 +1406,6 @@ interface UseGlobalFormaStateProps<T extends Record<string, any>> {
     deepEquals?: boolean;
     onError?: (error: Error) => void;
     validateOnChange?: boolean;
-    debounceMs?: number;
 }
 ```
 

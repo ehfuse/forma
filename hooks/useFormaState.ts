@@ -40,9 +40,6 @@ export interface UseFormaStateOptions<T extends Record<string, any>> {
 
     /** Enable validation on every change | 모든 변경에 대한 유효성 검사 활성화 */
     validateOnChange?: boolean;
-
-    /** Debounce delay for state updates in milliseconds | 상태 업데이트를 위한 디바운스 지연 시간 (밀리초) */
-    debounceMs?: number;
 }
 
 /**

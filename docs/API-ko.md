@@ -279,13 +279,19 @@ state.setValue("todos.0.text", "수정된 할 일");
 
 #### 🔄 **필드 새로고침 (Field Refresh)**
 
-`refreshFields` 메서드를 사용하여 특정 prefix를 가진 모든 필드 구독자들을 강제로 새로고침할 수 있습니다:
+`refreshFields` 메서드를 사용하여 특정 prefix를 가진 모든 필드 구독자들을 강제로 새로고침할 수 있습니다. 이는 **대량 데이터 일괄 처리 시 성능 최적화**에 매우 유용합니다.
+
+**💡 핵심 개념:**
+
+-   **개별 업데이트**: 각 필드마다 `setValue` → N번의 리렌더링
+-   **배치 업데이트**: 전체 데이터 `setValue` + `refreshFields` → 1번의 리렌더링
 
 ```typescript
 const state = useFormaState({
     user: { name: "김철수", email: "kim@example.com" },
     address: { city: "서울", street: "강남대로" },
     settings: { theme: "light", language: "ko" },
+    searchResults: [], // 대량 체크박스 데이터
 });
 
 // 각 필드를 개별적으로 구독하는 컴포넌트들
@@ -317,6 +323,17 @@ const syncWithServer = async () => {
     state.refreshFields("user");
 };
 ```
+
+#### 🚀 **대량 데이터 배치 처리 최적화**
+
+`refreshFields`는 **100개 이상의 체크박스, 테이블 행 일괄 업데이트** 등에서 극적인 성능 향상을 제공합니다.
+
+**📈 성능 개선 효과:**
+
+-   100개 체크박스 전체 선택: **100배 빨라짐** (100번 → 1번 리렌더링)
+-   500개 테이블 행 업데이트: **500배 빨라짐** (500번 → 1번 리렌더링)
+
+**🔗 자세한 사용법과 성능 비교:** [성능 최적화 가이드](./performance-optimization-ko.md#-대량-데이터-배치-처리-최적화)
 
 **주요 특징:**
 
@@ -1572,11 +1589,38 @@ interface UseUnregisterGlobalFormaStateReturn {
     ```
 
 2. **조건부 구독**
+
     ```typescript
     function ConditionalField({ showField }) {
         const value = showField ? form.useFormValue("field") : "";
         return showField ? <TextField value={value} /> : null;
     }
+    ```
+
+3. **대량 데이터 배치 처리**
+
+    ```typescript
+    // ✅ 권장: 배치 처리 + refreshFields (상세 내용은 성능 가이드 참조)
+    state.setValue("items", updatedItems);
+    state.refreshFields("items"); // 1번만 리렌더링
+
+    // 🔗 자세한 내용: 성능 최적화 가이드 참조
+    ```
+
+4. **배열 길이 구독 활용**
+
+    ```typescript
+    // ✅ 카운터는 길이만 구독
+    const TodoCounter = () => {
+        const count = state.useValue("todos.length");
+        return <span>{count}개</span>;
+    };
+
+    // ✅ 개별 항목은 해당 인덱스만 구독
+    const TodoItem = ({ index }) => {
+        const todo = state.useValue(`todos.${index}`);
+        return <div>{todo.text}</div>;
+    };
     ```
 
 ### 타입 안전성

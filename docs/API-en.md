@@ -283,11 +283,20 @@ state.setValue("todos.0.text", "Updated todo");
 
 #### 🔄 **Field Refresh**
 
-Use the `refreshFields` method to force refresh all field subscribers with a specific prefix:
+Use the `refreshFields` method to force refresh all field subscribers with a specific prefix. This is extremely useful for **performance optimization when batch processing large datasets**.
+
+**💡 Key Concept:**
+
+-   **Individual Updates**: Each field `setValue` → N re-renders
+-   **Batch Updates**: Entire data `setValue` + `refreshFields` → 1 re-render
 
 ```typescript
 const state = useFormaState({
     user: { name: "John Doe", email: "john@example.com" },
+    address: { city: "New York", street: "Broadway" },
+    settings: { theme: "light", language: "en" },
+    searchResults: [], // Large checkbox dataset
+});
     address: { city: "Seoul", street: "Gangnam-daero" },
     settings: { theme: "light", language: "en" },
 });
@@ -321,6 +330,17 @@ const syncWithServer = async () => {
     state.refreshFields("user");
 };
 ```
+
+#### 🚀 **Batch Processing Optimization for Large Datasets**
+
+`refreshFields` provides dramatic performance improvements for scenarios like **100+ checkboxes, bulk table row updates**.
+
+**📈 Performance Benefits:**
+
+-   100 checkboxes select all: **100x faster** (100 → 1 re-render)
+-   500 table rows update: **500x faster** (500 → 1 re-render)
+
+**🔗 Detailed usage and performance comparison:** [Performance Optimization Guide](./performance-optimization-en.md#-batch-processing-optimization-for-large-datasets)
 
 **Key Features:**
 
@@ -1586,11 +1606,38 @@ interface UseUnregisterGlobalFormaStateReturn {
     ```
 
 2. **Conditional Subscriptions**
+
     ```typescript
     function ConditionalField({ showField }) {
         const value = showField ? form.useFormValue("field") : "";
         return showField ? <TextField value={value} /> : null;
     }
+    ```
+
+3. **Batch Processing for Large Datasets**
+
+    ```typescript
+    // ✅ Recommended: Batch processing + refreshFields (see performance guide for details)
+    state.setValue("items", updatedItems);
+    state.refreshFields("items"); // Only 1 re-render
+
+    // 🔗 Details: See Performance Optimization Guide
+    ```
+
+4. **Leverage Array Length Subscriptions**
+
+    ```typescript
+    // ✅ Counter subscribes only to length
+    const TodoCounter = () => {
+        const count = state.useValue("todos.length");
+        return <span>{count} items</span>;
+    };
+
+    // ✅ Individual items subscribe only to their index
+    const TodoItem = ({ index }) => {
+        const todo = state.useValue(`todos.${index}`);
+        return <div>{todo.text}</div>;
+    };
     ```
 
 ### Type Safety

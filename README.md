@@ -39,15 +39,27 @@ Forma는 React 애플리케이션에서 폼과 상태를 **간편하면서도 �
 
 ### English
 
--   🚀 **[Getting Started Guide](https://github.com/ehfuse/forma/blob/main/docs/getting-started-en.md)** - Step-by-step tutorial and examples
--   📋 **[API Reference](https://github.com/ehfuse/forma/blob/main/docs/API-en.md)** - All methods, types, migration guide
--   ⚡ **[Performance Optimization Guide](https://github.com/ehfuse/forma/blob/main/docs/best-practices-en.md)** - Best practices for optimal performance
+-   **[Getting Started Guide](./docs/getting-started-en.md)** - Step-by-step tutorial and examples
+-   **[API Reference](./docs/API-en.md)** - Complete API documentation with examples
+-   **[Examples Collection](./docs/examples-en.md)** - Practical usage examples and patterns
+-   **[Performance Guide](./docs/performance-guide-en.md)** - Performance optimization techniques
+-   **[Performance Warnings](./docs/performance-warnings-en.md)** - Anti-patterns and common pitfalls
+-   **[Migration Guide](./docs/migration-en.md)** - Migrate from other form libraries
+-   **[useGlobalForm Guide](./docs/useGlobalForm-guide-en.md)** - Global form state management
+-   **[Global Hooks Comparison](./docs/global-hooks-comparison-en.md)** - useGlobalForm vs useGlobalFormaState
+-   **[Library Comparison](./docs/library-comparison-en.md)** - Forma vs other libraries
 
 ### 한국어 (Korean)
 
--   🚀 **[시작 가이드](https://github.com/ehfuse/forma/blob/main/docs/getting-started-ko.md)** - 단계별 튜토리얼과 예제
--   📋 **[API 레퍼런스](https://github.com/ehfuse/forma/blob/main/docs/API-ko.md)** - 모든 메서드, 타입, 마이그레이션 가이드
--   ⚡ **[성능 최적화 가이드](https://github.com/ehfuse/forma/blob/main/docs/best-practices-ko.md)** - 최고 성능을 위한 모범 사례
+-   **[시작 가이드](./docs/getting-started-ko.md)** - 단계별 튜토리얼과 예제
+-   **[API 레퍼런스](./docs/API-ko.md)** - 완전한 API 문서와 예제
+-   **[예제 모음](./docs/examples-ko.md)** - 실용적인 사용 예제와 패턴
+-   **[성능 최적화 가이드](./docs/performance-guide-ko.md)** - 성능 최적화 기법
+-   **[성능 최적화 주의사항](./docs/performance-warnings-ko.md)** - 안티패턴과 일반적인 함정
+-   **[마이그레이션 가이드](./docs/migration-ko.md)** - 다른 폼 라이브러리에서 이전
+-   **[useGlobalForm 가이드](./docs/useGlobalForm-guide-ko.md)** - 글로벌 폼 상태 관리
+-   **[글로벌 훅 비교](./docs/global-hooks-comparison-ko.md)** - useGlobalForm vs useGlobalFormaState
+-   **[라이브러리 비교](./docs/library-comparison-ko.md)** - Forma vs 다른 라이브러리
 
 ### Links | 링크
 
@@ -308,7 +320,7 @@ const userEmail = form.useFormValue("user.email");
 // user.name 변경 시 → userName 필드만 리렌더링
 ```
 
-**[View Detailed Performance Guide](https://github.com/ehfuse/forma/blob/main/docs/best-practices-en.md)**
+**[View Detailed Performance Guide](./docs/performance-guide-en.md)**
 
 ---
 

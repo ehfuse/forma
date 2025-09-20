@@ -35,9 +35,7 @@ Forma는 React 애플리케이션에서 폼과 상태를 **간편하면서도 �
 -   ✅ **TypeScript 완전 지원**: 강력한 타입 안전성
 -   ✅ **React 19 최적화**: 최신 React 기능 활용
 
-## Documentation
-
-## 문서
+## Documentation | 문서
 
 ### English
 
@@ -51,7 +49,7 @@ Forma는 React 애플리케이션에서 폼과 상태를 **간편하면서도 �
 -   📋 **[API 레퍼런스](https://github.com/ehfuse/forma/blob/main/docs/API-ko.md)** - 모든 메서드, 타입, 마이그레이션 가이드
 -   ⚡ **[성능 최적화 가이드](https://github.com/ehfuse/forma/blob/main/docs/best-practices-ko.md)** - 최고 성능을 위한 모범 사례
 
-### Links
+### Links | 링크
 
 ### 링크
 
@@ -60,9 +58,7 @@ Forma는 React 애플리케이션에서 폼과 상태를 **간편하면서도 �
 
 ---
 
-## Installation
-
-## 설치
+## Installation | 설치
 
 ```bash
 npm install @ehfuse/forma
@@ -74,13 +70,9 @@ yarn add @ehfuse/forma
 
 ---
 
-## Quick Start
+## Quick Start | 빠른 시작
 
-## 빠른 시작
-
-### Zero-Config Usage
-
-### Zero-Config 사용법
+### Zero-Config Usage | Zero-Config 사용법
 
 **Start immediately without any configuration!**  
 **설정 없이 바로 시작하세요!**
@@ -132,9 +124,7 @@ function ZeroConfigState() {
 }
 ```
 
-### Form State Management
-
-### 폼 상태 관리
+### Form State Management | 폼 상태 관리
 
 ```tsx
 import { useForm } from "@ehfuse/forma";
@@ -182,9 +172,7 @@ function MyForm() {
 }
 ```
 
-### General State Management
-
-### 일반 상태 관리
+### General State Management | 일반 상태 관리
 
 ```tsx
 import { useFormaState } from "@ehfuse/forma";
@@ -308,9 +296,7 @@ Forma는 **폼 상태 관리에 특화**된 라이브러리로 특정 시나리�
 
 ---
 
-## Core Performance Principles
-
-## 핵심 성능 원칙
+## Core Performance Principles | 핵심 성능 원칙
 
 ```tsx
 // ✅ Efficient: Individual field subscription
@@ -326,9 +312,7 @@ const userEmail = form.useFormValue("user.email");
 
 ---
 
-## Links
-
-## 링크
+## Links | 링크
 
 -   **📦 NPM**: [https://www.npmjs.com/package/@ehfuse/forma](https://www.npmjs.com/package/@ehfuse/forma)
 -   **🐙 GitHub**: [https://github.com/ehfuse/forma](https://github.com/ehfuse/forma)
@@ -336,9 +320,7 @@ const userEmail = form.useFormValue("user.email");
 
 ---
 
-## Contact
-
-## 연락처
+## Contact | 연락처
 
 -   **Developer**: 김영진 (KIM YOUNG JIN)
 -   **Email**: ehfuse@gmail.com

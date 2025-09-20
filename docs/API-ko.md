@@ -295,11 +295,6 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 
 #### Examples
 
-##### 다단계 폼
-
-````typescript
-#### Examples
-
 ##### 기본 사용법
 
 ```typescript
@@ -318,9 +313,60 @@ const sharedForm = useGlobalForm({
 });
 ```
 
+##### 다단계 폼
+
+```typescript
+// Step 1 컴포넌트
+function Step1() {
+    const form = useGlobalForm({
+        formId: "wizard-form",
+        initialValues: {
+            personal: { name: "", email: "" },
+            address: { street: "", city: "" },
+        },
+    });
+
+    return (
+        <div>
+            <input
+                name="personal.name"
+                value={form.useFormValue("personal.name")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="personal.email"
+                value={form.useFormValue("personal.email")}
+                onChange={form.handleFormChange}
+            />
+        </div>
+    );
+}
+
+// Step 2 컴포넌트
+function Step2() {
+    const form = useGlobalForm({
+        formId: "wizard-form", // 같은 formId로 상태 공유
+    });
+
+    return (
+        <div>
+            <input
+                name="address.street"
+                value={form.useFormValue("address.street")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="address.city"
+                value={form.useFormValue("address.city")}
+                onChange={form.handleFormChange}
+            />
+            <button onClick={form.submit}>완료</button>
+        </div>
+    );
+}
+```
+
 📚 **[글로벌 폼 상세 예제 →](./examples-ko.md#useglobalform-예제)**`
-
-
 
 #### 🔄 **자동 메모리 정리 (autoCleanup)**
 
@@ -340,17 +386,19 @@ const persistentForm = useGlobalForm({
 ```
 
 **자동 정리 동작:**
-- 마지막 사용자가 언마운트되면 자동으로 폼 정리
-- `autoCleanup: false`: 수동으로 `useUnregisterGlobalForm` 필요
+
+-   마지막 사용자가 언마운트되면 자동으로 폼 정리
+-   `autoCleanup: false`: 수동으로 `useUnregisterGlobalForm` 필요
 
 📚 **[자동 메모리 정리 상세 예제 →](./examples-ko.md#자동-메모리-정리-예제)**
 
 #### 권장사항
 
 ✅ **권장사항:**
-- 대부분의 경우 `autoCleanup: true` (기본값) 사용 권장
-- 수동 정리는 전체 폼 완료 후나 사용자 로그아웃 시에만 사용
-- 공유 폼의 경우 자동 정리에 의존하여 안전성 확보
+
+-   대부분의 경우 `autoCleanup: true` (기본값) 사용 권장
+-   수동 정리는 전체 폼 완료 후나 사용자 로그아웃 시에만 사용
+-   공유 폼의 경우 자동 정리에 의존하여 안전성 확보
 
 ⚠️ **주의:** 수동 unregister 시 해당 `formId`를 사용하는 모든 컴포넌트에 즉시 영향
 
@@ -423,8 +471,6 @@ const sharedState = useGlobalFormaState({
 ```
 
 📚 **[글로벌 상태 상세 예제 →](./examples-ko.md#useglobalformastate-예제)**
-
-
 
 ```typescript
 // 기본 장바구니 컴포넌트
@@ -1022,7 +1068,7 @@ const { name } = form.values;
 -   배열 길이 구독 (`todos.length`) 활용
 -   대량 데이터는 배치 처리 + `refreshFields` 사용
 
-� **[성능 최적화 가이드 →](./performance-guide-ko.md)**  
+� **[성능 최적화 가이드 →](./performance-guide-ko.md)**
 ⚠️ **[성능 최적화 주의사항 →](./performance-warnings-ko.md)**
 
 ---
@@ -1069,3 +1115,4 @@ const name = form.useFormValue("name");
 -   **[useGlobalForm 가이드](./useGlobalForm-guide-ko.md)** - 글로벌 폼 상태 관리
 
 추가 질문이나 예제가 필요하시면 언제든 문의해 주세요.
+````

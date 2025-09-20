@@ -284,6 +284,11 @@ const form = useGlobalForm({
 
 ## 📚 관련 문서
 
+-   [시작하기 가이드](./getting-started-ko.md)
+-   [API 레퍼런스](./API-ko.md)
+-   [예제 모음](./examples-ko.md)
 -   [useGlobalForm 가이드](./useGlobalForm-guide-ko.md)
--   [useFormaState 사용법](./getting-started-ko.md)
--   [성능 최적화 팁](./performance-optimization-report.md)
+-   [성능 최적화 가이드](./performance-guide-ko.md)
+-   [성능 최적화 주의사항](./performance-warnings-ko.md)
+-   [마이그레이션 가이드](./migration-ko.md)
+-   [라이브러리 비교 가이드](./library-comparison-ko.md)

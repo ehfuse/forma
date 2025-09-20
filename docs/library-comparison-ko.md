@@ -6,19 +6,27 @@ Forma는 폼 관리에 특화된 React 상태 관리 라이브러리입니다. �
 
 ## 🎯 Forma의 핵심 특징
 
-### 1. 폼 특화 설계 🎨
+### 1. 폼 관리에 특화된 설계 🎨
 
 -   폼 관리에 최적화된 API
 -   검증, 제출, 에러 처리 내장
 -   Material-UI(MUI)와 완벽한 통합
 
-### 2. 개별 필드 구독 ⚡
+### 2. 강력한 일반 상태 관리 📦
+
+-   `useFormaState`: 로컬 상태 관리에 최적화
+-   `useGlobalFormaState`: 글로벌 상태 관리 내장
+-   Redux나 Zustand 없이도 완전한 상태 관리 가능
+-   폼과 일반 상태를 하나의 라이브러리로 통합
+
+### 3. 개별 필드 구독 ⚡
 
 -   필드별 선택적 리렌더링
 -   대규모 폼에서 뛰어난 성능
 -   Dot notation 네이티브 지원
+-   상태 변경 시 필요한 컴포넌트만 업데이트
 
-### 3. TypeScript 우선 설계 📝
+### 4. TypeScript 우선 설계 📝
 
 -   강력한 타입 추론
 -   IDE 자동완성 최적화
@@ -68,15 +76,28 @@ const name = form.useFormValue("name"); // 해당 필드만 리렌더링
 #### 코드 비교
 
 ```typescript
-// Formik
+// Formik - 잘못된 사용법 (전체 폼 리렌더링)
 <Formik>
     {({ values, setFieldValue }) => (
-        <Field name="user.name" /> // 전체 폼 리렌더링
+        <input
+            value={values.user.name} // 전체 폼 리렌더링
+            onChange={(e) => setFieldValue("user.name", e.target.value)}
+        />
     )}
 </Formik>;
 
+// Formik - 올바른 사용법 (개별 필드 구독)
+<Field name="user.name">
+    {({ field, meta }) => (
+        <input {...field} /> // 해당 필드만 리렌더링
+    )}
+</Field>;
+
+// 또는 useField 사용
+const [field, meta] = useField("user.name"); // 개별 필드 구독
+
 // Forma
-const userName = form.useFormValue("user.name"); // 필드만 리렌더링
+const userName = form.useFormValue("user.name"); // 개별 필드 구독 (기본)
 <TextField
     name="user.name"
     value={userName}
@@ -86,58 +107,80 @@ const userName = form.useFormValue("user.name"); // 필드만 리렌더링
 
 #### 장단점 비교
 
-| 특징           | Forma                | Formik                 |
-| -------------- | -------------------- | ---------------------- |
-| **성능**       | ✅ 최적화된 리렌더링 | ❌ 빈번한 리렌더링     |
-| **API 복잡도** | ✅ 간단한 API        | ⚠️ 복잡한 render props |
-| **TypeScript** | ✅ 뛰어난 지원       | ⚠️ 제한적 지원         |
-| **유지보수**   | ✅ 활발한 개발       | ⚠️ 유지보수 모드       |
-| **번들 크기**  | ✅ 중간 크기         | ✅ 중간 크기           |
+| 특징             | Forma                        | Formik                           |
+| ---------------- | ---------------------------- | -------------------------------- |
+| **성능**         | ✅ 기본적으로 개별 필드 구독 | ✅ useField/Field 사용 시 최적화 |
+| **API 복잡도**   | ✅ 간단한 API                | ⚠️ render props 패턴 필요        |
+| **TypeScript**   | ✅ 뛰어난 타입 추론          | ⚠️ 제한적 타입 지원              |
+| **유지보수**     | ✅ 활발한 개발               | ⚠️ 유지보수 모드                 |
+| **번들 크기**    | ✅ 중간 크기                 | ✅ 중간 크기                     |
+| **Dot Notation** | ✅ 네이티브 지원             | ✅ 지원 (getIn 헬퍼 포함)        |
+| **학습 곡선**    | ✅ 직관적                    | ⚠️ render props 패턴 학습 필요   |
 
 **Forma가 더 좋은 경우:**
 
--   성능이 중요한 대규모 폼
--   현대적인 개발 환경
--   TypeScript 프로젝트
+-   기본 API 자체가 최적화되어 추가 패턴 학습이 불필요한 경우
+-   현대적이고 직관적인 API를 선호하는 경우
+-   TypeScript 프로젝트에서 강력한 타입 지원이 필요한 경우
 
 **Formik이 더 좋은 경우:**
 
+-   render props 패턴에 익숙하고 선호하는 팀
 -   기존 Formik 프로젝트의 마이그레이션 비용이 큰 경우
--   render props 패턴에 익숙한 팀
+-   Formik 생태계의 기존 플러그인을 활용하고 싶은 경우
 
 ### vs Zustand/Redux 🏪
 
-#### 역할 차이
+#### 코드 비교
 
 ```typescript
 // Zustand (일반 상태 관리)
 const name = useStore((state) => state.user.name);
 // 폼 검증, 제출 로직을 직접 구현해야 함
 
-// Forma (폼 특화)
+// Forma - 폼 관리
 const form = useForm({
-    validation: { name: "required" },
+    initialValues: { user: { name: "" } },
+    onValidate: async (values) => {
+        /* 검증 로직 */
+    },
     onSubmit: async (values) => {
         /* 제출 로직 */
     },
 });
 const name = form.useFormValue("user.name");
+
+// Forma - 일반 상태 관리
+const userState = useFormaState({ user: { name: "" } });
+const name = userState.useValue("user.name");
+
+// Forma - 글로벌 상태 관리
+const globalState = useGlobalFormaState("user-store", { user: { name: "" } });
+const name = globalState.useValue("user.name");
 ```
 
 #### 장단점 비교
 
-| 특징          | Forma          | Zustand      | Redux             |
-| ------------- | -------------- | ------------ | ----------------- |
-| **폼 관리**   | ✅ 전용 기능   | ⚠️ 직접 구현 | ⚠️ 직접 구현      |
-| **범용 상태** | ⚠️ 제한적      | ✅ 뛰어남    | ✅ 뛰어남         |
-| **성능**      | ✅ 폼에 최적화 | ✅ 좋음      | ✅ 좋음           |
-| **개발 도구** | ⚠️ 제한적      | ✅ 간단함    | ✅ Redux DevTools |
-| **학습 곡선** | ✅ 쉬움        | ✅ 쉬움      | ⚠️ 복잡함         |
+| 특징          | Forma                    | Zustand      | Redux             |
+| ------------- | ------------------------ | ------------ | ----------------- |
+| **폼 관리**   | ✅ 전용 기능             | ⚠️ 직접 구현 | ⚠️ 직접 구현      |
+| **범용 상태** | ✅ useFormaState 제공    | ✅ 뛰어남    | ✅ 뛰어남         |
+| **글로벌**    | ✅ useGlobalFormaState   | ✅ 내장      | ✅ 내장           |
+| **성능**      | ✅ 개별 필드 구독        | ✅ 좋음      | ✅ 좋음           |
+| **개발 도구** | ⚠️ 제한적                | ✅ 간단함    | ✅ Redux DevTools |
+| **학습 곡선** | ✅ 쉬움                  | ✅ 쉬움      | ⚠️ 복잡함         |
+| **통합성**    | ✅ 폼+상태를 하나로 관리 | ⚠️ 폼은 별도 | ⚠️ 폼은 별도      |
 
-**역할이 다름:**
+**Forma의 장점:**
 
--   **Zustand/Redux**: 범용 상태 관리
--   **Forma**: 폼 전용 상태 관리
+-   **올인원 솔루션**: 폼 관리 + 일반 상태 관리 + 글로벌 상태 관리
+-   **일관된 API**: 모든 상태 관리 패턴이 동일한 인터페이스
+-   **개별 구독**: Zustand보다 더 세밀한 리렌더링 제어
+
+**Zustand/Redux가 더 좋은 경우:**
+
+-   **Zustand**: 매우 가벼운 상태 관리만 필요한 경우
+-   **Redux**: 강력한 디버깅 도구와 미들웨어가 중요한 경우
 
 ### vs TanStack Form 🆕
 
@@ -204,18 +247,24 @@ const form = useForm({
     - 양식 관리 시스템
     - 복잡한 다단계 폼
 
-2. **성능이 중요한 폼**
+2. **통합 상태 관리가 필요한 경우**
+
+    - 폼 + 일반 상태를 하나의 라이브러리로 관리
+    - 추가 상태 관리 라이브러리 설치 부담 없이
+    - 일관된 API로 모든 상태 관리
+
+3. **성능이 중요한 폼**
 
     - 50개 이상의 필드
     - 실시간 업데이트가 빈번
     - 모바일 환경 최적화
 
-3. **MUI 프로젝트**
+4. **MUI 프로젝트**
 
     - Material-UI 기반 디자인 시스템
     - MUI 컴포넌트 중심 개발
 
-4. **TypeScript 프로젝트**
+5. **TypeScript 프로젝트**
     - 강력한 타입 안전성 필요
     - IDE 자동완성 중요
 
@@ -321,22 +370,30 @@ const expensiveValue = useMemo(() => {
 **Forma는 다음과 같은 경우에 최적의 선택입니다:**
 
 -   폼이 애플리케이션의 핵심인 경우
+-   폼 + 일반 상태 관리를 하나의 라이브러리로 통합하고 싶은 경우
 -   성능 최적화가 중요한 복잡한 폼
 -   MUI를 사용하는 TypeScript 프로젝트
+-   추가 상태 관리 라이브러리 없이 완전한 솔루션을 원하는 경우
 -   새로운 기술 도입이 가능한 초기 단계 프로젝트
 
 **하지만 다음과 같은 경우에는 다른 라이브러리가 더 나을 수 있습니다:**
 
 -   검증된 안정성이 가장 중요한 경우
 -   기존 팀의 경험과 학습 곡선을 고려해야 하는 경우
--   폼보다는 범용 상태 관리가 더 중요한 경우
+-   이미 다른 상태 관리 라이브러리가 잘 구축된 프로젝트
+-   Redux DevTools 등 특정 개발 도구가 필수인 경우
 
-**선택의 핵심은 프로젝트의 요구사항과 팀 상황에 맞는 적절한 도구를 고르는 것입니다.**
+**Forma의 핵심 가치는 폼과 상태 관리를 하나의 일관된 API로 제공하는 통합 솔루션입니다.**
 
 ---
 
 📚 **관련 문서**
 
--   [Forma 시작 가이드](./getting-started-ko.md)
+-   [시작하기 가이드](./getting-started-ko.md)
+-   [API 레퍼런스](./API-ko.md)
+-   [예제 모음](./examples-ko.md)
 -   [글로벌 훅 비교 가이드](./global-hooks-comparison-ko.md)
--   [성능 최적화 가이드](./best-practices-ko.md)
+-   [성능 최적화 가이드](./performance-guide-ko.md)
+-   [성능 최적화 주의사항](./performance-warnings-ko.md)
+-   [마이그레이션 가이드](./migration-ko.md)
+-   [useGlobalForm 가이드](./useGlobalForm-guide-ko.md)

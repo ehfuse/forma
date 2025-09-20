@@ -485,6 +485,12 @@ interface UseGlobalFormProps<T> {
     initialValues?: Partial<T>;
     /** Auto cleanup on component unmount (default: true) */
     autoCleanup?: boolean;
+    /** Form submission handler */
+    onSubmit?: (values: T) => Promise<void> | void;
+    /** Form validation handler - returns true if validation passes */
+    onValidate?: (values: T) => Promise<boolean> | boolean;
+    /** Callback after form submission completion */
+    onComplete?: (values: T) => void;
 }
 ```
 
@@ -500,6 +506,78 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 ```
 
 #### Examples
+
+##### Multi-Step Form
+
+````typescript
+#### Examples
+
+##### Complete Global Form with Handlers
+
+```typescript
+// Global form with validation and submission logic
+function GlobalFormExample() {
+    const form = useGlobalForm({
+        formId: "user-form",
+        initialValues: { name: "", email: "", age: 0 },
+        onValidate: async (values) => {
+            // Name validation
+            if (!values.name.trim()) {
+                alert("Please enter your name.");
+                return false;
+            }
+
+            // Email validation
+            if (!values.email.includes("@")) {
+                alert("Please enter a valid email.");
+                return false;
+            }
+
+            return true;
+        },
+        onSubmit: async (values) => {
+            console.log("Global form submission:", values);
+            await api.submitUser(values);
+        },
+        onComplete: (values) => {
+            alert("Submission completed!");
+        }
+    });
+
+    return (
+        <form onSubmit={form.submit}>
+            <input
+                name="name"
+                value={form.useFormValue("name")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="email"
+                value={form.useFormValue("email")}
+                onChange={form.handleFormChange}
+            />
+            <button type="submit" disabled={form.isSubmitting}>
+                {form.isSubmitting ? "Submitting..." : "Submit"}
+            </button>
+        </form>
+    );
+}
+
+// Another component sharing the same form state
+function FormViewer() {
+    const form = useGlobalForm({
+        formId: "user-form", // Same ID shares state
+    });
+
+    return (
+        <div>
+            <p>Current name: {form.useFormValue("name")}</p>
+            <p>Current email: {form.useFormValue("email")}</p>
+            <p>Modified: {form.isModified ? "Yes" : "No"}</p>
+        </div>
+    );
+}
+````
 
 ##### Multi-Step Form
 
@@ -533,6 +611,30 @@ function Step2() {
             value={form.useFormValue("email")}
             onChange={form.handleFormChange}
         />
+    );
+}
+
+// Final step - validation and submission
+function FinalStep() {
+    const form = useGlobalForm({
+        formId: "user-registration", // Same form state
+        onValidate: async (values) => {
+            return values.name && values.email && values.phone;
+        },
+        onSubmit: async (values) => {
+            await api.registerUser(values);
+        },
+    });
+
+    return (
+        <div>
+            <p>Name: {form.useFormValue("name")}</p>
+            <p>Email: {form.useFormValue("email")}</p>
+            <p>Phone: {form.useFormValue("phone")}</p>
+            <button onClick={form.submit} disabled={form.isSubmitting}>
+                Complete Registration
+            </button>
+        </div>
     );
 }
 ```
@@ -1404,6 +1506,9 @@ interface UseGlobalFormProps<T extends Record<string, any>> {
     formId: string;
     initialValues?: Partial<T>;
     autoCleanup?: boolean;
+    onSubmit?: (values: T) => Promise<void> | void;
+    onValidate?: (values: T) => Promise<boolean> | boolean;
+    onComplete?: (values: T) => void;
 }
 ```
 

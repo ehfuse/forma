@@ -50,6 +50,9 @@ export function useGlobalForm<T extends Record<string, any>>({
     formId,
     initialValues,
     autoCleanup = true,
+    onSubmit,
+    onValidate,
+    onComplete,
 }: UseGlobalFormProps<T>): UseGlobalFormReturn<T> {
     const context = useContext(GlobalFormaContext);
 
@@ -88,10 +91,13 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
     // 글로벌 스토어 가져오기 또는 생성 / Get or create global store
     const store = getOrCreateStore<T>(formId);
 
-    // useForm에 외부 스토어 전달 / Pass external store to useForm
+    // useForm에 외부 스토어와 핸들러들 전달 / Pass external store and handlers to useForm
     const form = useForm<T>({
         initialValues: (initialValues as T) || ({} as T),
         _externalStore: store,
+        onSubmit,
+        onValidate,
+        onComplete,
     });
 
     // 초기값이 있고 스토어가 비어있다면 초기값 설정 (올바른 방법으로)

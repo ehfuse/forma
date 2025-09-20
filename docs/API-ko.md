@@ -475,6 +475,12 @@ interface UseGlobalFormProps<T> {
     initialValues?: Partial<T>;
     /** 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true) */
     autoCleanup?: boolean;
+    /** 폼 제출 핸들러 */
+    onSubmit?: (values: T) => Promise<void> | void;
+    /** 폼 검증 핸들러 - true 반환 시 검증 통과 */
+    onValidate?: (values: T) => Promise<boolean> | boolean;
+    /** 폼 제출 완료 후 콜백 */
+    onComplete?: (values: T) => void;
 }
 ```
 
@@ -490,6 +496,78 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 ```
 
 #### Examples
+
+##### 다단계 폼
+
+````typescript
+#### Examples
+
+##### 완전한 폼 기능을 가진 글로벌 폼
+
+```typescript
+// 검증과 제출 로직을 가진 글로벌 폼
+function GlobalFormExample() {
+    const form = useGlobalForm({
+        formId: "user-form",
+        initialValues: { name: "", email: "", age: 0 },
+        onValidate: async (values) => {
+            // 이름 검증
+            if (!values.name.trim()) {
+                alert("이름을 입력해주세요.");
+                return false;
+            }
+
+            // 이메일 검증
+            if (!values.email.includes("@")) {
+                alert("올바른 이메일을 입력해주세요.");
+                return false;
+            }
+
+            return true;
+        },
+        onSubmit: async (values) => {
+            console.log("글로벌 폼 제출:", values);
+            await api.submitUser(values);
+        },
+        onComplete: (values) => {
+            alert("제출이 완료되었습니다!");
+        }
+    });
+
+    return (
+        <form onSubmit={form.submit}>
+            <input
+                name="name"
+                value={form.useFormValue("name")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="email"
+                value={form.useFormValue("email")}
+                onChange={form.handleFormChange}
+            />
+            <button type="submit" disabled={form.isSubmitting}>
+                {form.isSubmitting ? "제출 중..." : "제출"}
+            </button>
+        </form>
+    );
+}
+
+// 다른 컴포넌트에서 같은 폼 상태 공유
+function FormViewer() {
+    const form = useGlobalForm({
+        formId: "user-form", // 같은 ID로 상태 공유
+    });
+
+    return (
+        <div>
+            <p>현재 이름: {form.useFormValue("name")}</p>
+            <p>현재 이메일: {form.useFormValue("email")}</p>
+            <p>수정 여부: {form.isModified ? "수정됨" : "수정 안됨"}</p>
+        </div>
+    );
+}
+````
 
 ##### 다단계 폼
 
@@ -523,6 +601,30 @@ function Step2() {
             value={form.useFormValue("email")}
             onChange={form.handleFormChange}
         />
+    );
+}
+
+// 최종 단계 - 검증과 제출
+function FinalStep() {
+    const form = useGlobalForm({
+        formId: "user-registration", // 같은 폼 상태
+        onValidate: async (values) => {
+            return values.name && values.email && values.phone;
+        },
+        onSubmit: async (values) => {
+            await api.registerUser(values);
+        },
+    });
+
+    return (
+        <div>
+            <p>이름: {form.useFormValue("name")}</p>
+            <p>이메일: {form.useFormValue("email")}</p>
+            <p>전화번호: {form.useFormValue("phone")}</p>
+            <button onClick={form.submit} disabled={form.isSubmitting}>
+                등록 완료
+            </button>
+        </div>
     );
 }
 ```
@@ -1390,6 +1492,9 @@ interface UseGlobalFormProps<T extends Record<string, any>> {
     formId: string;
     initialValues?: Partial<T>;
     autoCleanup?: boolean;
+    onSubmit?: (values: T) => Promise<void> | void;
+    onValidate?: (values: T) => Promise<boolean> | boolean;
+    onComplete?: (values: T) => void;
 }
 ```
 

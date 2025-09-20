@@ -281,6 +281,28 @@ state.setValue("todos", [...state.getValues().todos, newItem]);
 state.setValue("todos.0.text", "Updated todo");
 ```
 
+**Key Features:**
+
+-   ✅ **Smart Notifications**: Only notifies when array length actually changes
+-   ✅ **Performance Optimized**: Prevents unnecessary re-renders on content changes
+-   ✅ **Automatic Detection**: Auto-notifies `.length` subscribers when arrays change
+
+**Usage Examples:**
+
+```typescript
+// Counter component (re-renders only when length changes)
+function TodoCounter() {
+    const count = state.useValue("todos.length");
+    return <span>Todos: {count}</span>;
+}
+
+// Individual item component (re-renders only when that item changes)
+function TodoItem({ index }) {
+    const text = state.useValue(`todos.${index}.text`);
+    return <div>{text}</div>;
+}
+```
+
 #### 🔄 **Field Refresh**
 
 Use the `refreshFields` method to force refresh all field subscribers with a specific prefix. This is extremely useful for **performance optimization when batch processing large datasets**.
@@ -341,34 +363,6 @@ const syncWithServer = async () => {
 -   500 table rows update: **500x faster** (500 → 1 re-render)
 
 **🔗 Detailed usage and performance comparison:** [Performance Optimization Guide](./performance-optimization-en.md#-batch-processing-optimization-for-large-datasets)
-
-**Key Features:**
-
--   ✅ **Selective Refresh**: Only refreshes fields matching the prefix
--   ✅ **Force Updates**: Triggers re-renders even when values haven't changed
--   ✅ **Performance Conscious**: Doesn't affect unrelated field subscribers
-
-**Key Features:**
-
--   ✅ **Smart Notifications**: Only notifies when array length actually changes
--   ✅ **Performance Optimized**: Prevents unnecessary re-renders on content changes
--   ✅ **Automatic Detection**: Auto-notifies `.length` subscribers when arrays change
-
-**Usage Examples:**
-
-```typescript
-// Counter component (re-renders only when length changes)
-function TodoCounter() {
-    const count = state.useValue("todos.length");
-    return <span>Todos: {count}</span>;
-}
-
-// Individual item component (re-renders only when that item changes)
-function TodoItem({ index }) {
-    const text = state.useValue(`todos.${index}.text`);
-    return <div>{text}</div>;
-}
-```
 
 ### useForm
 

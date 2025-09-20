@@ -277,6 +277,28 @@ state.setValue("todos", [...state.getValues().todos, newItem]);
 state.setValue("todos.0.text", "수정된 할 일");
 ```
 
+**주요 특징:**
+
+-   ✅ **스마트 알림**: 배열 길이가 실제로 변경될 때만 알림
+-   ✅ **성능 최적화**: 배열 내용 변경 시 불필요한 리렌더링 방지
+-   ✅ **자동 감지**: 배열 변경 시 `.length` 구독자에게 자동 알림
+
+**사용 예시:**
+
+```typescript
+// 카운터 컴포넌트 (길이 변경 시에만 리렌더링)
+function TodoCounter() {
+    const count = state.useValue("todos.length");
+    return <span>할 일: {count}개</span>;
+}
+
+// 개별 항목 컴포넌트 (해당 항목 변경 시에만 리렌더링)
+function TodoItem({ index }) {
+    const text = state.useValue(`todos.${index}.text`);
+    return <div>{text}</div>;
+}
+```
+
 #### 🔄 **필드 새로고침 (Field Refresh)**
 
 `refreshFields` 메서드를 사용하여 특정 prefix를 가진 모든 필드 구독자들을 강제로 새로고침할 수 있습니다. 이는 **대량 데이터 일괄 처리 시 성능 최적화**에 매우 유용합니다.
@@ -334,28 +356,6 @@ const syncWithServer = async () => {
 -   500개 테이블 행 업데이트: **500배 빨라짐** (500번 → 1번 리렌더링)
 
 **🔗 자세한 사용법과 성능 비교:** [성능 최적화 가이드](./performance-optimization-ko.md#-대량-데이터-배치-처리-최적화)
-
-**주요 특징:**
-
--   ✅ **스마트 알림**: 배열 길이가 실제로 변경될 때만 알림
--   ✅ **성능 최적화**: 배열 내용 변경 시 불필요한 리렌더링 방지
--   ✅ **자동 감지**: 배열 변경 시 `.length` 구독자에게 자동 알림
-
-**사용 예시:**
-
-```typescript
-// 카운터 컴포넌트 (길이 변경 시에만 리렌더링)
-function TodoCounter() {
-    const count = state.useValue("todos.length");
-    return <span>할 일: {count}개</span>;
-}
-
-// 개별 항목 컴포넌트 (해당 항목 변경 시에만 리렌더링)
-function TodoItem({ index }) {
-    const text = state.useValue(`todos.${index}.text`);
-    return <div>{text}</div>;
-}
-```
 
 ### useForm
 

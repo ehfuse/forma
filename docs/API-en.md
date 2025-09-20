@@ -854,26 +854,26 @@ function DynamicStateManager() {
 }
 ```
 
-##### Multi-Component Synchronization
+##### Shopping Cart Example - Using .length Subscription
 
 ```typescript
-// Shopping Cart State Management
+// Basic Shopping Cart Component
 function ShoppingCart() {
     const cart = useGlobalFormaState({
         stateId: "shopping-cart",
         initialValues: {
             items: [],
             total: 0,
-            discount: 0,
         },
     });
 
-    const items = cart.useValue("items");
+    // ✅ Recommended: .length subscription (rerenders only when array length changes)
+    const itemCount = cart.useValue("items.length");
     const total = cart.useValue("total");
 
     return (
         <div>
-            <h2>Cart ({items?.length || 0})</h2>
+            <h2>Cart ({itemCount})</h2>
             <p>Total: ${total}</p>
         </div>
     );
@@ -882,7 +882,7 @@ function ShoppingCart() {
 // Product List Component
 function ProductList() {
     const cart = useGlobalFormaState({
-        stateId: "shopping-cart", // Share same cart state
+        stateId: "shopping-cart",
     });
 
     const addToCart = (product) => {
@@ -897,44 +897,23 @@ function ProductList() {
     };
 
     return (
-        <div>
-            <button
-                onClick={() =>
-                    addToCart({ id: 1, name: "Product 1", price: 100 })
-                }
-            >
-                Add to Cart
-            </button>
-        </div>
-    );
-}
-
-// Checkout Component
-function Checkout() {
-    const cart = useGlobalFormaState({
-        stateId: "shopping-cart", // Share same cart state
-    });
-
-    const total = cart.useValue("total");
-    const items = cart.useValue("items");
-
-    const handleCheckout = () => {
-        console.log("Items to checkout:", items);
-        console.log("Total:", total);
-
-        // Reset cart after checkout
-        cart.setValues({ items: [], total: 0, discount: 0 });
-    };
-
-    return (
-        <div>
-            <h3>Checkout</h3>
-            <p>Amount: ${total}</p>
-            <button onClick={handleCheckout}>Complete Purchase</button>
-        </div>
+        <button
+            onClick={() => addToCart({ id: 1, name: "Product 1", price: 100 })}
+        >
+            Add Product
+        </button>
     );
 }
 ```
+
+**Key Points:**
+
+-   `itemCount = cart.useValue("items.length")`: Subscribe to array length only
+-   Use `.length` subscription instead of `items?.length || 0`
+-   Performance optimization: Prevents unnecessary rerenders when array content changes
+
+📚 **[Array Length Subscription Detailed Guide →](./performance-optimization-en.md#array-length-subscription)**  
+🔗 **[Performance Optimization Best Practices →](./best-practices-en.md#performance-optimization)**
 
 #### 🔄 **Auto Memory Cleanup (autoCleanup)**
 

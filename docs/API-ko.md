@@ -843,35 +843,35 @@ function DynamicStateManager() {
 }
 ```
 
-##### 다중 컴포넌트 동기화
+##### 쇼핑카트 예제 - .length 구독 활용
 
 ```typescript
-// 쇼핑카트 상태 관리
+// 기본 장바구니 컴포넌트
 function ShoppingCart() {
     const cart = useGlobalFormaState({
         stateId: "shopping-cart",
         initialValues: {
             items: [],
             total: 0,
-            discount: 0,
         },
     });
 
-    const items = cart.useValue("items");
+    // ✅ 권장: .length 구독 (배열 길이 변경 시에만 리렌더링)
+    const itemCount = cart.useValue("items.length");
     const total = cart.useValue("total");
 
     return (
         <div>
-            <h2>장바구니 ({items?.length || 0})</h2>
+            <h2>장바구니 ({itemCount})</h2>
             <p>총액: {total}원</p>
         </div>
     );
 }
 
-// 상품 목록 컴포넌트
+// 상품 추가 컴포넌트
 function ProductList() {
     const cart = useGlobalFormaState({
-        stateId: "shopping-cart", // 같은 장바구니 상태 공유
+        stateId: "shopping-cart",
     });
 
     const addToCart = (product) => {
@@ -886,44 +886,26 @@ function ProductList() {
     };
 
     return (
-        <div>
-            <button
-                onClick={() =>
-                    addToCart({ id: 1, name: "상품 1", price: 10000 })
-                }
-            >
-                장바구니에 추가
-            </button>
-        </div>
-    );
-}
-
-// 결제 컴포넌트
-function Checkout() {
-    const cart = useGlobalFormaState({
-        stateId: "shopping-cart", // 같은 장바구니 상태 공유
-    });
-
-    const total = cart.useValue("total");
-    const items = cart.useValue("items");
-
-    const handleCheckout = () => {
-        console.log("결제할 항목:", items);
-        console.log("총액:", total);
-
-        // 결제 후 장바구니 초기화
-        cart.setValues({ items: [], total: 0, discount: 0 });
-    };
-
-    return (
-        <div>
-            <h3>결제</h3>
-            <p>결제 금액: {total}원</p>
-            <button onClick={handleCheckout}>결제하기</button>
-        </div>
+        <button
+            onClick={() => addToCart({ id: 1, name: "상품 1", price: 10000 })}
+        >
+            상품 추가
+        </button>
     );
 }
 ```
+
+**핵심 포인트:**
+
+-   `itemCount = cart.useValue("items.length")`: 배열 길이만 구독
+-   `items?.length || 0` 대신 `.length` 구독 사용
+-   성능 최적화: 배열 내용 변경 시 불필요한 리렌더링 방지
+
+� **[배열 길이 구독 상세 가이드 →](./performance-optimization-ko.md#배열-길이-구독-array-length-subscription)**  
+🔗 **[성능 최적화 모범 사례 →](./best-practices-ko.md#성능-최적화)**
+}
+
+````
 
 #### 🔄 **자동 메모리 정리 (autoCleanup)**
 
@@ -941,7 +923,7 @@ const persistentState = useGlobalFormaState({
     stateId: "persistent-data",
     autoCleanup: false, // 수동 관리
 });
-```
+````
 
 **동작 방식:**
 

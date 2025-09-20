@@ -1,16 +1,16 @@
-# Forma Performance Optimization and Best Practices
+# Forma Performance Optimization and Precautions
 
-Tips and precautions for optimal performance when using Forma.
+Tips and precautions for achieving optimal performance when using Forma.
 
 ## 🔥 Core Performance Optimization Principles
 
 ### 1. Individual Field Subscription
 
-**❌ Inefficient: Subscribe to entire state**
+**❌ Inefficient method: Full state subscription**
 
 ```tsx
 const form = useForm({ name: "", email: "", age: 0 });
-const values = form.values; // Subscribe to entire state - re-renders on any field change
+const values = form.values; // Full state subscription - re-renders on any field change
 
 return (
     <div>
@@ -21,13 +21,13 @@ return (
 );
 ```
 
-**✅ Efficient: Subscribe to individual fields**
+**✅ Efficient method: Individual field subscriptions**
 
 ```tsx
 const form = useForm({ name: "", email: "", age: 0 });
-const name = form.useFormValue("name");   // Subscribe only to name field
-const email = form.useFormValue("email"); // Subscribe only to email field
-const age = form.useFormValue("age");     // Subscribe only to age field
+const name = form.useFormValue("name");   // Subscribe to name field only
+const email = form.useFormValue("email"); // Subscribe to email field only
+const age = form.useFormValue("age");     // Subscribe to age field only
 
 return (
     <div>
@@ -40,7 +40,7 @@ return (
 
 ### 2. Array Length Subscription Optimization
 
-**🔥 Key Feature: Subscribe only to array length for performance optimization**
+**🔥 Core feature: Subscribe to array length only for performance optimization**
 
 ```tsx
 const state = useFormaState({
@@ -50,10 +50,10 @@ const state = useFormaState({
     ],
 });
 
-// ✅ Subscribe only to array length - re-renders only when items are added/removed
+// ✅ Subscribe to array length only - re-renders only when items are added/removed
 const todoCount = state.useValue("todos.length");
 
-// ✅ Subscribe to specific item - re-renders only when that item changes
+// ✅ Subscribe to specific items only - re-renders only when that item changes
 const firstTodo = state.useValue("todos.0.text");
 
 const addTodo = () => {
@@ -70,7 +70,7 @@ const toggleTodo = (index: number) => {
 
 ## ⚠️ Precautions
 
-### 1. Be Careful When Subscribing to Parent Objects of Nested Structures
+### 1. Caution when subscribing to parent paths of nested objects
 
 **❌ Inefficient: Subscribe to entire parent object**
 
@@ -108,22 +108,22 @@ return (
 );
 ```
 
-### 2. Limitations of Index-based Subscriptions When Array Order Changes
+### 2. Precautions when array indices change
 
-**⚠️ Caution: Index-based subscriptions can be problematic when array order changes**
+**⚠️ Caution: Limitations of index-based subscriptions when array order changes**
 
 ```tsx
 const state = useFormaState({
-    items: ["Apple", "Banana", "Orange"],
+    items: ["apple", "banana", "orange"],
 });
 
-// ❌ Index-based subscription - problems when array order changes
-const firstItem = state.useValue("items.0"); // "Apple"
-const secondItem = state.useValue("items.1"); // "Banana"
+// ❌ Index-based subscription - can cause issues when array order changes
+const firstItem = state.useValue("items.0"); // "apple"
+const secondItem = state.useValue("items.1"); // "banana"
 
-// When array order changes, indices change causing unexpected values
-state.setValue("items", ["Banana", "Apple", "Orange"]);
-// firstItem still subscribes to "items.0", so it becomes "Banana"
+// If array order changes, indices will reference different values
+state.setValue("items", ["banana", "apple", "orange"]);
+// firstItem still subscribes to "items.0" so becomes "banana"
 ```
 
 **✅ Solution: ID-based access or full array subscription**
@@ -131,9 +131,9 @@ state.setValue("items", ["Banana", "Apple", "Orange"]);
 ```tsx
 const state = useFormaState({
     items: [
-        { id: 1, name: "Apple" },
-        { id: 2, name: "Banana" },
-        { id: 3, name: "Orange" },
+        { id: 1, name: "apple" },
+        { id: 2, name: "banana" },
+        { id: 3, name: "orange" },
     ],
 });
 
@@ -144,11 +144,11 @@ const findItemById = (id: number) => {
     return state.useValue(`items.${index}.name`);
 };
 
-// Or subscribe to entire array when needed
+// Or subscribe to full array if needed
 const items = state.useValue("items");
 ```
 
-### 3. Conditional Field Subscriptions
+### 3. Caution with conditional field subscriptions
 
 **❌ Conditional useValue calls violate React Hook rules**
 
@@ -158,7 +158,7 @@ function ConditionalComponent({ showEmail }: { showEmail: boolean }) {
 
     const name = form.useFormValue("name");
 
-    // ❌ Conditional Hook calls are forbidden
+    // ❌ Conditional Hook calls are prohibited
     if (showEmail) {
         const email = form.useFormValue("email");
         return (
@@ -172,7 +172,7 @@ function ConditionalComponent({ showEmail }: { showEmail: boolean }) {
 }
 ```
 
-**✅ Always call all Hooks and conditionally render**
+**✅ Always call all Hooks and render conditionally**
 
 ```tsx
 function ConditionalComponent({ showEmail }: { showEmail: boolean }) {
@@ -190,51 +190,140 @@ function ConditionalComponent({ showEmail }: { showEmail: boolean }) {
 }
 ```
 
-## 🚀 Batch Processing Optimization for Large Datasets
+### 4. Prohibit useValue calls inside map
 
-### High-Performance Updates with refreshFields
+**❌ Direct useValue calls inside map**
+
+```tsx
+function TodoList() {
+    const todos = state.useValue("todos");
+
+    return (
+        <div>
+            {todos.map((todo: any, index: number) => {
+                // ❌ React Hook Rules violation: Hook calls inside loops
+                const todoText = state.useValue(`todos.${index}.text`);
+                const isCompleted = state.useValue(`todos.${index}.completed`);
+
+                return (
+                    <div key={index}>
+                        <span
+                            style={{
+                                textDecoration: isCompleted
+                                    ? "line-through"
+                                    : "none",
+                            }}
+                        >
+                            {todoText}
+                        </span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+```
+
+**✅ Separate component to use useValue**
+
+```tsx
+function TodoItem({
+    index,
+    useValue,
+}: {
+    index: number;
+    useValue: (path: string) => any;
+}) {
+    // ✅ Call useValue at top level of component (using prop function)
+    const todoText = useValue(`todos.${index}.text`);
+    const isCompleted = useValue(`todos.${index}.completed`);
+
+    return (
+        <div>
+            <span
+                style={{
+                    textDecoration: isCompleted ? "line-through" : "none",
+                }}
+            >
+                {todoText}
+            </span>
+        </div>
+    );
+}
+
+function TodoList() {
+    const { useValue } = useFormaState({ todos: [] }); // Extract useValue function
+    const todos = useValue("todos");
+
+    return (
+        <div>
+            {todos.map((todo: any, index: number) => (
+                <TodoItem key={index} index={index} useValue={useValue} />
+                // ✅ Pass useValue function as prop
+                // ✅ Each TodoItem subscribes to fields individually
+            ))}
+        </div>
+    );
+}
+```
+
+**💡 Additional benefits of component separation:**
+
+-   **Performance optimization**: When individual items change, other items don't re-render
+-   **Memory efficiency**: Each component subscribes only to necessary fields
+-   **Debugging convenience**: Individual component rendering can be tracked in React DevTools
+
+## 🚀 Batch Processing Optimization for Large Data
+
+### High-performance updates using refreshFields
 
 When you need to update large amounts of data simultaneously, using `refreshFields` can provide dramatic performance improvements.
 
-**💡 Key Concept:**
+**💡 Core concept:**
 
--   **Individual Updates**: Each field `setValue` → N re-renders
--   **Batch Updates**: Entire data `setValue` + `refreshFields` → 1 re-render
+-   **Individual updates**: Each field `setValue` → N re-renders
+-   **Batch updates**: Full data `setValue` + `refreshFields` → 1 re-render
 
-### Real Use Case: 100+ Checkboxes Select All/Deselect
+### Real use case: Select/deselect all for 100+ checkboxes
 
 ```tsx
 const state = useFormaState({
     searchResults: [], // 100+ checkbox data
 });
 
-// 🚀 High-Performance Batch Processing: Multi-checkbox Select All/Deselect
+// 🚀 High-performance batch processing: Select/deselect all checkboxes
 const handleSelectAll = (allSearchResults: any[], selectAll: boolean) => {
-    // ❌ Inefficient approach: Individual calls for each item (145 items = 145 re-renders)
+    // ❌ Inefficient method: Individual calls (145 items = 145 re-renders)
     // allSearchResults.forEach((_: any, index: number) => {
     //     state.setValue(`searchResults.${index}.checked`, selectAll);
-    //     // Each setValue triggers individual field subscriber re-renders
+    //     // Each setValue triggers individual field subscribers to re-render
     // });
 
-    // ✅ Efficient approach: Batch processing with single refresh
+    // ✅ Efficient method: Batch processing then refresh once
     if (allSearchResults.length > 0) {
-        // 1. Batch update entire data (no re-renders yet)
+        // 1. Batch update all data (no re-renders)
         const updatedSearchResults = allSearchResults.map((item: any) => ({
             ...item,
             checked: selectAll,
         }));
         state.setValue("searchResults", updatedSearchResults);
 
-        // 2. Single call refreshes all related fields (1 re-render)
-        state.refreshFields("searchResults"); // Handles all searchResults.*.checked fields
+        // 2. Single call to refresh all related fields (1 re-render)
+        state.refreshFields("searchResults"); // Process all searchResults.*.checked fields
     }
 };
 
 // Actual checkbox components
-function SearchResultItem({ index }: { index: number }) {
-    // Subscribe to individual checkbox state
-    const isChecked = state.useValue(`searchResults.${index}.checked`);
-    const itemData = state.useValue(`searchResults.${index}`);
+function SearchResultItem({
+    index,
+    useValue,
+}: {
+    index: number;
+    useValue: (path: string) => any;
+}) {
+    // Subscribe to individual checkbox state (using prop useValue function)
+    const isChecked = useValue(`searchResults.${index}.checked`);
+    const itemData = useValue(`searchResults.${index}`);
 
     return (
         <div>
@@ -253,6 +342,64 @@ function SearchResultItem({ index }: { index: number }) {
     );
 }
 
+// ❌ Incorrect method: Using useValue inside map
+function SearchResultsListBad() {
+    const { useValue } = useFormaState({ searchResults: [] });
+    const searchResults = useValue("searchResults");
+
+    return (
+        <div>
+            {searchResults.map((item: any, index: number) => {
+                // ❌ React Hook Rules violation: Hook calls inside loops/conditionals prohibited
+                const isChecked = useValue(`searchResults.${index}.checked`);
+                const itemData = useValue(`searchResults.${index}`);
+
+                return (
+                    <div key={index}>
+                        <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) =>
+                                state.setValue(
+                                    `searchResults.${index}.checked`,
+                                    e.target.checked
+                                )
+                            }
+                        />
+                        <span>{itemData?.name}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+// ✅ Correct method: Separate component to use useValue
+function SearchResultsList() {
+    const { useValue } = useFormaState({ searchResults: [] }); // Extract useValue function
+    const searchResults = useValue("searchResults");
+
+    return (
+        <div>
+            {searchResults.map((item: any, index: number) => (
+                <SearchResultItem
+                    key={index}
+                    index={index}
+                    useValue={useValue}
+                />
+                // ✅ Pass useValue function as prop
+                // ✅ Each SearchResultItem calls useValue internally
+                // ✅ Individual field subscriptions so only that item re-renders
+            ))}
+        </div>
+    );
+}
+
+// 💡 Benefits of component separation:
+// 1. React Hook Rules compliance: Call useValue at component top level
+// 2. Individual field subscriptions: Each item re-renders independently
+// 3. Performance optimization: When one item changes, others don't re-render
+
 // Select all component
 function SelectAllButton() {
     const searchResults = state.useValue("searchResults");
@@ -267,15 +414,15 @@ function SelectAllButton() {
 }
 ```
 
-### ⚡ Performance Comparison: Batch Processing Benefits
+### ⚡ Performance comparison: Effect of batch processing
 
-| Scenario                   | Individual Processing | Batch Processing | Performance Gain |
-| -------------------------- | --------------------- | ---------------- | ---------------- |
-| 100 checkboxes select all  | 100 re-renders        | 1 re-render      | **100x faster**  |
-| 500 table rows update      | 500 re-renders        | 1 re-render      | **500x faster**  |
-| 1000 state synchronization | 1000 re-renders       | 1 re-render      | **1000x faster** |
+| Scenario                   | Individual Processing | Batch Processing | Performance Gain     |
+| -------------------------- | --------------------- | ---------------- | -------------------- |
+| 100 checkboxes select all | 100 re-renders       | 1 re-render      | **100x improvement** |
+| 500 table rows update     | 500 re-renders       | 1 re-render      | **500x improvement** |
+| 1000 state sync           | 1000 re-renders      | 1 re-render      | **1000x improvement** |
 
-### 📊 Real Performance Measurement
+### 📊 Actual performance measurement
 
 ```tsx
 // Performance measurement example
@@ -293,9 +440,9 @@ state.refreshFields("searchResults");
 console.timeEnd("Batch Update"); // ~2ms
 ```
 
-### Other Use Cases
+### Other use cases
 
-1. **Bulk Table Row Updates**
+1. **Bulk table row updates**
 
     ```tsx
     const updateTableRows = (rowUpdates: any[]) => {
@@ -307,7 +454,7 @@ console.timeEnd("Batch Update"); // ~2ms
     };
     ```
 
-2. **Form Section Reset**
+2. **Form field initialization**
 
     ```tsx
     const resetFormSection = () => {
@@ -321,14 +468,15 @@ console.timeEnd("Batch Update"); // ~2ms
     };
     ```
 
-3. **Server Data Synchronization**
+3. **Server data synchronization**
+
     ```tsx
     const syncWithServer = async () => {
         const serverData = await fetchLatestData();
         state.setValue("userData", serverData.user);
         state.setValue("preferences", serverData.preferences);
 
-        // Force UI refresh even if values are identical
+        // Force UI refresh even if values are the same
         state.refreshFields("userData");
         state.refreshFields("preferences");
     };
@@ -345,7 +493,7 @@ console.timeEnd("Batch Update"); // ~2ms
     const email = form.useFormValue("email");
     ```
 
-2. **Optimize counts with array length subscription**
+2. **Optimize counts with array length subscriptions**
 
     ```tsx
     const todoCount = state.useValue("todos.length");
@@ -359,35 +507,44 @@ console.timeEnd("Batch Update"); // ~2ms
 
 4. **Minimize re-render scope with component separation**
     ```tsx
-    function TodoItem({ index }) {
-        const text = state.useValue(`todos.${index}.text`);
+    function TodoItem({ index, useValue }) {
+        const text = useValue(`todos.${index}.text`);
         return <li>{text}</li>;
     }
     ```
 
-### ❌ DON'T (Things to Avoid)
+### ❌ DON'T (Avoid these patterns)
 
-1. **Subscribe to entire state object**
+1. **Full state object subscriptions**
 
     ```tsx
     const values = form.values; // ❌ Re-renders on any field change
     ```
 
-2. **Unnecessary re-renders by subscribing to parent objects**
+2. **Unnecessary re-renders with parent object subscriptions**
 
     ```tsx
-    const user = state.useValue("user"); // ❌ Re-renders on any user sub-field change
+    const user = state.useValue("user"); // ❌ Re-renders on any user sub-change
     ```
 
 3. **Conditional Hook calls**
 
     ```tsx
     if (condition) {
-        const value = form.useFormValue("field"); // ❌ Violates Hook rules
+        const value = form.useFormValue("field"); // ❌ Hook rule violation
     }
     ```
 
-4. **Maintain appropriate depth without excessive nesting**
+4. **Direct useValue calls inside map**
+
+    ```tsx
+    items.map((item, index) => {
+        const value = state.useValue(`items.${index}`); // ❌ Hook rule violation
+        return <div>{value}</div>;
+    });
+    ```
+
+5. **Maintain appropriate depth without excessive nesting**
 
     ```tsx
     // ❌ Excessive nesting
@@ -417,4 +574,4 @@ function MyComponent() {
 }
 ```
 
-Following these optimization principles ensures smooth user experience even with large-scale forms and complex state.
+Following these optimization principles will provide smooth user experience even with large-scale forms and complex state.

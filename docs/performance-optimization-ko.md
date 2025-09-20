@@ -190,6 +190,89 @@ function ConditionalComponent({ showEmail }: { showEmail: boolean }) {
 }
 ```
 
+### 4. map 내부에서 useValue 호출 금지
+
+**❌ map 내부에서 직접 useValue 호출**
+
+```tsx
+function TodoList() {
+    const todos = state.useValue("todos");
+
+    return (
+        <div>
+            {todos.map((todo: any, index: number) => {
+                // ❌ React Hook Rules 위반: 반복문 내부에서 Hook 호출
+                const todoText = state.useValue(`todos.${index}.text`);
+                const isCompleted = state.useValue(`todos.${index}.completed`);
+
+                return (
+                    <div key={index}>
+                        <span
+                            style={{
+                                textDecoration: isCompleted
+                                    ? "line-through"
+                                    : "none",
+                            }}
+                        >
+                            {todoText}
+                        </span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+```
+
+**✅ 별도 컴포넌트로 분리하여 useValue 사용**
+
+```tsx
+function TodoItem({
+    index,
+    useValue,
+}: {
+    index: number;
+    useValue: (path: string) => any;
+}) {
+    // ✅ 컴포넌트 최상위에서 useValue 호출 (prop으로 받은 함수 사용)
+    const todoText = useValue(`todos.${index}.text`);
+    const isCompleted = useValue(`todos.${index}.completed`);
+
+    return (
+        <div>
+            <span
+                style={{
+                    textDecoration: isCompleted ? "line-through" : "none",
+                }}
+            >
+                {todoText}
+            </span>
+        </div>
+    );
+}
+
+function TodoList() {
+    const { useValue } = useFormaState({ todos: [] }); // useValue 함수 추출
+    const todos = useValue("todos");
+
+    return (
+        <div>
+            {todos.map((todo: any, index: number) => (
+                <TodoItem key={index} index={index} useValue={useValue} />
+                // ✅ useValue 함수를 prop으로 전달
+                // ✅ 각 TodoItem이 개별적으로 필드 구독
+            ))}
+        </div>
+    );
+}
+```
+
+**💡 컴포넌트 분리의 추가 이점:**
+
+-   **성능 최적화**: 개별 항목 변경 시 다른 항목들은 리렌더링되지 않음
+-   **메모리 효율성**: 각 컴포넌트가 필요한 필드만 구독
+-   **디버깅 편의성**: React DevTools에서 개별 컴포넌트 렌더링 추적 가능
+
 ## 🚀 대량 데이터 배치 처리 최적화
 
 ### refreshFields를 활용한 고성능 업데이트
@@ -231,10 +314,16 @@ const handleSelectAll = (allSearchResults: any[], selectAll: boolean) => {
 };
 
 // 실제 체크박스 컴포넌트들
-function SearchResultItem({ index }: { index: number }) {
-    // 개별 체크박스 상태 구독
-    const isChecked = state.useValue(`searchResults.${index}.checked`);
-    const itemData = state.useValue(`searchResults.${index}`);
+function SearchResultItem({
+    index,
+    useValue,
+}: {
+    index: number;
+    useValue: (path: string) => any;
+}) {
+    // 개별 체크박스 상태 구독 (prop으로 받은 useValue 함수 사용)
+    const isChecked = useValue(`searchResults.${index}.checked`);
+    const itemData = useValue(`searchResults.${index}`);
 
     return (
         <div>
@@ -252,6 +341,64 @@ function SearchResultItem({ index }: { index: number }) {
         </div>
     );
 }
+
+// ❌ 잘못된 방법: map 내부에서 useValue 사용
+function SearchResultsListBad() {
+    const { useValue } = useFormaState({ searchResults: [] });
+    const searchResults = useValue("searchResults");
+
+    return (
+        <div>
+            {searchResults.map((item: any, index: number) => {
+                // ❌ React Hook Rules 위반: 반복문/조건문 내부에서 Hook 호출 금지
+                const isChecked = useValue(`searchResults.${index}.checked`);
+                const itemData = useValue(`searchResults.${index}`);
+
+                return (
+                    <div key={index}>
+                        <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) =>
+                                state.setValue(
+                                    `searchResults.${index}.checked`,
+                                    e.target.checked
+                                )
+                            }
+                        />
+                        <span>{itemData?.name}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+// ✅ 올바른 방법: 별도 컴포넌트로 분리하여 useValue 사용
+function SearchResultsList() {
+    const { useValue } = useFormaState({ searchResults: [] }); // useValue 함수 추출
+    const searchResults = useValue("searchResults");
+
+    return (
+        <div>
+            {searchResults.map((item: any, index: number) => (
+                <SearchResultItem
+                    key={index}
+                    index={index}
+                    useValue={useValue}
+                />
+                // ✅ useValue 함수를 prop으로 전달
+                // ✅ 각 SearchResultItem 내부에서 useValue 호출
+                // ✅ 개별 필드 구독으로 해당 항목만 리렌더링
+            ))}
+        </div>
+    );
+}
+
+// 💡 컴포넌트 분리의 장점:
+// 1. React Hook Rules 준수: useValue를 컴포넌트 최상위에서 호출
+// 2. 개별 필드 구독: 각 항목이 독립적으로 리렌더링
+// 3. 성능 최적화: 한 항목 변경 시 다른 항목들은 리렌더링되지 않음
 
 // 전체 선택 컴포넌트
 function SelectAllButton() {
@@ -322,6 +469,7 @@ console.timeEnd("Batch Update"); // ~2ms
     ```
 
 3. **서버 데이터 동기화**
+
     ```tsx
     const syncWithServer = async () => {
         const serverData = await fetchLatestData();
@@ -359,8 +507,8 @@ console.timeEnd("Batch Update"); // ~2ms
 
 4. **컴포넌트 분할로 리렌더링 범위 최소화**
     ```tsx
-    function TodoItem({ index }) {
-        const text = state.useValue(`todos.${index}.text`);
+    function TodoItem({ index, useValue }) {
+        const text = useValue(`todos.${index}.text`);
         return <li>{text}</li>;
     }
     ```
@@ -387,7 +535,16 @@ console.timeEnd("Batch Update"); // ~2ms
     }
     ```
 
-4. **과도한 중첩 없이 적절한 깊이 유지**
+4. **map 내부에서 useValue 직접 호출**
+
+    ```tsx
+    items.map((item, index) => {
+        const value = state.useValue(`items.${index}`); // ❌ Hook 규칙 위반
+        return <div>{value}</div>;
+    });
+    ```
+
+5. **과도한 중첩 없이 적절한 깊이 유지**
 
     ```tsx
     // ❌ 과도한 중첩

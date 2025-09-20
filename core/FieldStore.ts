@@ -447,35 +447,48 @@ export class FieldStore<T extends Record<string, any>> {
      */
     refreshFields(prefix: string): void {
         const prefixWithDot = prefix + ".";
-        console.log(`🔄 refreshFields("${prefix}") 시작`);
 
-        // 일반 필드 구독자들 중 prefix와 일치하는 경우 알림
+        // 성능 최적화: 리스너들을 먼저 수집한 후 배치 실행
+        const listenersToNotify = new Set<() => void>();
+
+        // 일반 필드 구독자들 중 prefix와 일치하는 경우 수집
         this.fields.forEach((field, key) => {
             const keyStr = String(key);
             if (keyStr === prefix || keyStr.startsWith(prefixWithDot)) {
-                console.log(
-                    `  ✅ 일반 필드 "${keyStr}" 알림 (구독자 ${field.listeners.size}명)`
-                );
-                field.listeners.forEach((listener) => listener());
+                field.listeners.forEach((listener) => {
+                    listenersToNotify.add(listener);
+                });
             }
         });
 
-        // Dot notation 구독자들 중 prefix와 일치하는 경우 알림
+        // Dot notation 구독자들 중 prefix와 일치하는 경우 수집
         this.dotNotationListeners.forEach((listeners, subscribedPath) => {
             if (
                 subscribedPath === prefix ||
                 subscribedPath.startsWith(prefixWithDot)
             ) {
-                console.log(
-                    `  ✅ Dot notation "${subscribedPath}" 알림 (구독자 ${listeners.size}명)`
-                );
-                listeners.forEach((listener) => listener());
+                listeners.forEach((listener) => {
+                    listenersToNotify.add(listener);
+                });
             }
         });
 
-        // 전역 구독자들에게는 알림하지 않음 (특정 prefix만 새로고침하기 위함)
-        // this.globalListeners.forEach((listener) => listener());
-        console.log(`🔄 refreshFields("${prefix}") 완료`);
+        // 배치 실행: 중복 제거된 리스너들을 한 번에 실행
+        // 마이크로태스크로 실행하여 동기 작업 완료 후 리렌더링 수행
+        if (listenersToNotify.size > 0) {
+            Promise.resolve().then(() => {
+                listenersToNotify.forEach((listener) => {
+                    try {
+                        listener();
+                    } catch (error) {
+                        console.error(
+                            "refreshFields 리스너 실행 중 오류:",
+                            error
+                        );
+                    }
+                });
+            });
+        }
     }
 
     /**

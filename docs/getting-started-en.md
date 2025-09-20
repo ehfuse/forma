@@ -6,7 +6,9 @@ A step-by-step guide for developers new to Forma.
 
 ### NPM // 4. Using with options
 
-const stateWithOptions = useFormaState(
+const stateWithOptions = ## Step 4: Array State Management and Length Subscription
+
+One of Forma's **core features** is optimizing performance by subscribing only to array length.FormaState(
 {
 data: {},
 },
@@ -125,7 +127,7 @@ function UserRegistration() {
 }
 ```
 
-## Step 2.5: General State Management (useFormaState)
+## Step 3: General State Management (useFormaState)
 
 You can also leverage Forma's **individual field subscription feature** for general state management beyond forms.
 
@@ -168,7 +170,7 @@ const stateWithOptions = useFormaState(
 );
 ```
 
-### Array State Management and Length Subscription
+## Step 4: Array State Management and Length Subscription
 
 One of Forma's **key features** is optimizing performance by subscribing only to array length.
 
@@ -200,7 +202,7 @@ const firstTodoCompleted = state.useValue("todos.0.completed");
 -   [TodoApp Example - Array State Management](./examples/todoapp-example-en.md)
 -   [Performance Optimization and Best Practices](./performance-optimization-en.md)
 
-### Nested Object State Management
+## Step 5: Nested Object State Management
 
 ```tsx
 import { useFormaState } from "@/forma";
@@ -266,307 +268,61 @@ function ProfileSettings() {
 }
 ```
 
-## Step 3: Adding Form Validation
-
-```tsx
-const form = useForm<UserForm>({
-    initialValues: {
-        name: "",
-        email: "",
-    },
-    onValidate: async (values) => {
-        // Name validation
-        if (!values.name.trim()) {
-            alert("Please enter your name.");
-            return false;
-        }
-
-        // Email validation
-        if (!values.email.includes("@")) {
-            alert("Please enter a valid email address.");
-            return false;
-        }
-
-        return true; // Validation passed
-    },
-    onSubmit: async (values) => {
-        try {
-            await fetch("/api/users", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
-            });
-
-            alert("Registration completed!");
-            form.resetForm(); // Reset form
-        } catch (error) {
-            alert("An error occurred during registration.");
-        }
-    },
-});
-```
-
-## Step 4: Working with Nested Objects
-
-```tsx
-interface DetailedUserForm {
-    personal: {
-        name: string;
-        age: number;
-    };
-    contact: {
-        email: string;
-        phone: string;
-        address: {
-            city: string;
-            zipCode: string;
-        };
-    };
-}
-
-function DetailedForm() {
-    const form = useForm<DetailedUserForm>({
-        initialValues: {
-            personal: { name: "", age: 0 },
-            contact: {
-                email: "",
-                phone: "",
-                address: { city: "", zipCode: "" },
-            },
-        },
-    });
-
-    // Access nested objects with dot notation
-    const name = form.useFormValue("personal.name");
-    const email = form.useFormValue("contact.email");
-    const city = form.useFormValue("contact.address.city");
-
-    return (
-        <form onSubmit={form.submit}>
-            <TextField
-                name="personal.name"
-                label="Name"
-                value={name}
-                onChange={form.handleFormChange}
-            />
-
-            <TextField
-                name="contact.email"
-                label="Email"
-                value={email}
-                onChange={form.handleFormChange}
-            />
-
-            <TextField
-                name="contact.address.city"
-                label="City"
-                value={city}
-                onChange={form.handleFormChange}
-            />
-        </form>
-    );
-}
-```
-
-## Step 5: Using Global Forms
+## Step 6: Using Global Forms
 
 ### Provider Setup
 
+````tsx
+## Step 6: Using Global Forms
+
+When you need to share form state across multiple components, typically used for multi-step forms or complex forms.
+
+### Basic Setup
+
 ```tsx
-// App.tsx
+// App.tsx - Wrap with Provider
 import { GlobalFormProvider } from "@/forma";
 
 function App() {
     return (
         <GlobalFormProvider>
-            <Router>
-                <Routes>
-                    <Route path="/step1" element={<Step1 />} />
-                    <Route path="/step2" element={<Step2 />} />
-                    <Route path="/review" element={<ReviewStep />} />
-                </Routes>
-            </Router>
+            <YourComponents />
         </GlobalFormProvider>
     );
 }
-```
 
-### Multi-Step Form Implementation
-
-**Method 1: Using Type Definition (Recommended)**
-
-```tsx
-// Type definition
-interface UserRegistrationData {
-    personal: {
-        name: string;
-        email: string;
-    };
-    preferences: {
-        newsletter: boolean;
-    };
+// Use in components
+interface UserForm {
+    name: string;
+    email: string;
 }
 
-// Step1.tsx
 function Step1() {
-    const form = useGlobalForm<UserRegistrationData>({
-        formId: "user-registration",
-        initialValues: {
-            personal: { name: "", email: "" },
-            preferences: { newsletter: false },
-        },
+    const form = useGlobalForm<UserForm>({
+        formId: "user-registration", // Unique ID for state sharing
+        initialValues: { name: "", email: "" },
     });
 
-    const name = form.useFormValue("personal.name");
-    const email = form.useFormValue("personal.email");
-
-    return (
-        <div>
-            <h2>Step 1: Basic Information</h2>
-            <TextField
-                name="personal.name"
-                value={name}
-                onChange={form.handleFormChange}
-            />
-            <TextField
-                name="personal.email"
-                value={email}
-                onChange={form.handleFormChange}
-            />
-            <Button onClick={() => navigate("/step2")}>Next Step</Button>
-        </div>
-    );
+    const name = form.useFormValue("name");
+    // ... form logic
 }
-
-// Step2.tsx
-function Step2() {
-    const form = useGlobalForm<UserRegistrationData>({
-        formId: "user-registration", // Share state with same form ID
-    });
-
-    const newsletter = form.useFormValue("preferences.newsletter");
-
-    return (
-        <div>
-            <h2>Step 2: Preferences</h2>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        name="preferences.newsletter"
-                        checked={newsletter}
-                        onChange={form.handleFormChange}
-                    />
-                }
-                label="Subscribe to Newsletter"
-            />
-            <Button onClick={() => navigate("/review")}>Review</Button>
-        </div>
-    );
-}
-```
-
-**Method 2: Using Inline Initial Values**
-
-```tsx
-// Step1.tsx
-function Step1() {
-    const form = useGlobalForm({
-        formId: "user-registration", // Form ID to share
-        initialValues: {
-            personal: { name: "", email: "" },
-            preferences: { newsletter: false },
-        },
-    });
-
-    const name = form.useFormValue("personal.name");
-    const email = form.useFormValue("personal.email");
-
-    return (
-        <div>
-            <h2>Step 1: Basic Information</h2>
-            <TextField
-                name="personal.name"
-                value={name}
-                onChange={form.handleFormChange}
-            />
-            <TextField
-                name="personal.email"
-                value={email}
-                onChange={form.handleFormChange}
-            />
-            <Button onClick={() => navigate("/step2")}>Next Step</Button>
-        </div>
-    );
-}
-
-// Step2.tsx
-function Step2() {
-    const form = useGlobalForm({
-        formId: "user-registration", // Share state with same form ID
-        initialValues: {
-            personal: { name: "", email: "" },
-            preferences: { newsletter: false },
-        },
-    });
-
-    const newsletter = form.useFormValue("preferences.newsletter");
-
-    return (
-        <div>
-            <h2>Step 2: Preferences</h2>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        name="preferences.newsletter"
-                        checked={newsletter}
-                        onChange={form.handleFormChange}
-                    />
-                }
-                label="Subscribe to newsletter"
-            />
-            <Button onClick={() => navigate("/review")}>Review</Button>
-        </div>
-    );
-}
-
-// ReviewStep.tsx
-function ReviewStep() {
-    const form = useGlobalForm({
-        formId: "user-registration", // Access same state
-        onSubmit: async (values) => {
-            await submitRegistration(values);
-        },
-    });
-
-    const name = form.useFormValue("personal.name");
-    const email = form.useFormValue("personal.email");
-    const newsletter = form.useFormValue("preferences.newsletter");
-
-    return (
-        <div>
-            <h2>Review and Submit</h2>
-            <p>Name: {name}</p>
-            <p>Email: {email}</p>
-            <p>Newsletter: {newsletter ? "Subscribed" : "Not subscribed"}</p>
-
-            <Button onClick={form.submit} variant="contained">
-                Complete Registration
-            </Button>
-        </div>
-    );
-}
-```
-
-                Complete Registration
-            </Button>
-        </div>
-    );
-
-}
-
 ````
 
-## Step 6: Advanced Features
+**📋 Detailed Global Form Examples:**
+
+-   [Multi-Step Form Implementation Guide](./useGlobalForm-guide-en.md)
+
+## 🎯 Next Steps
+
+1. **[API Reference](./API-en.md)** - Complete API documentation
+2. **[TodoApp Example](./examples/todoapp-example-en.md)** - Real-world array state management example
+3. **[Performance Optimization Guide](./performance-optimization-en.md)** - Performance optimization and best practices
+
+## Step 7: Advanced Features
+
+Forma is compatible with various UI libraries. Here we'll explore examples using **Material-UI (MUI)** components.
+
+> **📝 Note**: Currently, compatibility with MUI components has been verified, and compatibility with other UI libraries requires additional testing.
 
 ### Using DatePicker
 
@@ -588,7 +344,7 @@ function FormWithDate() {
         />
     );
 }
-````
+```
 
 ### Using Select
 
@@ -642,9 +398,35 @@ function FormWithSelect() {
 
 3. **Use Memoization**
     ```tsx
+
+    ```
+
+````
+
+## 💡 Performance Tips
+
+1. **Use Individual Field Subscription**
+
+    ```tsx
+    // ✅ Recommended
+    const name = form.useFormValue("name");
+
+    // ❌ Not recommended (full re-rendering)
+    const { name } = form.values;
+    ```
+
+2. **Conditional Subscription**
+
+    ```tsx
+    const conditionalValue = showField ? form.useFormValue("field") : "";
+    ```
+
+3. **Use Memoization**
+    ```tsx
     const expensiveValue = useMemo(() => {
         return calculateExpensiveValue(form.useFormValue("data"));
     }, [form.useFormValue("data")]);
     ```
 
 You're now ready to use Forma! 🎉
+````

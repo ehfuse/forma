@@ -16,14 +16,12 @@ _Forma is a high-performance library that makes form and state management in Rea
 ### 한국어 (Korean)
 
 -   🚀 **[시작 가이드](https://github.com/ehfuse/forma/blob/main/docs/getting-started-ko.md)** - 단계별 튜토리얼과 예제
--   📖 **[완전한 문서](https://github.com/ehfuse/forma/blob/main/docs/README-ko.md)** - API 레퍼런스, 사용 사례, 고급 기능
--   📋 **[API 레퍼런스](https://github.com/ehfuse/forma/blob/main/docs/API-ko.md)** - 모든 메서드, 타입, 마이그레이션 가이드
+-   **[API 레퍼런스](https://github.com/ehfuse/forma/blob/main/docs/API-ko.md)** - 모든 메서드, 타입, 마이그레이션 가이드
 -   ⚡ **[성능 최적화 가이드](https://github.com/ehfuse/forma/blob/main/docs/best-practices-ko.md)** - 최고 성능을 위한 모범 사례
 
 ### English
 
 -   🚀 **[Getting Started Guide](https://github.com/ehfuse/forma/blob/main/docs/getting-started-en.md)** - Step-by-step tutorial and examples
--   📖 **[Complete Documentation](https://github.com/ehfuse/forma/blob/main/docs/README-en.md)** - API reference, use cases, advanced features
 -   📋 **[API Reference](https://github.com/ehfuse/forma/blob/main/docs/API-en.md)** - All methods, types, migration guide
 -   ⚡ **[Performance Optimization Guide](https://github.com/ehfuse/forma/blob/main/docs/best-practices-en.md)** - Best practices for optimal performance
 

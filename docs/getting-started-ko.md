@@ -115,7 +115,7 @@ function UserRegistration() {
 }
 ```
 
-## 2.5단계: 일반 상태 관리 (useFormaState)
+## 3단계: 일반 상태 관리 (useFormaState)
 
 폼이 아닌 일반적인 상태 관리에도 Forma의 **개별 필드 구독 기능**을 활용할 수 있습니다.
 
@@ -156,7 +156,7 @@ const stateWithOptions = useFormaState(
 );
 ```
 
-### 배열 상태 관리와 길이 구독
+## 4단계: 배열 상태 관리와 길이 구독
 
 Forma의 **핵심 기능** 중 하나는 배열의 길이만 구독하여 성능을 최적화하는 것입니다.
 
@@ -188,7 +188,7 @@ const firstTodoCompleted = state.useValue("todos.0.completed");
 -   [TodoApp 예제 - 배열 상태 관리](./examples/todoapp-example-ko.md)
 -   [성능 최적화 및 주의사항](./performance-optimization-ko.md)
 
-### 중첩 객체 상태 관리
+## 5단계: 중첩 객체 상태 관리
 
 ```tsx
 import { useFormaState } from "@/forma";
@@ -254,300 +254,50 @@ function ProfileSettings() {
 }
 ```
 
-## 3단계: 폼 검증 추가
+## 6단계: 글로벌 폼 사용하기
+
+여러 컴포넌트 간에 폼 상태를 공유해야 할 때 사용합니다. 주로 다단계 폼(multi-step form)이나 복잡한 폼에서 활용됩니다.
+
+### 기본 설정
 
 ```tsx
-const form = useForm<UserForm>({
-    initialValues: {
-        name: "",
-        email: "",
-    },
-    onValidate: async (values) => {
-        // 이름 검증
-        if (!values.name.trim()) {
-            alert("이름을 입력해주세요.");
-            return false;
-        }
-
-        // 이메일 검증
-        if (!values.email.includes("@")) {
-            alert("올바른 이메일 주소를 입력해주세요.");
-            return false;
-        }
-
-        return true; // 검증 통과
-    },
-    onSubmit: async (values) => {
-        try {
-            await fetch("/api/users", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
-            });
-
-            alert("가입이 완료되었습니다!");
-            form.resetForm(); // 폼 초기화
-        } catch (error) {
-            alert("가입 중 오류가 발생했습니다.");
-        }
-    },
-});
-```
-
-## 4단계: 중첩 객체 다루기
-
-```tsx
-interface DetailedUserForm {
-    personal: {
-        name: string;
-        age: number;
-    };
-    contact: {
-        email: string;
-        phone: string;
-        address: {
-            city: string;
-            zipCode: string;
-        };
-    };
-}
-
-function DetailedForm() {
-    const form = useForm<DetailedUserForm>({
-        initialValues: {
-            personal: { name: "", age: 0 },
-            contact: {
-                email: "",
-                phone: "",
-                address: { city: "", zipCode: "" },
-            },
-        },
-    });
-
-    // Dot notation으로 중첩 객체 접근
-    const name = form.useFormValue("personal.name");
-    const email = form.useFormValue("contact.email");
-    const city = form.useFormValue("contact.address.city");
-
-    return (
-        <form onSubmit={form.submit}>
-            <TextField
-                name="personal.name"
-                label="이름"
-                value={name}
-                onChange={form.handleFormChange}
-            />
-
-            <TextField
-                name="contact.email"
-                label="이메일"
-                value={email}
-                onChange={form.handleFormChange}
-            />
-
-            <TextField
-                name="contact.address.city"
-                label="도시"
-                value={city}
-                onChange={form.handleFormChange}
-            />
-        </form>
-    );
-}
-```
-
-## 5단계: 글로벌 폼 사용하기
-
-### Provider 설정
-
-```tsx
-// App.tsx
+// App.tsx - Provider로 감싸기
 import { GlobalFormProvider } from "@/forma";
 
 function App() {
     return (
         <GlobalFormProvider>
-            <Router>
-                <Routes>
-                    <Route path="/step1" element={<Step1 />} />
-                    <Route path="/step2" element={<Step2 />} />
-                    <Route path="/review" element={<ReviewStep />} />
-                </Routes>
-            </Router>
+            <YourComponents />
         </GlobalFormProvider>
     );
 }
-```
 
-### 다단계 폼 구현
-
-**방법 1: 타입 정의와 함께 사용 (권장)**
-
-```tsx
-// 타입 정의
-interface UserRegistrationData {
-    personal: {
-        name: string;
-        email: string;
-    };
-    preferences: {
-        newsletter: boolean;
-    };
+// 컴포넌트에서 사용
+interface UserForm {
+    name: string;
+    email: string;
 }
 
-// Step1.tsx
 function Step1() {
-    const form = useGlobalForm<UserRegistrationData>({
-        formId: "user-registration",
-        initialValues: {
-            personal: { name: "", email: "" },
-            preferences: { newsletter: false },
-        },
+    const form = useGlobalForm<UserForm>({
+        formId: "user-registration", // 고유 ID로 상태 공유
+        initialValues: { name: "", email: "" },
     });
 
-    const name = form.useFormValue("personal.name");
-    const email = form.useFormValue("personal.email");
-
-    return (
-        <div>
-            <h2>1단계: 기본 정보</h2>
-            <TextField
-                name="personal.name"
-                value={name}
-                onChange={form.handleFormChange}
-            />
-            <TextField
-                name="personal.email"
-                value={email}
-                onChange={form.handleFormChange}
-            />
-            <Button onClick={() => navigate("/step2")}>다음 단계</Button>
-        </div>
-    );
-}
-
-// Step2.tsx
-function Step2() {
-    const form = useGlobalForm<UserRegistrationData>({
-        formId: "user-registration", // 같은 폼 ID로 상태 공유
-    });
-
-    const newsletter = form.useFormValue("preferences.newsletter");
-
-    return (
-        <div>
-            <h2>2단계: 선택사항</h2>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        name="preferences.newsletter"
-                        checked={newsletter}
-                        onChange={form.handleFormChange}
-                    />
-                }
-                label="뉴스레터 구독"
-            />
-            <Button onClick={() => navigate("/review")}>검토하기</Button>
-        </div>
-    );
+    const name = form.useFormValue("name");
+    // ... 폼 로직
 }
 ```
 
-**방법 2: 인라인 초기값 사용**
+**📋 자세한 글로벌 폼 예제:**
 
-```tsx
-// Step1.tsx
-function Step1() {
-    const form = useGlobalForm({
-        formId: "user-registration", // 공유할 폼 ID
-        initialValues: {
-            personal: { name: "", email: "" },
-            preferences: { newsletter: false },
-        },
-    });
+-   [다단계 폼 구현 가이드](./useGlobalForm-guide-ko.md)
 
-    const name = form.useFormValue("personal.name");
-    const email = form.useFormValue("personal.email");
+## 7단계: 고급 기능
 
-    return (
-        <div>
-            <h2>1단계: 기본 정보</h2>
-            <TextField
-                name="personal.name"
-                value={name}
-                onChange={form.handleFormChange}
-            />
-            <TextField
-                name="personal.email"
-                value={email}
-                onChange={form.handleFormChange}
-            />
-            <Button onClick={() => navigate("/step2")}>다음 단계</Button>
-        </div>
-    );
-}
+Forma는 다양한 UI 라이브러리와 호환됩니다. 여기서는 **Material-UI (MUI)** 컴포넌트를 활용한 예제들을 살펴보겠습니다.
 
-// Step2.tsx
-function Step2() {
-    const form = useGlobalForm({
-        formId: "user-registration", // 같은 폼 ID로 상태 공유
-        initialValues: {
-            personal: { name: "", email: "" },
-            preferences: { newsletter: false },
-        },
-    });
-
-    const newsletter = form.useFormValue("preferences.newsletter");
-
-    return (
-        <div>
-            <h2>2단계: 선택사항</h2>
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        name="preferences.newsletter"
-                        checked={newsletter}
-                        onChange={form.handleFormChange}
-                    />
-                }
-                label="뉴스레터 구독"
-            />
-            <Button onClick={() => navigate("/review")}>검토하기</Button>
-        </div>
-    );
-}
-
-// ReviewStep.tsx
-function ReviewStep() {
-    const form = useGlobalForm({
-        formId: "user-registration", // 같은 상태 조회
-        onSubmit: async (values) => {
-            await submitRegistration(values);
-        },
-    });
-
-    const name = form.useFormValue("personal.name");
-    const email = form.useFormValue("personal.email");
-    const newsletter = form.useFormValue("preferences.newsletter");
-
-    return (
-        <div>
-            <h2>검토 및 제출</h2>
-            <p>이름: {name}</p>
-            <p>이메일: {email}</p>
-            <p>뉴스레터: {newsletter ? "구독" : "구독안함"}</p>
-
-            <Button onClick={form.submit} variant="contained">
-                가입 완료
-            </Button>
-        </div>
-    );
-}
-```
-
-````
-
-## 6단계: 고급 기능
+> **� 참고**: 현재 MUI 컴포넌트와의 호환성이 검증되었으며, 다른 UI 라이브러리와의 호환성은 추가 테스트가 필요합니다.
 
 ### DatePicker 사용
 
@@ -569,7 +319,7 @@ function FormWithDate() {
         />
     );
 }
-````
+```
 
 ### Select 사용
 

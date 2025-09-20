@@ -80,6 +80,21 @@ function LocalFormComponent() {
             email: "",
             phone: "",
         },
+        onValidate: async (values) => {
+            // Name validation
+            if (!values.name.trim()) {
+                alert("Please enter your name.");
+                return false;
+            }
+
+            // Email validation
+            if (!values.email.includes("@")) {
+                alert("Please enter a valid email address.");
+                return false;
+            }
+
+            return true; // Validation passed
+        },
         onSubmit: async (values) => {
             console.log("Submit:", values);
         },
@@ -449,15 +464,28 @@ function RightPanel() {
 ### 1. formId Naming Convention
 
 ```typescript
-// ✅ Good examples
-const form = useGlobalForm({ formId: "user-registration" });
-const form = useGlobalForm({ formId: "product-edit-123" });
-const form = useGlobalForm({ formId: "order-checkout" });
+// ✅ Good examples - Clear and specific names
+const form = useGlobalForm({ formId: "user-registration" }); // User registration form
+const form = useGlobalForm({ formId: "product-edit-123" }); // Specific product edit form
+const form = useGlobalForm({ formId: "order-checkout" }); // Order checkout form
 
-// ❌ Avoid these
-const form = useGlobalForm({ formId: "form1" });
-const form = useGlobalForm({ formId: "data" });
+// ❌ Avoid these - Vague and generic names
+const form = useGlobalForm({ formId: "form1" }); // Unclear what this form does
+const form = useGlobalForm({ formId: "data" }); // Too generic, high collision risk
 ```
+
+**Good formId characteristics:**
+
+-   **Specific**: Clearly expresses the form's purpose
+-   **Unique**: Doesn't conflict with other forms
+-   **Consistent**: Uses unified naming conventions within the team
+-   **Descriptive**: Easy for code readers to understand
+
+**Problems with bad formIds:**
+
+-   **Ambiguous**: Makes maintenance difficult due to unclear purpose
+-   **Collision risk**: Generic names can cause data conflicts
+-   **Debugging difficulty**: Hard to identify issues when problems occur
 
 ### 2. Type Safety
 

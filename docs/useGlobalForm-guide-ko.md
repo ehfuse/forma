@@ -240,6 +240,21 @@ function LocalFormComponent() {
             email: "",
             phone: "",
         },
+        onValidate: async (values) => {
+            // 이름 검증
+            if (!values.name.trim()) {
+                alert("이름을 입력해주세요.");
+                return false;
+            }
+
+            // 이메일 검증
+            if (!values.email.includes("@")) {
+                alert("올바른 이메일 주소를 입력해주세요.");
+                return false;
+            }
+
+            return true; // 검증 통과
+        },
         onSubmit: async (values) => {
             console.log("제출:", values);
         },
@@ -449,15 +464,28 @@ function RightPanel() {
 ### 1. formId 명명 규칙
 
 ```typescript
-// ✅ 좋은 예
-const form = useGlobalForm({ formId: "user-registration" });
-const form = useGlobalForm({ formId: "product-edit-123" });
-const form = useGlobalForm({ formId: "order-checkout" });
+// ✅ 좋은 예 - 명확하고 구체적인 이름
+const form = useGlobalForm({ formId: "user-registration" }); // 사용자 등록 폼
+const form = useGlobalForm({ formId: "product-edit-123" }); // 특정 상품 편집 폼
+const form = useGlobalForm({ formId: "order-checkout" }); // 주문 결제 폼
 
-// ❌ 피해야 할 예
-const form = useGlobalForm({ formId: "form1" });
-const form = useGlobalForm({ formId: "data" });
+// ❌ 피해야 할 예 - 모호하고 일반적인 이름
+const form = useGlobalForm({ formId: "form1" }); // 어떤 폼인지 알 수 없음
+const form = useGlobalForm({ formId: "data" }); // 너무 일반적이며 충돌 가능성 높음
 ```
+
+**좋은 formId의 특징:**
+
+-   **구체적**: 폼의 목적을 명확히 표현
+-   **유니크**: 다른 폼과 중복되지 않음
+-   **일관성**: 팀 내에서 통일된 명명 규칙 사용
+-   **의미전달**: 코드를 읽는 사람이 쉽게 이해할 수 있음
+
+**나쁜 formId의 문제점:**
+
+-   **모호함**: 폼의 용도를 알 수 없어 유지보수 어려움
+-   **충돌위험**: 일반적인 이름으로 인한 데이터 충돌 가능성
+-   **디버깅 어려움**: 문제 발생 시 원인 파악이 힘듦
 
 ### 2. 타입 안정성
 

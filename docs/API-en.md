@@ -13,6 +13,8 @@ This document provides a detailed reference for all APIs in the Forma library.
     -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
     -   [useUnregisterGlobalForm](#useunregisterglobalform)
     -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
+-   [Methods](#methods)
+    -   [setBatch](#setbatch)
 -   [Components](#components)
     -   [GlobalFormaProvider](#globalformaprovider)
 -   [Core Classes](#core-classes)
@@ -72,6 +74,8 @@ interface UseFormaStateReturn<T> {
     getValues: () => T;
     /** Set all values at once */
     setValues: (values: Partial<T>) => void;
+    /** Batch update multiple fields efficiently */
+    setBatch: (updates: Record<string, any>) => void;
     /** Reset to initial values */
     reset: () => void;
     /** Refresh all field subscribers with specific prefix */
@@ -111,6 +115,24 @@ const theme = state.useValue("settings.theme");
 ```
 
 📚 **[Detailed usage examples →](./examples-en.md#useformastate-examples)**
+
+#### Functions
+
+| Function        | Signature                                         | Description                                                                                   |
+| --------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `useValue`      | `<K extends string>(path: K) => any`              | Subscribe to specific field value using dot notation. Re-renders only when the field changes. |
+| `setValue`      | `<K extends string>(path: K, value: any) => void` | Set specific field value using dot notation. Triggers re-render for subscribers.              |
+| `getValues`     | `() => T`                                         | Get all current values as an object (not reactive).                                           |
+| `setValues`     | `(values: Partial<T>) => void`                    | Set multiple values at once. Triggers re-render for all affected subscribers.                 |
+| `setBatch`      | `(updates: Record<string, any>) => void`          | Batch update multiple fields efficiently. Minimizes re-renders by grouping updates.           |
+| `reset`         | `() => void`                                      | Reset all fields to initial values.                                                           |
+| `refreshFields` | `(prefix: string) => void`                        | Force refresh all field subscribers with specific prefix. Useful for bulk updates.            |
+| `handleChange`  | `(event: React.ChangeEvent<...>) => void`         | Handle standard input change events. Automatically updates corresponding field.               |
+| `hasField`      | `(path: string) => boolean`                       | Check if a field exists in the state.                                                         |
+| `removeField`   | `(path: string) => void`                          | Remove a field from the state.                                                                |
+| `getValue`      | `(path: string) => any`                           | Get single field value (not reactive).                                                        |
+| `subscribe`     | `(callback: (values: T) => void) => () => void`   | Subscribe to all state changes. Returns unsubscribe function.                                 |
+| `_store`        | `FieldStore<T>`                                   | Direct access to internal store for advanced usage.                                           |
 
 #### 🔢 **Array Length Subscription**
 
@@ -247,6 +269,26 @@ const email = form.useFormValue("email");
 
 📚 **[Detailed Form Usage Examples →](./examples-en.md#useform-examples)**
 
+#### Functions
+
+| Function                 | Signature                                        | Description                                                           |
+| ------------------------ | ------------------------------------------------ | --------------------------------------------------------------------- |
+| `isSubmitting`           | `boolean`                                        | Whether the form is currently submitting.                             |
+| `isValidating`           | `boolean`                                        | Whether the form is currently validating.                             |
+| `isModified`             | `boolean`                                        | Whether the form has been modified from initial values.               |
+| `useFormValue`           | `(fieldName: string) => any`                     | Subscribe to specific form field value (recommended for performance). |
+| `getFormValue`           | `(fieldName: string) => any`                     | Get specific form field value without subscription.                   |
+| `getFormValues`          | `() => T`                                        | Get all current form values.                                          |
+| `setFormValue`           | `(name: string, value: any) => void`             | Set specific form field value.                                        |
+| `setFormValues`          | `(values: Partial<T>) => void`                   | Set multiple form values at once.                                     |
+| `setInitialFormValues`   | `(values: T) => void`                            | Update initial form values.                                           |
+| `handleFormChange`       | `(e: FormChangeEvent) => void`                   | Handle form input change events.                                      |
+| `handleDatePickerChange` | `(fieldName: string) => DatePickerChangeHandler` | Create date picker change handler for specific field.                 |
+| `submit`                 | `(e?: React.FormEvent) => Promise<boolean>`      | Submit the form, returns validation result.                           |
+| `resetForm`              | `() => void`                                     | Reset form to initial values.                                         |
+| `validateForm`           | `() => Promise<boolean>`                         | Validate the form, returns validation result.                         |
+| `values`                 | `T`                                              | All form values (not recommended - causes full re-render).            |
+
 ---
 
 ### useGlobalForm
@@ -368,6 +410,17 @@ function Step2() {
 
 📚 **[Detailed Global Form Examples →](./examples-en.md#useglobalform-examples)**
 
+#### Functions
+
+`useGlobalForm` extends `useForm` and adds the following functions:
+
+| Function | Signature       | Description                                 |
+| -------- | --------------- | ------------------------------------------- |
+| `formId` | `string`        | Unique identifier for the global form.      |
+| `_store` | `FieldStore<T>` | Direct access to the global store instance. |
+
+All other functions from `useForm` are available.
+
 #### 🔄 **Auto Memory Cleanup (autoCleanup)**
 
 `useGlobalForm` also supports **reference-counting based auto cleanup**:
@@ -471,6 +524,26 @@ const sharedState = useGlobalFormaState({
 ```
 
 📚 **[Detailed Global State Examples →](./examples-en.md#useglobalformastate-examples)**
+
+#### Functions
+
+`useGlobalFormaState` returns the same `UseFormaStateReturn<T>` interface as `useFormaState`:
+
+| Function        | Signature                                         | Description                                                                                   |
+| --------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `useValue`      | `<K extends string>(path: K) => any`              | Subscribe to specific field value using dot notation. Re-renders only when the field changes. |
+| `setValue`      | `<K extends string>(path: K, value: any) => void` | Set specific field value using dot notation. Triggers re-render for subscribers.              |
+| `getValues`     | `() => T`                                         | Get all current values as an object (not reactive).                                           |
+| `setValues`     | `(values: Partial<T>) => void`                    | Set multiple values at once. Triggers re-render for all affected subscribers.                 |
+| `setBatch`      | `(updates: Record<string, any>) => void`          | Batch update multiple fields efficiently. Minimizes re-renders by grouping updates.           |
+| `reset`         | `() => void`                                      | Reset all fields to initial values.                                                           |
+| `refreshFields` | `(prefix: string) => void`                        | Force refresh all field subscribers with specific prefix. Useful for bulk updates.            |
+| `handleChange`  | `(event: React.ChangeEvent<...>) => void`         | Handle standard input change events. Automatically updates corresponding field.               |
+| `hasField`      | `(path: string) => boolean`                       | Check if a field exists in the state.                                                         |
+| `removeField`   | `(path: string) => void`                          | Remove a field from the state.                                                                |
+| `getValue`      | `(path: string) => any`                           | Get single field value (not reactive).                                                        |
+| `subscribe`     | `(callback: (values: T) => void) => () => void`   | Subscribe to all state changes. Returns unsubscribe function.                                 |
+| `_store`        | `FieldStore<T>`                                   | Direct access to internal store for advanced usage.                                           |
 
 ```typescript
 // Basic Shopping Cart Component
@@ -768,7 +841,60 @@ clearStates();
 
 ---
 
-## Components
+## Methods
+
+### setBatch
+
+Efficiently batch update multiple fields to minimize re-renders.
+
+#### Signature
+
+```typescript
+setBatch(updates: Record<string, any>): void
+```
+
+#### Parameters
+
+-   `updates`: Object containing field paths as keys and new values as values. Supports dot notation.
+
+#### Description
+
+`setBatch` allows you to update multiple fields in a single operation, which is much more efficient than calling `setValue` multiple times. Instead of triggering a re-render for each individual field update, `setBatch` groups all updates and triggers only one re-render at the end.
+
+This method is particularly useful for:
+
+-   Bulk data updates
+-   Form initialization
+-   Synchronizing multiple related fields
+
+#### Examples
+
+```typescript
+const state = useFormaState({
+    user: { name: "", email: "", age: 0 },
+    settings: { theme: "light", notifications: true },
+});
+
+// Batch update multiple fields
+state.setBatch({
+    "user.name": "John Doe",
+    "user.email": "john@example.com",
+    "settings.theme": "dark",
+});
+
+// All subscribers re-render only once, not three times
+```
+
+**Performance Benefits:**
+
+-   **Reduced Re-renders**: 1 re-render instead of N re-renders
+-   **Better UX**: Smoother updates for bulk operations
+-   **Memory Efficient**: Less garbage collection pressure
+
+📚 **[Detailed setBatch examples →](./examples-en.md#setbatch-examples)**  
+🔗 **[Performance optimization with setBatch →](./performance-guide-en.md#setbatch-optimization)**
+
+---
 
 ### GlobalFormaProvider
 
@@ -826,7 +952,20 @@ constructor(initialValues: T)
 getValue(fieldName: string): any
 ```
 
-Returns the current value of a specific field.
+Returns the current value of a specific field. Supports dot notation for nested objects.
+
+**Parameters:**
+
+-   `fieldName`: Field name or dot notation path (e.g., `"user.name"`)
+
+**Returns:** The field value, or `undefined` if the field doesn't exist.
+
+**Example:**
+
+```typescript
+const store = new FieldStore({ user: { name: "John" } });
+const name = store.getValue("user.name"); // "John"
+```
 
 ##### setValue
 
@@ -834,7 +973,19 @@ Returns the current value of a specific field.
 setValue(fieldName: string, value: any): void
 ```
 
-Sets the value of a specific field. Supports dot notation.
+Sets the value of a specific field and notifies all subscribers. Supports dot notation.
+
+**Parameters:**
+
+-   `fieldName`: Field name or dot notation path
+-   `value`: New value to set
+
+**Example:**
+
+```typescript
+store.setValue("user.name", "Jane");
+store.setValue("settings.theme", "dark");
+```
 
 ##### getValues
 
@@ -842,7 +993,15 @@ Sets the value of a specific field. Supports dot notation.
 getValues(): T
 ```
 
-Returns the current values of all fields as an object.
+Returns all current field values as an object.
+
+**Returns:** Complete state object
+
+**Example:**
+
+```typescript
+const allValues = store.getValues(); // { user: { name: "Jane" }, settings: { theme: "dark" } }
+```
 
 ##### setValues
 
@@ -850,7 +1009,42 @@ Returns the current values of all fields as an object.
 setValues(values: Partial<T>): void
 ```
 
-Sets the values of multiple fields in batch.
+Sets multiple field values at once and notifies subscribers.
+
+**Parameters:**
+
+-   `values`: Object with field updates
+
+**Example:**
+
+```typescript
+store.setValues({
+    "user.name": "Bob",
+    "user.email": "bob@example.com",
+});
+```
+
+##### setBatch
+
+```typescript
+setBatch(updates: Record<string, any>): void
+```
+
+Efficiently batch updates multiple fields in a single operation to minimize re-renders.
+
+**Parameters:**
+
+-   `updates`: Object with field paths as keys and new values
+
+**Example:**
+
+```typescript
+store.setBatch({
+    "user.name": "Alice",
+    "user.age": 30,
+    "settings.notifications": true,
+});
+```
 
 ##### subscribe
 
@@ -860,6 +1054,22 @@ subscribe(fieldName: string, callback: () => void): () => void
 
 Subscribes to changes in a specific field. Returns an unsubscribe function.
 
+**Parameters:**
+
+-   `fieldName`: Field name or dot notation path
+-   `listener`: Callback function called on change
+
+**Returns:** Unsubscribe function
+
+**Example:**
+
+```typescript
+const unsubscribe = store.subscribe("user.name", () => {
+    console.log("Name changed");
+});
+// Later: unsubscribe();
+```
+
 ##### subscribeGlobal
 
 ```typescript
@@ -868,13 +1078,19 @@ subscribeGlobal(callback: () => void): () => void
 
 Subscribes to changes in all fields.
 
+**Parameters:**
+
+-   `callback`: Callback function called on any change
+
+**Returns:** Unsubscribe function
+
 ##### reset
 
 ```typescript
 reset(): void
 ```
 
-Resets all fields to their initial values.
+Resets all fields to their initial values and notifies subscribers.
 
 ##### isModified
 
@@ -883,6 +1099,8 @@ isModified(): boolean
 ```
 
 Checks if any field has been modified from initial values.
+
+**Returns:** `true` if modified, `false` otherwise
 
 ---
 

@@ -13,6 +13,8 @@
     -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
     -   [useUnregisterGlobalForm](#useunregisterglobalform)
     -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
+-   [Methods](#methods)
+    -   [setBatch](#setbatch)
 -   [Components](#components)
     -   [GlobalFormaProvider](#globalformaprovider)
 -   [Core Classes](#core-classes)
@@ -72,6 +74,8 @@ interface UseFormaStateReturn<T> {
     getValues: () => T;
     /** 모든 값을 한 번에 설정 */
     setValues: (values: Partial<T>) => void;
+    /** 여러 필드를 효율적으로 일괄 업데이트 */
+    setBatch: (updates: Record<string, any>) => void;
     /** 초기값으로 재설정 */
     reset: () => void;
     /** 특정 prefix를 가진 모든 필드 구독자들을 새로고침 */
@@ -111,6 +115,24 @@ const theme = state.useValue("settings.theme");
 ```
 
 📚 **[상세한 사용 예제 →](./examples-ko.md#useformastate-예제)**
+
+#### Functions
+
+| Function        | Signature                                         | Description                                                                  |
+| --------------- | ------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `useValue`      | `<K extends string>(path: K) => any`              | dot notation으로 특정 필드 값 구독. 필드가 변경될 때만 리렌더링.             |
+| `setValue`      | `<K extends string>(path: K, value: any) => void` | dot notation으로 특정 필드 값 설정. 구독자에게 리렌더링 트리거.              |
+| `getValues`     | `() => T`                                         | 모든 현재 값을 객체로 가져옴 (반응형 아님).                                  |
+| `setValues`     | `(values: Partial<T>) => void`                    | 여러 값을 한 번에 설정. 영향을 받는 모든 구독자에게 리렌더링 트리거.         |
+| `setBatch`      | `(updates: Record<string, any>) => void`          | 여러 필드를 효율적으로 일괄 업데이트. 리렌더링 최소화.                       |
+| `reset`         | `() => void`                                      | 모든 필드를 초기값으로 재설정.                                               |
+| `refreshFields` | `(prefix: string) => void`                        | 특정 prefix를 가진 모든 필드 구독자를 강제로 새로고침. 대량 업데이트에 유용. |
+| `handleChange`  | `(event: React.ChangeEvent<...>) => void`         | 표준 입력 변경 이벤트 처리. 해당 필드를 자동으로 업데이트.                   |
+| `hasField`      | `(path: string) => boolean`                       | 상태에 필드가 존재하는지 확인.                                               |
+| `removeField`   | `(path: string) => void`                          | 상태에서 필드 제거.                                                          |
+| `getValue`      | `(path: string) => any`                           | 단일 필드 값 가져옴 (반응형 아님).                                           |
+| `subscribe`     | `(callback: (values: T) => void) => () => void`   | 모든 상태 변경에 구독. 구독 해제 함수 반환.                                  |
+| `_store`        | `FieldStore<T>`                                   | 고급 사용을 위한 내부 스토어 직접 접근.                                      |
 
 #### 🔢 **배열 길이 구독 (Array Length Subscription)**
 
@@ -247,6 +269,26 @@ const email = form.useFormValue("email");
 
 📚 **[상세한 폼 사용 예제 →](./examples-ko.md#useform-예제)**
 
+#### Functions
+
+| Function                 | Signature                                        | Description                                   |
+| ------------------------ | ------------------------------------------------ | --------------------------------------------- |
+| `isSubmitting`           | `boolean`                                        | 폼이 현재 제출 중인지 여부.                   |
+| `isValidating`           | `boolean`                                        | 폼이 현재 검증 중인지 여부.                   |
+| `isModified`             | `boolean`                                        | 폼이 초기값에서 수정되었는지 여부.            |
+| `useFormValue`           | `(fieldName: string) => any`                     | 특정 폼 필드 값 구독 (성능을 위해 권장).      |
+| `getFormValue`           | `(fieldName: string) => any`                     | 구독 없이 특정 폼 필드 값 가져옴.             |
+| `getFormValues`          | `() => T`                                        | 모든 현재 폼 값 가져옴.                       |
+| `setFormValue`           | `(name: string, value: any) => void`             | 특정 폼 필드 값 설정.                         |
+| `setFormValues`          | `(values: Partial<T>) => void`                   | 여러 폼 값 한 번에 설정.                      |
+| `setInitialFormValues`   | `(values: T) => void`                            | 초기 폼 값 업데이트.                          |
+| `handleFormChange`       | `(e: FormChangeEvent) => void`                   | 폼 입력 변경 이벤트 처리.                     |
+| `handleDatePickerChange` | `(fieldName: string) => DatePickerChangeHandler` | 특정 필드용 date picker 변경 핸들러 생성.     |
+| `submit`                 | `(e?: React.FormEvent) => Promise<boolean>`      | 폼 제출, 검증 결과 반환.                      |
+| `resetForm`              | `() => void`                                     | 폼을 초기값으로 재설정.                       |
+| `validateForm`           | `() => Promise<boolean>`                         | 폼 검증, 검증 결과 반환.                      |
+| `values`                 | `T`                                              | 모든 폼 값 (전체 리렌더링 발생하므로 비권장). |
+
 ---
 
 ### useGlobalForm
@@ -292,6 +334,17 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
     _store: FieldStore<T>;
 }
 ```
+
+#### Functions
+
+`useGlobalForm`은 `useForm`을 확장하며 다음 함수들을 추가합니다:
+
+| Function | Signature       | Description                       |
+| -------- | --------------- | --------------------------------- |
+| `formId` | `string`        | 글로벌 폼의 고유 식별자.          |
+| `_store` | `FieldStore<T>` | 글로벌 스토어 인스턴스 직접 접근. |
+
+`useForm`의 모든 함수들이 사용 가능합니다.
 
 #### Examples
 
@@ -440,6 +493,26 @@ interface UseGlobalFormaStateProps<T> {
 #### Return Value
 
 `useFormaState`와 동일한 `UseFormaStateReturn<T>` 인터페이스를 반환합니다.
+
+#### Functions
+
+`useGlobalFormaState`는 `useFormaState`와 동일한 `UseFormaStateReturn<T>` 인터페이스를 반환합니다:
+
+| Function        | Signature                                         | Description                                                                  |
+| --------------- | ------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `useValue`      | `<K extends string>(path: K) => any`              | dot notation으로 특정 필드 값 구독. 필드가 변경될 때만 리렌더링.             |
+| `setValue`      | `<K extends string>(path: K, value: any) => void` | dot notation으로 특정 필드 값 설정. 구독자에게 리렌더링 트리거.              |
+| `getValues`     | `() => T`                                         | 모든 현재 값을 객체로 가져옴 (반응형 아님).                                  |
+| `setValues`     | `(values: Partial<T>) => void`                    | 여러 값을 한 번에 설정. 영향을 받는 모든 구독자에게 리렌더링 트리거.         |
+| `setBatch`      | `(updates: Record<string, any>) => void`          | 여러 필드를 효율적으로 일괄 업데이트. 리렌더링 최소화.                       |
+| `reset`         | `() => void`                                      | 모든 필드를 초기값으로 재설정.                                               |
+| `refreshFields` | `(prefix: string) => void`                        | 특정 prefix를 가진 모든 필드 구독자를 강제로 새로고침. 대량 업데이트에 유용. |
+| `handleChange`  | `(event: React.ChangeEvent<...>) => void`         | 표준 입력 변경 이벤트 처리. 해당 필드를 자동으로 업데이트.                   |
+| `hasField`      | `(path: string) => boolean`                       | 상태에 필드가 존재하는지 확인.                                               |
+| `removeField`   | `(path: string) => void`                          | 상태에서 필드 제거.                                                          |
+| `getValue`      | `(path: string) => any`                           | 단일 필드 값 가져옴 (반응형 아님).                                           |
+| `subscribe`     | `(callback: (values: T) => void) => () => void`   | 모든 상태 변경에 구독. 구독 해제 함수 반환.                                  |
+| `_store`        | `FieldStore<T>`                                   | 고급 사용을 위한 내부 스토어 직접 접근.                                      |
 
 #### 특징
 
@@ -766,6 +839,61 @@ clearStates();
 
 ---
 
+## Methods
+
+### setBatch
+
+여러 필드를 효율적으로 일괄 업데이트하여 리렌더링을 최소화합니다.
+
+#### Signature
+
+```typescript
+setBatch(updates: Record<string, any>): void
+```
+
+#### Parameters
+
+-   `updates`: 키로 필드 경로, 값으로 새 값을 가진 객체. dot notation 지원.
+
+#### Description
+
+`setBatch`를 사용하면 여러 필드를 한 번의 작업으로 업데이트할 수 있어, 각 개별 필드 업데이트마다 리렌더링을 트리거하는 것보다 훨씬 효율적입니다. 개별 업데이트 대신 모든 업데이트를 그룹화하여 마지막에 한 번만 리렌더링을 트리거합니다.
+
+다음과 같은 경우에 특히 유용합니다:
+
+-   대량 데이터 업데이트
+-   폼 초기화
+-   여러 관련 필드 동기화
+
+#### Examples
+
+```typescript
+const state = useFormaState({
+    user: { name: "", email: "", age: 0 },
+    settings: { theme: "light", notifications: true },
+});
+
+// 여러 필드를 일괄 업데이트
+state.setBatch({
+    "user.name": "John Doe",
+    "user.email": "john@example.com",
+    "settings.theme": "dark",
+});
+
+// 구독자는 한 번만 리렌더링됨 (세 번이 아님)
+```
+
+**성능 이점:**
+
+-   **리렌더링 감소**: N번 대신 1번 리렌더링
+-   **더 나은 UX**: 대량 작업 시 더 부드러운 업데이트
+-   **메모리 효율성**: 가비지 컬렉션 압력 감소
+
+📚 **[setBatch 상세 예제 →](./examples-ko.md#setbatch-예제)**  
+🔗 **[setBatch를 활용한 성능 최적화 →](./performance-guide-ko.md#setbatch-최적화)**
+
+---
+
 ## Components
 
 ### GlobalFormaProvider
@@ -824,7 +952,20 @@ constructor(initialValues: T)
 getValue(fieldName: string): any
 ```
 
-특정 필드의 현재 값을 반환합니다.
+특정 필드의 현재 값을 반환합니다. 중첩 객체에 대한 dot notation을 지원합니다.
+
+**매개변수:**
+
+-   `fieldName`: 필드명 또는 dot notation 경로 (예: `"user.name"`)
+
+**반환:** 필드 값, 또는 필드가 존재하지 않으면 `undefined`.
+
+**예제:**
+
+```typescript
+const store = new FieldStore({ user: { name: "John" } });
+const name = store.getValue("user.name"); // "John"
+```
 
 ##### setValue
 
@@ -832,7 +973,19 @@ getValue(fieldName: string): any
 setValue(fieldName: string, value: any): void
 ```
 
-특정 필드의 값을 설정합니다. Dot notation을 지원합니다.
+특정 필드의 값을 설정하고 모든 구독자에게 알립니다. Dot notation을 지원합니다.
+
+**매개변수:**
+
+-   `fieldName`: 필드명 또는 dot notation 경로
+-   `value`: 설정할 새 값
+
+**예제:**
+
+```typescript
+store.setValue("user.name", "Jane");
+store.setValue("settings.theme", "dark");
+```
 
 ##### getValues
 
@@ -842,13 +995,56 @@ getValues(): T
 
 모든 필드의 현재 값을 객체로 반환합니다.
 
+**반환:** 완전한 상태 객체
+
+**예제:**
+
+```typescript
+const allValues = store.getValues(); // { user: { name: "Jane" }, settings: { theme: "dark" } }
+```
+
 ##### setValues
 
 ```typescript
 setValues(values: Partial<T>): void
 ```
 
-여러 필드의 값을 일괄 설정합니다.
+여러 필드의 값을 일괄 설정하고 구독자에게 알립니다.
+
+**매개변수:**
+
+-   `values`: 업데이트할 필드 객체
+
+**예제:**
+
+```typescript
+store.setValues({
+    "user.name": "Bob",
+    "user.email": "bob@example.com",
+});
+```
+
+##### setBatch
+
+```typescript
+setBatch(updates: Record<string, any>): void
+```
+
+여러 필드를 효율적으로 일괄 업데이트하여 리렌더링을 최소화합니다.
+
+**매개변수:**
+
+-   `updates`: 키로 필드 경로, 값으로 새 값을 가진 객체
+
+**예제:**
+
+```typescript
+store.setBatch({
+    "user.name": "Alice",
+    "user.age": 30,
+    "settings.notifications": true,
+});
+```
 
 ##### subscribe
 
@@ -857,6 +1053,22 @@ subscribe(fieldName: string, callback: () => void): () => void
 ```
 
 특정 필드의 변경을 구독합니다. 구독 해제 함수를 반환합니다.
+
+**매개변수:**
+
+-   `fieldName`: 필드명 또는 dot notation 경로
+-   `callback`: 변경 시 호출될 콜백 함수
+
+**반환:** 구독 해제 함수
+
+**예제:**
+
+```typescript
+const unsubscribe = store.subscribe("user.name", () => {
+    console.log("Name changed");
+});
+// 나중에: unsubscribe();
+```
 
 ##### subscribeGlobal
 
@@ -872,7 +1084,7 @@ subscribeGlobal(callback: () => void): () => void
 reset(): void
 ```
 
-모든 필드를 초기값으로 되돌립니다.
+모든 필드를 초기값으로 재설정하고 구독자에게 알립니다.
 
 ##### isModified
 
@@ -881,6 +1093,8 @@ isModified(): boolean
 ```
 
 초기값에서 변경되었는지 확인합니다.
+
+**반환:** 변경되었으면 `true`, 아니면 `false`
 
 ---
 

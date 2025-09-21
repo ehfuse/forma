@@ -94,12 +94,12 @@ function ExpensiveValidation() {
 }
 ```
 
-### 5. 배치 업데이트 (setBatch)로 대량 데이터 최적화
+### 5. 배치 업데이트 (setBatch)로 편의성 및 동기화 개선
 
-`setBatch`는 여러 필드를 한 번에 업데이트하여 리렌더링을 최소화하는 핵심 성능 최적화 방법입니다.
+`setBatch`는 여러 필드를 한 번에 업데이트할 수 있는 편의 함수입니다. 주요 장점은 코드 가독성과 데이터 일관성입니다.
 
 ```tsx
-// ❌ 개별 업데이트 (N번 리렌더링)
+// ❌ 개별 업데이트 (여러 번의 리스너 실행)
 function updateUserProfileIndividually() {
     state.setValue("user.name", "김철수");
     state.setValue("user.email", "kim@example.com");
@@ -107,10 +107,10 @@ function updateUserProfileIndividually() {
     state.setValue("settings.theme", "dark");
     state.setValue("settings.language", "ko");
     state.setValue("preferences.notifications", false);
-    // → 6번 리렌더링 발생
+    // → 각 setValue마다 즉시 리스너 실행
 }
 
-// ✅ 배치 업데이트 (1번만 리렌더링)
+// ✅ 배치 업데이트 (한 번에 리스너 실행)
 function updateUserProfileWithBatch() {
     state.setBatch({
         "user.name": "김철수",
@@ -120,7 +120,7 @@ function updateUserProfileWithBatch() {
         "settings.language": "ko",
         "preferences.notifications": false,
     });
-    // → 1번만 리렌더링
+    // → 모든 변경사항을 모아서 마지막에 한 번만 리스너 실행
 }
 
 // 🔥 실전 예시: 체크박스 일괄 선택
@@ -133,11 +133,11 @@ function selectAllCheckboxes() {
     });
 
     state.setBatch(updates);
-    // → 100개를 개별로 하면 100번 리렌더링
-    // → setBatch 사용하면 1번만 리렌더링 (100배 성능 향상!)
+    // → 개별 setValue: 각 필드마다 즉시 리스너 실행
+    // → setBatch: 모든 변경사항을 모아서 마지막에 한 번만 리스너 실행
 }
 
-// 💡 서버 데이터 로딩 최적화
+// 💡 서버 데이터 로딩 동기화
 async function loadDataFromServer() {
     const serverData = await fetchComplexDataFromServer();
 
@@ -150,7 +150,7 @@ async function loadDataFromServer() {
         "notifications.preferences": serverData.notifications,
         "dashboard.widgets": serverData.widgets,
     });
-    // → 모든 관련 컴포넌트가 한 번에 업데이트됨
+    // → 모든 관련 컴포넌트가 동시에 업데이트됨 (데이터 일관성 보장)
 }
 ```
 
@@ -158,17 +158,18 @@ async function loadDataFromServer() {
 
 1. **언제 사용하나:**
 
-    - ✅ 5개 이상의 필드를 동시에 업데이트할 때
-    - ✅ 서버 데이터를 폼에 로드할 때
-    - ✅ 체크박스/라디오 일괄 선택/해제
-    - ✅ 설정 페이지에서 여러 옵션 변경
-    - ✅ 테이블 행 다중 업데이트
+    - ✅ 여러 필드를 논리적으로 함께 업데이트할 때
+    - ✅ 서버 데이터를 폼에 로드할 때 (데이터 일관성)
+    - ✅ 체크박스/라디오 일괄 선택/해제 (편의성)
+    - ✅ 설정 페이지에서 여러 옵션 변경 (원자적 업데이트)
+    - ✅ 테이블 행 다중 업데이트 (동기화)
 
-2. **성능 효과:**
+2. **주요 이점:**
 
-    - 10개 필드: **10배 빠름** (10 → 1 리렌더링)
-    - 100개 필드: **100배 빠름** (100 → 1 리렌더링)
-    - 1000개 필드: **1000배 빠름** (1000 → 1 리렌더링)
+    - 📝 **코드 가독성**: 여러 필드를 한 번에 표현
+    - 🔄 **데이터 일관성**: 모든 변경사항이 동시에 반영
+    - ⏱️ **타이밍 최적화**: 리스너 실행을 마지막에 일괄 처리
+    - 🧹 **편의성**: 개별 setValue 호출 대신 객체로 한 번에 처리
 
 3. **사용 패턴:**
 

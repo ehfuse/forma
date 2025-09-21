@@ -335,10 +335,11 @@ const updateSelectedItems = (selectedIds: number[], newStatus: string) => {
 -   ✅ Simultaneous changes to multiple settings
 -   ✅ Updating multiple table rows data
 
-**Performance improvement:**
+**Key Benefits:**
 
--   100 field updates: **100x faster** (100 → 1 re-render)
--   1000 checkbox selection: **1000x faster** (1000 → 1 re-render)
+-   📝 **Code Readability**: Express multiple field changes at once
+-   🔄 **Data Consistency**: All changes are applied simultaneously
+-   ⏱️ **Convenience**: Single object instead of multiple setValue calls
 
 ---
 

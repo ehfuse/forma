@@ -845,7 +845,7 @@ clearStates();
 
 ### setBatch
 
-Efficiently batch update multiple fields to minimize re-renders.
+A convenience function for updating multiple fields at once. Improves code readability and data consistency.
 
 #### Signature
 
@@ -859,13 +859,13 @@ setBatch(updates: Record<string, any>): void
 
 #### Description
 
-`setBatch` allows you to update multiple fields in a single operation, which is much more efficient than calling `setValue` multiple times. Instead of triggering a re-render for each individual field update, `setBatch` groups all updates and triggers only one re-render at the end.
+`setBatch` allows you to update multiple fields in a single operation. Instead of multiple `setValue` calls, you can express all changes as an object at once, improving code readability. All changes are applied simultaneously, ensuring data consistency.
 
 This method is particularly useful for:
 
--   Bulk data updates
--   Form initialization
--   Synchronizing multiple related fields
+-   Loading server data into forms
+-   Logically updating multiple related fields together
+-   Bulk checkbox/radio button select/deselect
 
 #### Examples
 

@@ -94,12 +94,12 @@ function ExpensiveValidation() {
 }
 ```
 
-### 5. Batch Updates (setBatch) for Large Dataset Optimization
+### 5. Batch Updates (setBatch) for Convenience and Synchronization
 
-`setBatch` is a key performance optimization method that minimizes re-renders by updating multiple fields at once.
+`setBatch` is a convenience function for updating multiple fields at once. Its main benefits are code readability and data consistency.
 
 ```tsx
-// ❌ Individual updates (N re-renders)
+// ❌ Individual updates (multiple listener executions)
 function updateUserProfileIndividually() {
     state.setValue("user.name", "John Doe");
     state.setValue("user.email", "john@example.com");
@@ -107,10 +107,10 @@ function updateUserProfileIndividually() {
     state.setValue("settings.theme", "dark");
     state.setValue("settings.language", "en");
     state.setValue("preferences.notifications", false);
-    // → 6 re-renders
+    // → Each setValue triggers listeners immediately
 }
 
-// ✅ Batch update (single re-render)
+// ✅ Batch update (single listener execution)
 function updateUserProfileWithBatch() {
     state.setBatch({
         "user.name": "John Doe",
@@ -120,7 +120,7 @@ function updateUserProfileWithBatch() {
         "settings.language": "en",
         "preferences.notifications": false,
     });
-    // → Only 1 re-render
+    // → Collects all changes and executes listeners once at the end
 }
 
 // 🔥 Real-world example: Bulk checkbox selection
@@ -133,11 +133,11 @@ function selectAllCheckboxes() {
     });
 
     state.setBatch(updates);
-    // → Individual updates: 100 re-renders
-    // → setBatch: 1 re-render (100x performance improvement!)
+    // → Individual setValue: immediate listener execution for each field
+    // → setBatch: collects all changes and executes listeners once at the end
 }
 
-// 💡 Server data loading optimization
+// 💡 Server data loading synchronization
 async function loadDataFromServer() {
     const serverData = await fetchComplexDataFromServer();
 
@@ -150,7 +150,7 @@ async function loadDataFromServer() {
         "notifications.preferences": serverData.notifications,
         "dashboard.widgets": serverData.widgets,
     });
-    // → All related components update simultaneously
+    // → All related components update simultaneously (ensures data consistency)
 }
 ```
 
@@ -158,17 +158,18 @@ async function loadDataFromServer() {
 
 1. **When to use:**
 
-    - ✅ When updating 5+ fields simultaneously
-    - ✅ When loading server data into forms
-    - ✅ Bulk checkbox/radio select/deselect
-    - ✅ Multiple option changes in settings pages
-    - ✅ Multiple table row updates
+    - ✅ When logically updating multiple fields together
+    - ✅ When loading server data into forms (data consistency)
+    - ✅ Bulk checkbox/radio select/deselect (convenience)
+    - ✅ Multiple option changes in settings pages (atomic updates)
+    - ✅ Multiple table row updates (synchronization)
 
-2. **Performance impact:**
+2. **Key Benefits:**
 
-    - 10 fields: **10x faster** (10 → 1 re-render)
-    - 100 fields: **100x faster** (100 → 1 re-render)
-    - 1000 fields: **1000x faster** (1000 → 1 re-render)
+    - 📝 **Code Readability**: Express multiple field changes at once
+    - 🔄 **Data Consistency**: All changes are applied simultaneously
+    - ⏱️ **Timing Optimization**: Batches listener execution at the end
+    - 🧹 **Convenience**: Single object instead of multiple setValue calls
 
 3. **Usage patterns:**
 

@@ -10,6 +10,7 @@
     -   [동적 필드 관리](#동적-필드-관리)
     -   [배열 길이 구독](#배열-길이-구독)
     -   [필드 새로고침 활용](#필드-새로고침-활용)
+    -   [배치 업데이트 (setBatch) 활용](#배치-업데이트-setbatch-활용)
 -   [useForm 예제](#useform-예제)
     -   [기본 폼 관리](#기본-폼-관리)
     -   [중첩 객체 처리](#중첩-객체-처리)
@@ -226,6 +227,114 @@ const syncWithServer = async () => {
     state.refreshFields("user");
 };
 ```
+
+### 배치 업데이트 (setBatch) 활용
+
+`setBatch` 메서드는 여러 필드를 한 번에 효율적으로 업데이트할 수 있는 기능입니다. 특히 대량의 필드를 동시에 변경할 때 성능상 큰 이점을 제공합니다.
+
+```typescript
+const state = useFormaState({
+    user: { name: "", email: "", age: 0 },
+    settings: { theme: "light", language: "ko", notifications: true },
+    preferences: { privacy: "public", newsletter: false },
+});
+
+// ❌ 개별 업데이트 (여러 번 리렌더링)
+const updateProfileIndividually = () => {
+    state.setValue("user.name", "김철수");
+    state.setValue("user.email", "kim@example.com");
+    state.setValue("user.age", 30);
+    state.setValue("settings.theme", "dark");
+    state.setValue("settings.language", "en");
+    // → 5번 리렌더링 발생
+};
+
+// ✅ 배치 업데이트 (한 번만 리렌더링)
+const updateProfileWithBatch = () => {
+    state.setBatch({
+        "user.name": "김철수",
+        "user.email": "kim@example.com",
+        "user.age": 30,
+        "settings.theme": "dark",
+        "settings.language": "en",
+    });
+    // → 1번만 리렌더링 발생
+};
+
+// 🔥 실전 활용 예시: 폼 데이터 일괄 업데이트
+const loadUserDataFromServer = async () => {
+    const userData = await fetchUserFromServer();
+
+    // 서버에서 받은 데이터를 한 번에 업데이트
+    state.setBatch({
+        "user.name": userData.name,
+        "user.email": userData.email,
+        "user.age": userData.age,
+        "settings.theme": userData.preferences.theme,
+        "settings.language": userData.preferences.language,
+        "settings.notifications": userData.preferences.notifications,
+        "preferences.privacy": userData.privacy.level,
+        "preferences.newsletter": userData.marketing.newsletter,
+    });
+};
+
+// 🎯 체크박스 일괄 선택/해제 예시
+const checkboxData = useFormaState({
+    items: Array.from({ length: 100 }, (_, i) => ({
+        id: i + 1,
+        name: `아이템 ${i + 1}`,
+        checked: false,
+    })),
+});
+
+// ❌ 개별 선택 (100번 리렌더링)
+const selectAllIndividually = () => {
+    checkboxData.getValues().items.forEach((_, index) => {
+        checkboxData.setValue(`items.${index}.checked`, true);
+    });
+    // → 100번 리렌더링
+};
+
+// ✅ 배치 선택 (1번만 리렌더링)
+const selectAllWithBatch = () => {
+    const updates: Record<string, boolean> = {};
+    checkboxData.getValues().items.forEach((_, index) => {
+        updates[`items.${index}.checked`] = true;
+    });
+    checkboxData.setBatch(updates);
+    // → 1번만 리렌더링
+};
+
+// 💡 조건부 배치 업데이트
+const updateSelectedItems = (selectedIds: number[], newStatus: string) => {
+    const updates: Record<string, any> = {};
+
+    checkboxData.getValues().items.forEach((item, index) => {
+        if (selectedIds.includes(item.id)) {
+            updates[`items.${index}.status`] = newStatus;
+            updates[`items.${index}.lastModified`] = Date.now();
+        }
+    });
+
+    // 선택된 아이템들만 일괄 업데이트
+    if (Object.keys(updates).length > 0) {
+        checkboxData.setBatch(updates);
+    }
+};
+```
+
+**setBatch 사용 시기:**
+
+-   ✅ 10개 이상의 필드를 동시에 업데이트할 때
+-   ✅ 서버 데이터를 폼에 로드할 때
+-   ✅ 체크박스/라디오 버튼 일괄 선택/해제
+-   ✅ 설정 화면에서 여러 옵션 동시 변경
+-   ✅ 테이블의 여러 행 데이터 업데이트
+
+**성능 개선 효과:**
+
+-   100개 필드 업데이트: **100배 빨라짐** (100 → 1 리렌더링)
+-   1000개 체크박스 선택: **1000배 빨라짐** (1000 → 1 리렌더링)
 
 ---
 

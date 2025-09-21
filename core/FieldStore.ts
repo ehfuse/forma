@@ -28,6 +28,7 @@
  */
 
 import { getNestedValue, setNestedValue } from "../utils/dotNotation";
+import { devError } from "../utils/environment";
 
 /**
  * 개별 필드 상태 관리 Store / Individual field state management store
@@ -481,13 +482,133 @@ export class FieldStore<T extends Record<string, any>> {
                     try {
                         listener();
                     } catch (error) {
-                        console.error(
-                            "refreshFields 리스너 실행 중 오류:",
-                            error
-                        );
+                        devError("refreshFields 리스너 실행 중 오류:", error);
                     }
                 });
             });
+        }
+    }
+
+    /**
+     * Batch update multiple fields efficiently
+     * 여러 필드를 효율적으로 일괄 업데이트
+     * @param updates - 업데이트할 필드들의 키-값 쌍
+     */
+    setBatch(updates: Record<string, any>): void {
+        if (!updates || Object.keys(updates).length === 0) {
+            return;
+        }
+
+        // 성능 최적화: 영향받는 리스너들을 먼저 수집
+        const affectedListeners = new Set<() => void>();
+
+        // 각 업데이트를 개별적으로 처리하되, 리스너 실행은 마지막에 일괄 처리
+        Object.entries(updates).forEach(([fieldName, value]) => {
+            this.setValueWithoutNotify(fieldName, value, affectedListeners);
+        });
+
+        // 글로벌 리스너들도 추가
+        this.globalListeners.forEach((listener) =>
+            affectedListeners.add(listener)
+        );
+
+        // 배치로 모든 영향받는 리스너들 실행
+        affectedListeners.forEach((listener) => {
+            try {
+                listener();
+            } catch (error) {
+                devError("setBatch 리스너 실행 중 오류:", error);
+            }
+        });
+    }
+
+    /**
+     * Set value without immediately notifying listeners (for batch operations)
+     * 리스너 알림 없이 값 설정 (배치 작업용)
+     */
+    private setValueWithoutNotify(
+        fieldName: string,
+        value: any,
+        affectedListeners: Set<() => void>
+    ) {
+        // dot notation이 포함된 경우
+        if (fieldName.includes(".")) {
+            const rootField = fieldName.split(".")[0] as keyof T;
+            const rootFieldStr = String(rootField);
+            const remainingPath = fieldName.substring(rootFieldStr.length + 1);
+
+            let field = this.fields.get(rootField);
+            if (!field) {
+                field = {
+                    value: {},
+                    listeners: new Set(),
+                };
+                this.fields.set(rootField, field);
+            }
+
+            const oldRootValue = field.value;
+            const newRootValue = setNestedValue(
+                field.value || {},
+                remainingPath,
+                value
+            );
+
+            if (JSON.stringify(field.value) !== JSON.stringify(newRootValue)) {
+                field.value = newRootValue;
+
+                // 루트 필드 구독자들 수집
+                field.listeners.forEach((listener) => {
+                    affectedListeners.add(listener);
+                });
+
+                // Dot notation 구독자들 수집
+                this.dotNotationListeners.forEach(
+                    (listeners, subscribedPath) => {
+                        if (subscribedPath === fieldName) {
+                            listeners.forEach((listener) =>
+                                affectedListeners.add(listener)
+                            );
+                        }
+                        // 배열 필드나 .length 구독자들에게 알림
+                        else if (subscribedPath === `${rootFieldStr}.length`) {
+                            const oldLength = Array.isArray(oldRootValue)
+                                ? oldRootValue.length
+                                : 0;
+                            const newLength = Array.isArray(newRootValue)
+                                ? newRootValue.length
+                                : 0;
+
+                            if (oldLength !== newLength) {
+                                listeners.forEach((listener) =>
+                                    affectedListeners.add(listener)
+                                );
+                            }
+                        }
+                        // 부모 경로가 변경된 경우 하위 구독자들도 알림
+                        else if (subscribedPath.startsWith(`${fieldName}.`)) {
+                            listeners.forEach((listener) =>
+                                affectedListeners.add(listener)
+                            );
+                        }
+                    }
+                );
+            }
+        } else {
+            // 일반 필드 처리
+            if (!this.fields.has(fieldName as keyof T)) {
+                this.fields.set(fieldName as keyof T, {
+                    value: value,
+                    listeners: new Set(),
+                });
+            } else {
+                const field = this.fields.get(fieldName as keyof T);
+                if (field && field.value !== value) {
+                    field.value = value;
+                    field.listeners.forEach((listener) => {
+                        affectedListeners.add(listener);
+                    });
+                }
+            }
         }
     }
 

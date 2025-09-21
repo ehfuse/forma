@@ -94,6 +94,103 @@ function ExpensiveValidation() {
 }
 ```
 
+### 5. Batch Updates (setBatch) for Large Dataset Optimization
+
+`setBatch` is a key performance optimization method that minimizes re-renders by updating multiple fields at once.
+
+```tsx
+// ❌ Individual updates (N re-renders)
+function updateUserProfileIndividually() {
+    state.setValue("user.name", "John Doe");
+    state.setValue("user.email", "john@example.com");
+    state.setValue("user.age", 30);
+    state.setValue("settings.theme", "dark");
+    state.setValue("settings.language", "en");
+    state.setValue("preferences.notifications", false);
+    // → 6 re-renders
+}
+
+// ✅ Batch update (single re-render)
+function updateUserProfileWithBatch() {
+    state.setBatch({
+        "user.name": "John Doe",
+        "user.email": "john@example.com",
+        "user.age": 30,
+        "settings.theme": "dark",
+        "settings.language": "en",
+        "preferences.notifications": false,
+    });
+    // → Only 1 re-render
+}
+
+// 🔥 Real-world example: Bulk checkbox selection
+function selectAllCheckboxes() {
+    const updates: Record<string, boolean> = {};
+
+    // Select 100 checkboxes at once
+    Array.from({ length: 100 }, (_, i) => {
+        updates[`items.${i}.checked`] = true;
+    });
+
+    state.setBatch(updates);
+    // → Individual updates: 100 re-renders
+    // → setBatch: 1 re-render (100x performance improvement!)
+}
+
+// 💡 Server data loading optimization
+async function loadDataFromServer() {
+    const serverData = await fetchComplexDataFromServer();
+
+    // Update multiple server data at once
+    state.setBatch({
+        "user.profile": serverData.userProfile,
+        "user.settings": serverData.userSettings,
+        "app.theme": serverData.theme,
+        "app.language": serverData.language,
+        "notifications.preferences": serverData.notifications,
+        "dashboard.widgets": serverData.widgets,
+    });
+    // → All related components update simultaneously
+}
+```
+
+**setBatch Core Guidelines:**
+
+1. **When to use:**
+
+    - ✅ When updating 5+ fields simultaneously
+    - ✅ When loading server data into forms
+    - ✅ Bulk checkbox/radio select/deselect
+    - ✅ Multiple option changes in settings pages
+    - ✅ Multiple table row updates
+
+2. **Performance impact:**
+
+    - 10 fields: **10x faster** (10 → 1 re-render)
+    - 100 fields: **100x faster** (100 → 1 re-render)
+    - 1000 fields: **1000x faster** (1000 → 1 re-render)
+
+3. **Usage patterns:**
+
+    ```tsx
+    // Pattern 1: Prepare object then batch update
+    const updates = {};
+    items.forEach((item, index) => {
+        updates[`items.${index}.status`] = "updated";
+    });
+    state.setBatch(updates);
+
+    // Pattern 2: Conditional batch update
+    const updates = {};
+    selectedItems.forEach((itemId) => {
+        const index = findIndexById(itemId);
+        updates[`items.${index}.selected`] = true;
+    });
+    if (Object.keys(updates).length > 0) {
+        state.setBatch(updates);
+    }
+    ```
+
 ## 📝 Recommended Patterns
 
 ### useForm vs useGlobalForm vs useFormaState

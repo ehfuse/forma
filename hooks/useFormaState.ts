@@ -59,6 +59,9 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
     /** Set all values at once | 모든 값을 한 번에 설정 */
     setValues: (values: Partial<T>) => void;
 
+    /** Batch update multiple fields efficiently | 여러 필드를 효율적으로 일괄 업데이트 */
+    setBatch: (updates: Record<string, any>) => void;
+
     /** Reset to initial values | 초기값으로 재설정 */
     reset: () => void;
 
@@ -310,6 +313,12 @@ export function useFormaState<T extends Record<string, any>>(
         setValue,
         getValues,
         setValues,
+        setBatch: useCallback(
+            (updates: Record<string, any>) => {
+                store.setBatch(updates);
+            },
+            [store] // store 의존성 추가
+        ),
         reset,
         setInitialValues,
         handleChange,

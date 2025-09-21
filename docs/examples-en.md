@@ -10,6 +10,7 @@ This document provides various usage examples of the Forma library. It explains 
     -   [Dynamic Field Management](#dynamic-field-management)
     -   [Array Length Subscription](#array-length-subscription)
     -   [Field Refresh Utilization](#field-refresh-utilization)
+    -   [Batch Updates (setBatch) Utilization](#batch-updates-setbatch-utilization)
 -   [useForm Examples](#useform-examples)
     -   [Basic Form Management](#basic-form-management)
     -   [Nested Object Handling](#nested-object-handling)
@@ -230,6 +231,114 @@ const syncWithServer = async () => {
     state.refreshFields("user");
 };
 ```
+
+### Batch Updates (setBatch) Utilization
+
+The `setBatch` method allows you to efficiently update multiple fields in a single operation. This provides significant performance benefits when updating many fields simultaneously.
+
+```typescript
+const state = useFormaState({
+    user: { name: "", email: "", age: 0 },
+    settings: { theme: "light", language: "en", notifications: true },
+    preferences: { privacy: "public", newsletter: false },
+});
+
+// ❌ Individual updates (multiple re-renders)
+const updateProfileIndividually = () => {
+    state.setValue("user.name", "John Doe");
+    state.setValue("user.email", "john@example.com");
+    state.setValue("user.age", 30);
+    state.setValue("settings.theme", "dark");
+    state.setValue("settings.language", "ko");
+    // → 5 re-renders
+};
+
+// ✅ Batch update (single re-render)
+const updateProfileWithBatch = () => {
+    state.setBatch({
+        "user.name": "John Doe",
+        "user.email": "john@example.com",
+        "user.age": 30,
+        "settings.theme": "dark",
+        "settings.language": "ko",
+    });
+    // → 1 re-render only
+};
+
+// 🔥 Real-world usage: Bulk form data update
+const loadUserDataFromServer = async () => {
+    const userData = await fetchUserFromServer();
+
+    // Update server data all at once
+    state.setBatch({
+        "user.name": userData.name,
+        "user.email": userData.email,
+        "user.age": userData.age,
+        "settings.theme": userData.preferences.theme,
+        "settings.language": userData.preferences.language,
+        "settings.notifications": userData.preferences.notifications,
+        "preferences.privacy": userData.privacy.level,
+        "preferences.newsletter": userData.marketing.newsletter,
+    });
+};
+
+// 🎯 Bulk checkbox select/deselect example
+const checkboxData = useFormaState({
+    items: Array.from({ length: 100 }, (_, i) => ({
+        id: i + 1,
+        name: `Item ${i + 1}`,
+        checked: false,
+    })),
+});
+
+// ❌ Individual selection (100 re-renders)
+const selectAllIndividually = () => {
+    checkboxData.getValues().items.forEach((_, index) => {
+        checkboxData.setValue(`items.${index}.checked`, true);
+    });
+    // → 100 re-renders
+};
+
+// ✅ Batch selection (single re-render)
+const selectAllWithBatch = () => {
+    const updates: Record<string, boolean> = {};
+    checkboxData.getValues().items.forEach((_, index) => {
+        updates[`items.${index}.checked`] = true;
+    });
+    checkboxData.setBatch(updates);
+    // → 1 re-render only
+};
+
+// 💡 Conditional batch update
+const updateSelectedItems = (selectedIds: number[], newStatus: string) => {
+    const updates: Record<string, any> = {};
+
+    checkboxData.getValues().items.forEach((item, index) => {
+        if (selectedIds.includes(item.id)) {
+            updates[`items.${index}.status`] = newStatus;
+            updates[`items.${index}.lastModified`] = Date.now();
+        }
+    });
+
+    // Bulk update only selected items
+    if (Object.keys(updates).length > 0) {
+        checkboxData.setBatch(updates);
+    }
+};
+```
+
+**When to use setBatch:**
+
+-   ✅ When updating 10+ fields simultaneously
+-   ✅ When loading server data into forms
+-   ✅ Bulk checkbox/radio button select/deselect
+-   ✅ Simultaneous changes to multiple settings
+-   ✅ Updating multiple table rows data
+
+**Performance improvement:**
+
+-   100 field updates: **100x faster** (100 → 1 re-render)
+-   1000 checkbox selection: **1000x faster** (1000 → 1 re-render)
 
 ---
 

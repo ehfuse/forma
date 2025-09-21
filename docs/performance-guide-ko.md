@@ -94,6 +94,103 @@ function ExpensiveValidation() {
 }
 ```
 
+### 5. 배치 업데이트 (setBatch)로 대량 데이터 최적화
+
+`setBatch`는 여러 필드를 한 번에 업데이트하여 리렌더링을 최소화하는 핵심 성능 최적화 방법입니다.
+
+```tsx
+// ❌ 개별 업데이트 (N번 리렌더링)
+function updateUserProfileIndividually() {
+    state.setValue("user.name", "김철수");
+    state.setValue("user.email", "kim@example.com");
+    state.setValue("user.age", 30);
+    state.setValue("settings.theme", "dark");
+    state.setValue("settings.language", "ko");
+    state.setValue("preferences.notifications", false);
+    // → 6번 리렌더링 발생
+}
+
+// ✅ 배치 업데이트 (1번만 리렌더링)
+function updateUserProfileWithBatch() {
+    state.setBatch({
+        "user.name": "김철수",
+        "user.email": "kim@example.com",
+        "user.age": 30,
+        "settings.theme": "dark",
+        "settings.language": "ko",
+        "preferences.notifications": false,
+    });
+    // → 1번만 리렌더링
+}
+
+// 🔥 실전 예시: 체크박스 일괄 선택
+function selectAllCheckboxes() {
+    const updates: Record<string, boolean> = {};
+
+    // 100개 체크박스를 일괄 선택
+    Array.from({ length: 100 }, (_, i) => {
+        updates[`items.${i}.checked`] = true;
+    });
+
+    state.setBatch(updates);
+    // → 100개를 개별로 하면 100번 리렌더링
+    // → setBatch 사용하면 1번만 리렌더링 (100배 성능 향상!)
+}
+
+// 💡 서버 데이터 로딩 최적화
+async function loadDataFromServer() {
+    const serverData = await fetchComplexDataFromServer();
+
+    // 서버에서 받은 여러 데이터를 한 번에 업데이트
+    state.setBatch({
+        "user.profile": serverData.userProfile,
+        "user.settings": serverData.userSettings,
+        "app.theme": serverData.theme,
+        "app.language": serverData.language,
+        "notifications.preferences": serverData.notifications,
+        "dashboard.widgets": serverData.widgets,
+    });
+    // → 모든 관련 컴포넌트가 한 번에 업데이트됨
+}
+```
+
+**setBatch 핵심 가이드라인:**
+
+1. **언제 사용하나:**
+
+    - ✅ 5개 이상의 필드를 동시에 업데이트할 때
+    - ✅ 서버 데이터를 폼에 로드할 때
+    - ✅ 체크박스/라디오 일괄 선택/해제
+    - ✅ 설정 페이지에서 여러 옵션 변경
+    - ✅ 테이블 행 다중 업데이트
+
+2. **성능 효과:**
+
+    - 10개 필드: **10배 빠름** (10 → 1 리렌더링)
+    - 100개 필드: **100배 빠름** (100 → 1 리렌더링)
+    - 1000개 필드: **1000배 빠름** (1000 → 1 리렌더링)
+
+3. **사용 패턴:**
+
+    ```tsx
+    // 패턴 1: 객체 준비 후 배치 업데이트
+    const updates = {};
+    items.forEach((item, index) => {
+        updates[`items.${index}.status`] = "updated";
+    });
+    state.setBatch(updates);
+
+    // 패턴 2: 조건부 배치 업데이트
+    const updates = {};
+    selectedItems.forEach((itemId) => {
+        const index = findIndexById(itemId);
+        updates[`items.${index}.selected`] = true;
+    });
+    if (Object.keys(updates).length > 0) {
+        state.setBatch(updates);
+    }
+    ```
+
 ## 📝 권장 패턴
 
 ### useForm vs useGlobalForm vs useFormaState

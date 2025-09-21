@@ -256,15 +256,25 @@ export class FieldStore<T extends Record<string, any>> {
                 }
                 // 🔥 배열 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
                 // Notify individual field subscribers only if their actual values changed when entire array is replaced
-                else if (Array.isArray(value) && Array.isArray(oldValue) && subscribedPath.startsWith(`${fieldStr}.`)) {
-                    const pathParts = subscribedPath.split('.');
+                else if (
+                    Array.isArray(value) &&
+                    Array.isArray(oldValue) &&
+                    subscribedPath.startsWith(`${fieldStr}.`)
+                ) {
+                    const pathParts = subscribedPath.split(".");
                     if (pathParts.length >= 3 && pathParts[0] === fieldStr) {
                         const index = parseInt(pathParts[1]);
                         if (!isNaN(index) && index >= 0) {
                             // 해당 인덱스의 값을 비교
-                            const oldItemValue = getNestedValue(oldValue, pathParts.slice(1).join('.'));
-                            const newItemValue = getNestedValue(value, pathParts.slice(1).join('.'));
-                            
+                            const oldItemValue = getNestedValue(
+                                oldValue,
+                                pathParts.slice(1).join(".")
+                            );
+                            const newItemValue = getNestedValue(
+                                value,
+                                pathParts.slice(1).join(".")
+                            );
+
                             // 실제로 값이 변경된 경우에만 알림
                             if (oldItemValue !== newItemValue) {
                                 listeners.forEach((listener) => listener());
@@ -273,9 +283,11 @@ export class FieldStore<T extends Record<string, any>> {
                     }
                 }
                 // 배열이 새로 생성되거나 삭제된 경우 (undefined → array 또는 array → undefined)
-                else if (subscribedPath.startsWith(`${fieldStr}.`) && 
-                         ((Array.isArray(value) && !Array.isArray(oldValue)) || 
-                          (!Array.isArray(value) && Array.isArray(oldValue)))) {
+                else if (
+                    subscribedPath.startsWith(`${fieldStr}.`) &&
+                    ((Array.isArray(value) && !Array.isArray(oldValue)) ||
+                        (!Array.isArray(value) && Array.isArray(oldValue)))
+                ) {
                     listeners.forEach((listener) => listener());
                 }
             });

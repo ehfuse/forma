@@ -262,21 +262,25 @@ export class FieldStore<T extends Record<string, any>> {
                     subscribedPath.startsWith(`${fieldStr}.`)
                 ) {
                     const pathParts = subscribedPath.split(".");
-                    if (pathParts.length >= 3 && pathParts[0] === fieldStr) {
+                    if (pathParts.length >= 2 && pathParts[0] === fieldStr) {
                         const index = parseInt(pathParts[1]);
                         if (!isNaN(index) && index >= 0) {
-                            // 해당 인덱스의 값을 비교
+                            // 해당 인덱스의 값을 비교 (전체 객체 또는 특정 속성)
+                            const pathAfterIndex = pathParts.slice(1).join(".");
                             const oldItemValue = getNestedValue(
                                 oldValue,
-                                pathParts.slice(1).join(".")
+                                pathAfterIndex
                             );
                             const newItemValue = getNestedValue(
                                 value,
-                                pathParts.slice(1).join(".")
+                                pathAfterIndex
                             );
 
                             // 실제로 값이 변경된 경우에만 알림
-                            if (oldItemValue !== newItemValue) {
+                            if (
+                                JSON.stringify(oldItemValue) !==
+                                JSON.stringify(newItemValue)
+                            ) {
                                 listeners.forEach((listener) => listener());
                             }
                         }

@@ -363,17 +363,18 @@ state.setValue("items", partiallyUpdated);
 -   **Smart re-rendering**: Only actual value changes trigger re-renders
 -   **React-friendly**: Follows immutability principles compatible with React optimizations
 
+```tsx
 // Actual checkbox components
 function SearchResultItem({
-index,
-useValue,
+    index,
+    useValue,
 }: {
-index: number;
-useValue: (path: string) => any;
+    index: number;
+    useValue: (path: string) => any;
 }) {
-// Subscribe to individual checkbox state (using useValue function passed as prop)
-const isChecked = useValue(`searchResults.${index}.checked`);
-const itemData = useValue(`searchResults.${index}`);
+    // Subscribe to individual checkbox state (using useValue function passed as prop)
+    const isChecked = useValue(`searchResults.${index}.checked`);
+    const itemData = useValue(`searchResults.${index}`);
 
     return (
         <div>
@@ -390,13 +391,12 @@ const itemData = useValue(`searchResults.${index}`);
             <span>{itemData?.name}</span>
         </div>
     );
-
 }
 
 // ❌ Wrong way: Using useValue inside map
 function SearchResultsListBad() {
-const { useValue } = useFormaState({ searchResults: [] });
-const searchResults = useValue("searchResults");
+    const { useValue } = useFormaState({ searchResults: [] });
+    const searchResults = useValue("searchResults");
 
     return (
         <div>
@@ -423,13 +423,15 @@ const searchResults = useValue("searchResults");
             })}
         </div>
     );
-
 }
+```
 
 // ✅ Correct way: Separate components to use useValue
+
+```tsx
 function SearchResultsList() {
-const { useValue } = useFormaState({ searchResults: [] }); // Extract useValue function
-const searchResults = useValue("searchResults");
+    const { useValue } = useFormaState({ searchResults: [] }); // Extract useValue function
+    const searchResults = useValue("searchResults");
 
     return (
         <div>
@@ -445,7 +447,6 @@ const searchResults = useValue("searchResults");
             ))}
         </div>
     );
-
 }
 
 // 💡 Benefits of component separation:
@@ -455,28 +456,26 @@ const searchResults = useValue("searchResults");
 
 // Select all component
 function SelectAllButton() {
-const searchResults = state.useValue("searchResults");
-const allChecked =
-searchResults?.every((item: any) => item.checked) || false;
+    const searchResults = state.useValue("searchResults");
+    const allChecked =
+        searchResults?.every((item: any) => item.checked) || false;
 
     return (
         <button onClick={() => handleSelectAll(searchResults, !allChecked)}>
             {allChecked ? "Deselect All" : "Select All"}
         </button>
     );
-
 }
-
-````
+```
 
 ### ⚡ Performance Comparison: Effects of Array Replacement
 
-| Scenario                  | Individual Processing                        | Array Replacement                            | Performance Improvement                              |
-| ------------------------- | -------------------------------------------- | -------------------------------------------- | ---------------------------------------------------- |
-| Select all 100 checkboxes | 100 setValue calls                          | 1 array replacement                         | **Significant improvement** (Reduced API calls)     |
-| All items same state      | 100 subscribers all re-render               | 0 subscribers re-render (no value changes)  | **Infinite improvement** (No unnecessary re-renders) |
-| Half items change state   | 100 subscribers all re-render               | 50 subscribers re-render only               | **2x improvement** (Only changed subscribers)       |
-| Synchronize 1000 states   | 1000 individual setValue calls             | 1 array replacement                         | **Dramatic improvement** (Forma internal optimization) |
+| Scenario                  | Individual Processing          | Array Replacement                          | Performance Improvement                                |
+| ------------------------- | ------------------------------ | ------------------------------------------ | ------------------------------------------------------ |
+| Select all 100 checkboxes | 100 setValue calls             | 1 array replacement                        | **Significant improvement** (Reduced API calls)        |
+| All items same state      | 100 subscribers all re-render  | 0 subscribers re-render (no value changes) | **Infinite improvement** (No unnecessary re-renders)   |
+| Half items change state   | 100 subscribers all re-render  | 50 subscribers re-render only              | **2x improvement** (Only changed subscribers)          |
+| Synchronize 1000 states   | 1000 individual setValue calls | 1 array replacement                        | **Dramatic improvement** (Forma internal optimization) |
 
 ### 📊 Actual Performance Measurement
 
@@ -491,10 +490,13 @@ console.timeEnd("Individual Updates"); // ~145ms (100 setValue calls)
 
 console.time("Array Replacement");
 // ✅ Array replacement: Single setValue + smart re-rendering
-const updatedResults = searchResults.map(item => ({ ...item, checked: true }));
+const updatedResults = searchResults.map((item) => ({
+    ...item,
+    checked: true,
+}));
 state.setValue("searchResults", updatedResults);
 console.timeEnd("Array Replacement"); // ~2ms (1 setValue call)
-````
+```
 
 ### Other Use Cases
 

@@ -363,17 +363,18 @@ state.setValue("items", partiallyUpdated);
 -   **스마트 리렌더링**: 실제 변경된 값만 감지하여 리렌더링
 -   **React 친화적**: 불변성 원칙을 따라 React 최적화와 호환
 
+```tsx
 // 실제 체크박스 컴포넌트들
 function SearchResultItem({
-index,
-useValue,
+    index,
+    useValue,
 }: {
-index: number;
-useValue: (path: string) => any;
+    index: number;
+    useValue: (path: string) => any;
 }) {
-// 개별 체크박스 상태 구독 (prop으로 받은 useValue 함수 사용)
-const isChecked = useValue(`searchResults.${index}.checked`);
-const itemData = useValue(`searchResults.${index}`);
+    // 개별 체크박스 상태 구독 (prop으로 받은 useValue 함수 사용)
+    const isChecked = useValue(`searchResults.${index}.checked`);
+    const itemData = useValue(`searchResults.${index}`);
 
     return (
         <div>
@@ -390,13 +391,12 @@ const itemData = useValue(`searchResults.${index}`);
             <span>{itemData?.name}</span>
         </div>
     );
-
 }
 
 // ❌ 잘못된 방법: map 내부에서 useValue 사용
 function SearchResultsListBad() {
-const { useValue } = useFormaState({ searchResults: [] });
-const searchResults = useValue("searchResults");
+    const { useValue } = useFormaState({ searchResults: [] });
+    const searchResults = useValue("searchResults");
 
     return (
         <div>
@@ -423,13 +423,15 @@ const searchResults = useValue("searchResults");
             })}
         </div>
     );
-
 }
+```
 
 // ✅ 올바른 방법: 별도 컴포넌트로 분리하여 useValue 사용
+
+```tsx
 function SearchResultsList() {
-const { useValue } = useFormaState({ searchResults: [] }); // useValue 함수 추출
-const searchResults = useValue("searchResults");
+    const { useValue } = useFormaState({ searchResults: [] }); // useValue 함수 추출
+    const searchResults = useValue("searchResults");
 
     return (
         <div>
@@ -445,7 +447,6 @@ const searchResults = useValue("searchResults");
             ))}
         </div>
     );
-
 }
 
 // 💡 컴포넌트 분리의 장점:
@@ -455,28 +456,26 @@ const searchResults = useValue("searchResults");
 
 // 전체 선택 컴포넌트
 function SelectAllButton() {
-const searchResults = state.useValue("searchResults");
-const allChecked =
-searchResults?.every((item: any) => item.checked) || false;
+    const searchResults = state.useValue("searchResults");
+    const allChecked =
+        searchResults?.every((item: any) => item.checked) || false;
 
     return (
         <button onClick={() => handleSelectAll(searchResults, !allChecked)}>
             {allChecked ? "전체 해제" : "전체 선택"}
         </button>
     );
-
 }
-
-````
+```
 
 ### ⚡ 성능 비교: 배열 전체 교체의 효과
 
-| 시나리오                 | 개별 처리                        | 배열 전체 교체                     | 성능 개선                                  |
-| ------------------------ | -------------------------------- | ---------------------------------- | ------------------------------------------ |
-| 100개 체크박스 전체 선택 | 100번 setValue 호출              | 1번 배열 교체                      | **대폭 향상** (API 호출 횟수 감소)         |
-| 체크 상태가 모두 동일    | 100개 구독자 모두 리렌더링       | 0개 구독자 리렌더링 (값 변경 없음) | **무한대 향상** (불필요한 리렌더링 방지)   |
-| 절반만 체크 상태 변경    | 100개 구독자 모두 리렌더링       | 50개 구독자만 리렌더링             | **2배 향상** (변경된 구독자만 처리)        |
-| 1000개 상태 동기화       | 1000번 개별 setValue             | 1번 배열 교체                      | **극적 향상** (Forma 내부 처리 최적화)     |
+| 시나리오                 | 개별 처리                  | 배열 전체 교체                     | 성능 개선                                |
+| ------------------------ | -------------------------- | ---------------------------------- | ---------------------------------------- |
+| 100개 체크박스 전체 선택 | 100번 setValue 호출        | 1번 배열 교체                      | **대폭 향상** (API 호출 횟수 감소)       |
+| 체크 상태가 모두 동일    | 100개 구독자 모두 리렌더링 | 0개 구독자 리렌더링 (값 변경 없음) | **무한대 향상** (불필요한 리렌더링 방지) |
+| 절반만 체크 상태 변경    | 100개 구독자 모두 리렌더링 | 50개 구독자만 리렌더링             | **2배 향상** (변경된 구독자만 처리)      |
+| 1000개 상태 동기화       | 1000번 개별 setValue       | 1번 배열 교체                      | **극적 향상** (Forma 내부 처리 최적화)   |
 
 ### 📊 실제 성능 측정
 
@@ -491,10 +490,13 @@ console.timeEnd("Individual Updates"); // ~145ms (100개 setValue 호출)
 
 console.time("Array Replacement");
 // ✅ 배열 교체: 한 번의 setValue + 스마트 리렌더링
-const updatedResults = searchResults.map(item => ({ ...item, checked: true }));
+const updatedResults = searchResults.map((item) => ({
+    ...item,
+    checked: true,
+}));
 state.setValue("searchResults", updatedResults);
 console.timeEnd("Array Replacement"); // ~2ms (1번 setValue 호출)
-````
+```
 
 ### 다른 활용 사례들
 

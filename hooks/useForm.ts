@@ -298,7 +298,11 @@ export function useForm<T extends Record<string, any>>(
 
             try {
                 if (onSubmit) {
-                    await onSubmit(currentValues);
+                    const result = await onSubmit(currentValues);
+                    // onSubmit이 boolean을 반환하면 해당 값 사용, 아니면 true로 간주
+                    if (result === false) {
+                        return false;
+                    }
                 }
 
                 if (onComplete) {

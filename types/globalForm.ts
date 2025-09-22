@@ -50,7 +50,7 @@ export interface UseGlobalFormProps<T extends Record<string, any>> {
     /** 컴포넌트 언마운트 시 자동 정리 여부 | Auto cleanup on component unmount */
     autoCleanup?: boolean;
     /** 폼 제출 핸들러 | Form submission handler */
-    onSubmit?: (values: T) => Promise<void> | void;
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     /** 폼 검증 핸들러 - true 반환 시 검증 통과 | Form validation handler - returns true if validation passes */
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 | Callback after form submission completion */

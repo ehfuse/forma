@@ -67,7 +67,7 @@ export interface UseFormProps<T extends Record<string, any>> {
     /** 폼의 초기값 | Initial form values */
     initialValues: T;
     /** 폼 제출 핸들러 | Form submission handler */
-    onSubmit?: (values: T) => Promise<void> | void;
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     /** 폼 검증 핸들러 | Form validation handler */
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 | Callback after form submission completion */
@@ -85,7 +85,7 @@ export interface UseFormPropsOptional<
     /** 폼의 초기값 (선택사항) | Initial form values (optional) */
     initialValues?: T;
     /** 폼 제출 핸들러 | Form submission handler */
-    onSubmit?: (values: T) => Promise<void> | void;
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     /** 폼 검증 핸들러 | Form validation handler */
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 | Callback after form submission completion */

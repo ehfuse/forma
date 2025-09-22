@@ -160,7 +160,7 @@ const todoCount = state.useValue("todos.length"); // 2
 
 #### 🔄 **필드 새로고침 (Field Refresh)**
 
-`refreshFields` 메서드를 사용하여 특정 prefix를 가진 모든 필드 구독자들을 강제로 새로고침할 수 있습니다. 이는 **대량 데이터 일괄 처리 시 성능 최적화**에 매우 유용합니다.
+`refreshFields` 메서드를 사용하여 특정 prefix를 가진 모든 필드 구독자들을 강제로 새로고침할 수 있습니다. 이는 **값이 동일하더라도 UI를 강제로 새로고침**해야 하는 특수한 경우에 사용합니다.
 
 ```typescript
 const state = useFormaState({
@@ -172,18 +172,20 @@ const state = useFormaState({
 state.refreshFields("user");
 ```
 
-**💡 핵심 개념:**
+**💡 사용 용도:**
 
--   **개별 업데이트**: 각 필드마다 `setValue` → N번의 리렌더링
--   **배치 업데이트**: 전체 데이터 `setValue` + `refreshFields` → 1번의 리렌더링
+-   **서버 데이터 동기화**: 서버에서 받은 데이터가 현재 값과 동일하더라도 UI 새로고침
+-   **강제 재검증**: 값은 같지만 유효성 검사나 포맷팅을 다시 실행
+-   **외부 상태 동기화**: 외부 라이브러리나 시스템과의 동기화
 
-**📈 성능 개선 효과:**
+**⚠️ 주의사항:**
 
--   100개 체크박스 전체 선택: **100배 빨라짐** (100번 → 1번 리렌더링)
--   500개 테이블 행 업데이트: **500배 빨라짐** (500번 → 1번 리렌더링)
+-   `refreshFields`는 성능 최적화 도구가 아닙니다
+-   개별 필드 구독자들은 여전히 각각 리렌더링됩니다
+-   대량 데이터 업데이트 시에는 **배열 전체 교체**가 가장 효율적입니다
 
-📚 **[필드 새로고침 상세 예제 →](./examples-ko.md#필드-새로고침-활용)**  
-🔗 **[대량 데이터 배치 처리 가이드 →](./performance-warnings-ko.md#-대량-데이터-배치-처리-최적화)**
+📚 **[필드 새로고침 활용 예제 →](./examples-ko.md#필드-새로고침-활용)**  
+🔗 **[대량 데이터 최적화 가이드 →](./performance-warnings-ko.md#-대량-데이터-배치-처리-최적화)**
 
 ### useForm
 
@@ -203,8 +205,8 @@ function useForm<T extends Record<string, any>>(
 interface UseFormProps<T> {
     /** 폼의 초기값 */
     initialValues: T;
-    /** 폼 제출 핸들러 */
-    onSubmit?: (values: T) => Promise<void> | void;
+    /** 폼 제출 핸들러 - false 반환 시 제출 실패로 처리 */
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     /** 폼 검증 핸들러 - true 반환 시 검증 통과 */
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 */
@@ -255,7 +257,12 @@ interface UseFormReturn<T> {
 const form = useForm({
     initialValues: { name: "", email: "", age: 0 },
     onSubmit: async (values) => {
-        await api.submitUser(values);
+        // ✅ 새로운 기능: boolean 반환으로 제출 성공/실패 제어
+        const success = await api.submitUser(values);
+        if (!success) {
+            return false; // 제출 실패 시 false 반환
+        }
+        // return undefined 또는 true로 성공 표시
     },
     onValidate: async (values) => {
         return values.email.includes("@");
@@ -265,7 +272,23 @@ const form = useForm({
 // 개별 필드 구독 (성능 최적화)
 const name = form.useFormValue("name");
 const email = form.useFormValue("email");
+
+// submit 함수는 여전히 boolean을 반환
+const handleSubmit = async () => {
+    const success = await form.submit();
+    if (success) {
+        console.log("제출 성공!");
+    } else {
+        console.log("제출 실패!");
+    }
+};
 ```
+
+**💡 onSubmit 반환값 처리:**
+
+-   `true` 또는 `undefined`: 제출 성공
+-   `false`: 제출 실패 (더 이상 예외 던질 필요 없음)
+-   예외 발생 시: 자동으로 제출 실패로 처리
 
 📚 **[상세한 폼 사용 예제 →](./examples-ko.md#useform-예제)**
 
@@ -315,8 +338,8 @@ interface UseGlobalFormProps<T> {
     initialValues?: Partial<T>;
     /** 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true) */
     autoCleanup?: boolean;
-    /** 폼 제출 핸들러 */
-    onSubmit?: (values: T) => Promise<void> | void;
+    /** 폼 제출 핸들러 - false 반환 시 제출 실패로 처리 */
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     /** 폼 검증 핸들러 - true 반환 시 검증 통과 */
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 */
@@ -1137,7 +1160,7 @@ useForm 훅의 매개변수 타입입니다.
 ```typescript
 interface UseFormProps<T extends Record<string, any>> {
     initialValues: T;
-    onSubmit?: (values: T) => Promise<void> | void;
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     onValidate?: (values: T) => Promise<boolean> | boolean;
     onComplete?: (values: T) => void;
     _externalStore?: FieldStore<T>;
@@ -1153,7 +1176,7 @@ interface UseGlobalFormProps<T extends Record<string, any>> {
     formId: string;
     initialValues?: Partial<T>;
     autoCleanup?: boolean;
-    onSubmit?: (values: T) => Promise<void> | void;
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     onValidate?: (values: T) => Promise<boolean> | boolean;
     onComplete?: (values: T) => void;
 }

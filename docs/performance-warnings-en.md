@@ -277,14 +277,14 @@ function TodoList() {
 
 ## 🚀 Mass Data Batch Processing Optimization
 
-### High-Performance Updates Using refreshFields
+### High-Performance Updates Using Array Replacement
 
-When you need to update large amounts of data simultaneously, using `refreshFields` can provide dramatic performance improvements.
+When you need to update large amounts of data simultaneously, **array replacement** provides optimal performance.
 
 **💡 Core concept:**
 
--   **Individual updates**: `setValue` for each field → N re-renders
--   **Batch updates**: Whole data `setValue` + `refreshFields` → 1 re-render
+-   **Individual updates**: `setValue` for each field → All subscribed field subscribers re-render
+-   **Array replacement**: `setValue` with new array → **Only actually changed field subscribers** re-render
 
 ### Real Use Case: Select/Deselect All for 100 Checkboxes
 
@@ -295,37 +295,85 @@ const state = useFormaState({
 
 // 🚀 High-performance batch processing: Select/deselect all checkboxes
 const handleSelectAll = (allSearchResults: any[], selectAll: boolean) => {
-    // ❌ Inefficient method: Individual calls for each item (145 items = 145 re-renders)
+    // ❌ Inefficient method: Individual calls for each item
     // allSearchResults.forEach((_: any, index: number) => {
     //     state.setValue(`searchResults.${index}.checked`, selectAll);
     //     // Each setValue causes individual field subscribers to re-render
     // });
 
-    // ✅ Efficient method: Batch processing then refresh all at once
+    // ✅ Efficient method: Array replacement
     if (allSearchResults.length > 0) {
-        // 1. Batch update all data (no re-rendering)
         const updatedSearchResults = allSearchResults.map((item: any) => ({
             ...item,
             checked: selectAll,
         }));
+        // Replacing the entire array automatically notifies only fields with changed values
         state.setValue("searchResults", updatedSearchResults);
-
-        // 2. Single call to refresh all related fields (1 re-render)
-        state.refreshFields("searchResults"); // Handles all searchResults.*.checked fields
+        // refreshFields is unnecessary - notifications already sent to changed subscribers
     }
 };
+```
+
+**⚡ Performance optimization principles:**
+
+1. **Smart comparison**: Forma compares each element individually when replacing arrays
+2. **Selective notification**: Only field subscribers with actually changed values get notified
+3. **Immutability utilization**: Creating new arrays is compatible with React optimizations
+
+**💡 Why is array replacement most efficient?**
+
+```tsx
+// 100 checkbox scenario analysis
+const state = useFormaState({
+    items: Array(100)
+        .fill()
+        .map((_, i) => ({ id: i, checked: false })),
+});
+
+// Scenario 1: Individual setValue (inefficient)
+// - 100 setValue calls
+// - Each call causes corresponding subscriber to re-render
+// - Total 100 re-renders occur
+items.forEach((_, index) => {
+    state.setValue(`items.${index}.checked`, true);
+});
+
+// Scenario 2: Array replacement (efficient)
+// - 1 setValue call
+// - Forma internally compares previous vs new values
+// - Only subscribers with actual false→true changes re-render
+// - Total 100 re-renders occur (but only 1 API call)
+const updatedItems = items.map((item) => ({ ...item, checked: true }));
+state.setValue("items", updatedItems);
+
+// Scenario 3: Partial changes (most efficient)
+// - When only 50 items change true→false
+// - 1 setValue call
+// - Only 50 changed subscribers re-render
+const partiallyUpdated = items.map((item, index) =>
+    index < 50 ? { ...item, checked: false } : item
+);
+state.setValue("items", partiallyUpdated);
+```
+
+**🎯 Key Benefits:**
+
+-   **Minimize API calls**: N calls → 1 call reduces JavaScript execution time
+-   **Batch processing**: All changes processed in single update cycle
+-   **Smart re-rendering**: Only actual value changes trigger re-renders
+-   **React-friendly**: Follows immutability principles compatible with React optimizations
 
 // Actual checkbox components
 function SearchResultItem({
-    index,
-    useValue,
+index,
+useValue,
 }: {
-    index: number;
-    useValue: (path: string) => any;
+index: number;
+useValue: (path: string) => any;
 }) {
-    // Subscribe to individual checkbox state (using useValue function passed as prop)
-    const isChecked = useValue(`searchResults.${index}.checked`);
-    const itemData = useValue(`searchResults.${index}`);
+// Subscribe to individual checkbox state (using useValue function passed as prop)
+const isChecked = useValue(`searchResults.${index}.checked`);
+const itemData = useValue(`searchResults.${index}`);
 
     return (
         <div>
@@ -342,12 +390,13 @@ function SearchResultItem({
             <span>{itemData?.name}</span>
         </div>
     );
+
 }
 
 // ❌ Wrong way: Using useValue inside map
 function SearchResultsListBad() {
-    const { useValue } = useFormaState({ searchResults: [] });
-    const searchResults = useValue("searchResults");
+const { useValue } = useFormaState({ searchResults: [] });
+const searchResults = useValue("searchResults");
 
     return (
         <div>
@@ -374,12 +423,13 @@ function SearchResultsListBad() {
             })}
         </div>
     );
+
 }
 
 // ✅ Correct way: Separate components to use useValue
 function SearchResultsList() {
-    const { useValue } = useFormaState({ searchResults: [] }); // Extract useValue function
-    const searchResults = useValue("searchResults");
+const { useValue } = useFormaState({ searchResults: [] }); // Extract useValue function
+const searchResults = useValue("searchResults");
 
     return (
         <div>
@@ -395,6 +445,7 @@ function SearchResultsList() {
             ))}
         </div>
     );
+
 }
 
 // 💡 Benefits of component separation:
@@ -404,55 +455,59 @@ function SearchResultsList() {
 
 // Select all component
 function SelectAllButton() {
-    const searchResults = state.useValue("searchResults");
-    const allChecked =
-        searchResults?.every((item: any) => item.checked) || false;
+const searchResults = state.useValue("searchResults");
+const allChecked =
+searchResults?.every((item: any) => item.checked) || false;
 
     return (
         <button onClick={() => handleSelectAll(searchResults, !allChecked)}>
             {allChecked ? "Deselect All" : "Select All"}
         </button>
     );
+
 }
-```
 
-### ⚡ Performance Comparison: Effects of Batch Processing
+````
 
-| Scenario                  | Individual Processing | Batch Processing | Performance Improvement |
-| ------------------------- | --------------------- | ---------------- | ----------------------- |
-| Select all 100 checkboxes | 100 re-renders        | 1 re-render      | **100x improvement**    |
-| Update 500 table rows     | 500 re-renders        | 1 re-render      | **500x improvement**    |
-| Synchronize 1000 states   | 1000 re-renders       | 1 re-render      | **1000x improvement**   |
+### ⚡ Performance Comparison: Effects of Array Replacement
+
+| Scenario                  | Individual Processing                        | Array Replacement                            | Performance Improvement                              |
+| ------------------------- | -------------------------------------------- | -------------------------------------------- | ---------------------------------------------------- |
+| Select all 100 checkboxes | 100 setValue calls                          | 1 array replacement                         | **Significant improvement** (Reduced API calls)     |
+| All items same state      | 100 subscribers all re-render               | 0 subscribers re-render (no value changes)  | **Infinite improvement** (No unnecessary re-renders) |
+| Half items change state   | 100 subscribers all re-render               | 50 subscribers re-render only               | **2x improvement** (Only changed subscribers)       |
+| Synchronize 1000 states   | 1000 individual setValue calls             | 1 array replacement                         | **Dramatic improvement** (Forma internal optimization) |
 
 ### 📊 Actual Performance Measurement
 
 ```tsx
 // Performance measurement example
 console.time("Individual Updates");
-// ❌ Individual processing: 145ms (145 items)
+// ❌ Individual processing: Each field setValue + re-render
 searchResults.forEach((_, index) => {
     state.setValue(`searchResults.${index}.checked`, true);
 });
-console.timeEnd("Individual Updates"); // ~145ms
+console.timeEnd("Individual Updates"); // ~145ms (100 setValue calls)
 
-console.time("Batch Update");
-// ✅ Batch processing: 2ms (same 145 items)
+console.time("Array Replacement");
+// ✅ Array replacement: Single setValue + smart re-rendering
+const updatedResults = searchResults.map(item => ({ ...item, checked: true }));
 state.setValue("searchResults", updatedResults);
-state.refreshFields("searchResults");
-console.timeEnd("Batch Update"); // ~2ms
-```
+console.timeEnd("Array Replacement"); // ~2ms (1 setValue call)
+````
 
 ### Other Use Cases
 
 1. **Bulk table row updates**
 
     ```tsx
-    const updateTableRows = (rowUpdates: any[]) => {
+    const updateTableRows = (rowUpdates: number[]) => {
+        // ✅ Optimize with array replacement
         const updatedTable = tableData.map((row, index) =>
             rowUpdates.includes(index) ? { ...row, status: "updated" } : row
         );
         state.setValue("tableData", updatedTable);
-        state.refreshFields("tableData");
+        // Only actually changed rows automatically re-render
     };
     ```
 
@@ -460,13 +515,12 @@ console.timeEnd("Batch Update"); // ~2ms
 
     ```tsx
     const resetFormSection = () => {
-        const resetData = {
+        // ✅ Update multiple areas at once with setValues
+        state.setValues({
             personal: { name: "", email: "", phone: "" },
             address: { street: "", city: "", zipCode: "" },
-        };
-        state.setValues(resetData);
-        state.refreshFields("personal");
-        state.refreshFields("address");
+        });
+        // Only changed fields automatically re-render
     };
     ```
 
@@ -475,12 +529,18 @@ console.timeEnd("Batch Update"); // ~2ms
     ```tsx
     const syncWithServer = async () => {
         const serverData = await fetchLatestData();
-        state.setValue("userData", serverData.user);
-        state.setValue("preferences", serverData.preferences);
 
-        // Force UI refresh even if values are identical
-        state.refreshFields("userData");
-        state.refreshFields("preferences");
+        // ✅ Batch update
+        state.setValues({
+            userData: serverData.user,
+            preferences: serverData.preferences,
+        });
+
+        // Use refreshFields only when force refresh is needed even with identical values
+        if (forceRefresh) {
+            state.refreshFields("userData");
+            state.refreshFields("preferences");
+        }
     };
     ```
 

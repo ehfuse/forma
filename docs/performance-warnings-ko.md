@@ -277,14 +277,14 @@ function TodoList() {
 
 ## 🚀 대량 데이터 배치 처리 최적화
 
-### refreshFields를 활용한 고성능 업데이트
+### 배열 전체 교체를 활용한 고성능 업데이트
 
-대량의 데이터를 동시에 업데이트해야 하는 경우, `refreshFields`를 사용하면 극적인 성능 향상을 얻을 수 있습니다.
+대량의 데이터를 동시에 업데이트해야 하는 경우, **배열 전체 교체**를 사용하면 최적의 성능을 얻을 수 있습니다.
 
 **💡 핵심 개념:**
 
--   **개별 업데이트**: 각 필드마다 `setValue` → N번의 리렌더링
--   **배치 업데이트**: 전체 데이터 `setValue` + `refreshFields` → 1번의 리렌더링
+-   **개별 업데이트**: 각 필드마다 `setValue` → 변경된 모든 구독자가 리렌더링
+-   **배열 전체 교체**: 새 배열로 `setValue` → **값이 실제로 변경된 구독자만** 리렌더링
 
 ### 실제 사용 사례: 100개 체크박스 전체 선택/해제
 
@@ -295,37 +295,85 @@ const state = useFormaState({
 
 // 🚀 고성능 배치 처리: 다중 체크박스 전체 선택/해제
 const handleSelectAll = (allSearchResults: any[], selectAll: boolean) => {
-    // ❌ 비효율적인 방법: 각 항목마다 개별 호출 (145개 항목 = 145번 리렌더링)
+    // ❌ 비효율적인 방법: 각 항목마다 개별 호출
     // allSearchResults.forEach((_: any, index: number) => {
     //     state.setValue(`searchResults.${index}.checked`, selectAll);
     //     // 각 setValue마다 개별 필드 구독자들이 리렌더링됨
     // });
 
-    // ✅ 효율적인 방법: 배치 처리 후 한 번에 새로고침
+    // ✅ 효율적인 방법: 배열 전체 교체
     if (allSearchResults.length > 0) {
-        // 1. 배치로 전체 데이터 업데이트 (리렌더링 없음)
         const updatedSearchResults = allSearchResults.map((item: any) => ({
             ...item,
             checked: selectAll,
         }));
+        // 배열 전체를 교체하면 값이 실제로 변경된 필드만 자동으로 알림이 감
         state.setValue("searchResults", updatedSearchResults);
-
-        // 2. 단 1번의 호출로 모든 관련 필드 새로고침 (1번 리렌더링)
-        state.refreshFields("searchResults"); // 모든 searchResults.*.checked 필드 처리
+        // refreshFields는 불필요함 - 값이 변경된 구독자에게는 이미 알림이 갔음
     }
 };
+```
+
+**⚡ 성능 최적화 원리:**
+
+1. **스마트 비교**: Forma는 배열 교체 시 각 요소를 개별적으로 비교
+2. **선택적 알림**: 실제로 값이 변경된 필드 구독자에게만 알림
+3. **불변성 활용**: 새 배열 생성으로 React 최적화와 호환
+
+**💡 왜 배열 전체 교체가 가장 효율적인가?**
+
+```tsx
+// 100개 체크박스 시나리오 분석
+const state = useFormaState({
+    items: Array(100)
+        .fill()
+        .map((_, i) => ({ id: i, checked: false })),
+});
+
+// 시나리오 1: 개별 setValue (비효율적)
+// - setValue 호출 100번
+// - 각 호출마다 해당 구독자 리렌더링
+// - 총 100번의 리렌더링 발생
+items.forEach((_, index) => {
+    state.setValue(`items.${index}.checked`, true);
+});
+
+// 시나리오 2: 배열 전체 교체 (효율적)
+// - setValue 호출 1번
+// - Forma가 내부적으로 이전 값과 새 값을 비교
+// - 실제로 false→true로 변경된 구독자만 리렌더링
+// - 총 100번의 리렌더링 발생 (하지만 1번의 API 호출)
+const updatedItems = items.map((item) => ({ ...item, checked: true }));
+state.setValue("items", updatedItems);
+
+// 시나리오 3: 일부만 변경 (가장 효율적)
+// - 50개만 true→false로 변경하는 경우
+// - setValue 호출 1번
+// - 실제로 변경된 50개 구독자만 리렌더링
+const partiallyUpdated = items.map((item, index) =>
+    index < 50 ? { ...item, checked: false } : item
+);
+state.setValue("items", partiallyUpdated);
+```
+
+**🎯 핵심 이점:**
+
+-   **API 호출 최소화**: N번 → 1번 호출로 JavaScript 실행 시간 단축
+-   **배치 처리**: 단일 업데이트 사이클에서 모든 변경사항 처리
+-   **스마트 리렌더링**: 실제 변경된 값만 감지하여 리렌더링
+-   **React 친화적**: 불변성 원칙을 따라 React 최적화와 호환
 
 // 실제 체크박스 컴포넌트들
 function SearchResultItem({
-    index,
-    useValue,
+index,
+useValue,
 }: {
-    index: number;
-    useValue: (path: string) => any;
+index: number;
+useValue: (path: string) => any;
 }) {
-    // 개별 체크박스 상태 구독 (prop으로 받은 useValue 함수 사용)
-    const isChecked = useValue(`searchResults.${index}.checked`);
-    const itemData = useValue(`searchResults.${index}`);
+// 개별 체크박스 상태 구독 (prop으로 받은 useValue 함수 사용)
+const isChecked = useValue(`searchResults.${index}.checked`);
+const itemData = useValue(`searchResults.${index}`);
 
     return (
         <div>
@@ -342,12 +390,13 @@ function SearchResultItem({
             <span>{itemData?.name}</span>
         </div>
     );
+
 }
 
 // ❌ 잘못된 방법: map 내부에서 useValue 사용
 function SearchResultsListBad() {
-    const { useValue } = useFormaState({ searchResults: [] });
-    const searchResults = useValue("searchResults");
+const { useValue } = useFormaState({ searchResults: [] });
+const searchResults = useValue("searchResults");
 
     return (
         <div>
@@ -374,12 +423,13 @@ function SearchResultsListBad() {
             })}
         </div>
     );
+
 }
 
 // ✅ 올바른 방법: 별도 컴포넌트로 분리하여 useValue 사용
 function SearchResultsList() {
-    const { useValue } = useFormaState({ searchResults: [] }); // useValue 함수 추출
-    const searchResults = useValue("searchResults");
+const { useValue } = useFormaState({ searchResults: [] }); // useValue 함수 추출
+const searchResults = useValue("searchResults");
 
     return (
         <div>
@@ -395,6 +445,7 @@ function SearchResultsList() {
             ))}
         </div>
     );
+
 }
 
 // 💡 컴포넌트 분리의 장점:
@@ -404,55 +455,59 @@ function SearchResultsList() {
 
 // 전체 선택 컴포넌트
 function SelectAllButton() {
-    const searchResults = state.useValue("searchResults");
-    const allChecked =
-        searchResults?.every((item: any) => item.checked) || false;
+const searchResults = state.useValue("searchResults");
+const allChecked =
+searchResults?.every((item: any) => item.checked) || false;
 
     return (
         <button onClick={() => handleSelectAll(searchResults, !allChecked)}>
             {allChecked ? "전체 해제" : "전체 선택"}
         </button>
     );
+
 }
-```
 
-### ⚡ 성능 비교: 배치 처리의 효과
+````
 
-| 시나리오                 | 개별 처리       | 배치 처리    | 성능 개선       |
-| ------------------------ | --------------- | ------------ | --------------- |
-| 100개 체크박스 전체 선택 | 100번 리렌더링  | 1번 리렌더링 | **100배 향상**  |
-| 500개 테이블 행 업데이트 | 500번 리렌더링  | 1번 리렌더링 | **500배 향상**  |
-| 1000개 상태 동기화       | 1000번 리렌더링 | 1번 리렌더링 | **1000배 향상** |
+### ⚡ 성능 비교: 배열 전체 교체의 효과
+
+| 시나리오                 | 개별 처리                        | 배열 전체 교체                     | 성능 개선                                  |
+| ------------------------ | -------------------------------- | ---------------------------------- | ------------------------------------------ |
+| 100개 체크박스 전체 선택 | 100번 setValue 호출              | 1번 배열 교체                      | **대폭 향상** (API 호출 횟수 감소)         |
+| 체크 상태가 모두 동일    | 100개 구독자 모두 리렌더링       | 0개 구독자 리렌더링 (값 변경 없음) | **무한대 향상** (불필요한 리렌더링 방지)   |
+| 절반만 체크 상태 변경    | 100개 구독자 모두 리렌더링       | 50개 구독자만 리렌더링             | **2배 향상** (변경된 구독자만 처리)        |
+| 1000개 상태 동기화       | 1000번 개별 setValue             | 1번 배열 교체                      | **극적 향상** (Forma 내부 처리 최적화)     |
 
 ### 📊 실제 성능 측정
 
 ```tsx
 // 성능 측정 예시
 console.time("Individual Updates");
-// ❌ 개별 처리: 145ms (145개 항목)
+// ❌ 개별 처리: 각 필드마다 setValue + 리렌더링
 searchResults.forEach((_, index) => {
     state.setValue(`searchResults.${index}.checked`, true);
 });
-console.timeEnd("Individual Updates"); // ~145ms
+console.timeEnd("Individual Updates"); // ~145ms (100개 setValue 호출)
 
-console.time("Batch Update");
-// ✅ 배치 처리: 2ms (동일한 145개 항목)
+console.time("Array Replacement");
+// ✅ 배열 교체: 한 번의 setValue + 스마트 리렌더링
+const updatedResults = searchResults.map(item => ({ ...item, checked: true }));
 state.setValue("searchResults", updatedResults);
-state.refreshFields("searchResults");
-console.timeEnd("Batch Update"); // ~2ms
-```
+console.timeEnd("Array Replacement"); // ~2ms (1번 setValue 호출)
+````
 
 ### 다른 활용 사례들
 
 1. **테이블 행 일괄 업데이트**
 
     ```tsx
-    const updateTableRows = (rowUpdates: any[]) => {
+    const updateTableRows = (rowUpdates: number[]) => {
+        // ✅ 배열 전체 교체로 최적화
         const updatedTable = tableData.map((row, index) =>
             rowUpdates.includes(index) ? { ...row, status: "updated" } : row
         );
         state.setValue("tableData", updatedTable);
-        state.refreshFields("tableData");
+        // 값이 실제로 변경된 행만 자동으로 리렌더링됨
     };
     ```
 
@@ -460,13 +515,12 @@ console.timeEnd("Batch Update"); // ~2ms
 
     ```tsx
     const resetFormSection = () => {
-        const resetData = {
+        // ✅ setValues로 여러 영역 한 번에 업데이트
+        state.setValues({
             personal: { name: "", email: "", phone: "" },
             address: { street: "", city: "", zipCode: "" },
-        };
-        state.setValues(resetData);
-        state.refreshFields("personal");
-        state.refreshFields("address");
+        });
+        // 변경된 필드만 자동으로 리렌더링됨
     };
     ```
 
@@ -475,12 +529,18 @@ console.timeEnd("Batch Update"); // ~2ms
     ```tsx
     const syncWithServer = async () => {
         const serverData = await fetchLatestData();
-        state.setValue("userData", serverData.user);
-        state.setValue("preferences", serverData.preferences);
 
-        // 값이 동일하더라도 UI 강제 새로고침
-        state.refreshFields("userData");
-        state.refreshFields("preferences");
+        // ✅ 배치로 업데이트
+        state.setValues({
+            userData: serverData.user,
+            preferences: serverData.preferences,
+        });
+
+        // refreshFields는 값이 동일하더라도 강제 새로고침이 필요한 경우에만 사용
+        if (forceRefresh) {
+            state.refreshFields("userData");
+            state.refreshFields("preferences");
+        }
     };
     ```
 

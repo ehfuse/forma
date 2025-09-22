@@ -160,7 +160,7 @@ const todoCount = state.useValue("todos.length"); // 2
 
 #### 🔄 **Field Refresh**
 
-You can use the `refreshFields` method to force refresh all field subscribers with a specific prefix. This is very useful for **performance optimization in bulk data processing**.
+You can use the `refreshFields` method to force refresh all field subscribers with a specific prefix. This is used for **forcing UI refresh even when values are identical** in special cases.
 
 ```typescript
 const state = useFormaState({
@@ -172,18 +172,20 @@ const state = useFormaState({
 state.refreshFields("user");
 ```
 
-**💡 Key Concepts:**
+**💡 Use Cases:**
 
--   **Individual Updates**: Each field `setValue` → N re-renders
--   **Batch Updates**: Set entire data `setValue` + `refreshFields` → 1 re-render
+-   **Server Data Synchronization**: Force UI refresh even when server data is identical to current values
+-   **Force Re-validation**: Re-run validation or formatting even when values are same
+-   **External State Sync**: Synchronization with external libraries or systems
 
-**📈 Performance Improvement Effects:**
+**⚠️ Important Notes:**
 
--   Selecting all 100 checkboxes: **100x faster** (100 re-renders → 1 re-render)
--   Updating 500 table rows: **500x faster** (500 re-renders → 1 re-render)
+-   `refreshFields` is not a performance optimization tool
+-   Individual field subscribers will still re-render individually
+-   For bulk data updates, **array replacement** is the most efficient approach
 
-📚 **[Detailed Field Refresh Examples →](./examples-en.md#field-refresh-utilization)**  
-🔗 **[Bulk Data Batch Processing Optimization Guide →](./performance-warnings-en.md#-bulk-data-batch-processing-optimization)**
+📚 **[Field Refresh Usage Examples →](./examples-en.md#field-refresh-utilization)**  
+🔗 **[Bulk Data Optimization Guide →](./performance-warnings-en.md#-bulk-data-batch-processing-optimization)**
 
 ### useForm
 
@@ -203,8 +205,8 @@ function useForm<T extends Record<string, any>>(
 interface UseFormProps<T> {
     /** Initial values for the form */
     initialValues: T;
-    /** Form submission handler */
-    onSubmit?: (values: T) => Promise<void> | void;
+    /** Form submission handler - return false to indicate submission failure */
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     /** Form validation handler - returns true if validation passes */
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** Callback after form submission completion */
@@ -255,7 +257,12 @@ interface UseFormReturn<T> {
 const form = useForm({
     initialValues: { name: "", email: "", age: 0 },
     onSubmit: async (values) => {
-        await api.submitUser(values);
+        // ✅ New feature: Control submission success/failure with boolean return
+        const success = await api.submitUser(values);
+        if (!success) {
+            return false; // Return false to indicate submission failure
+        }
+        // return undefined or true to indicate success
     },
     onValidate: async (values) => {
         return values.email.includes("@");
@@ -265,7 +272,23 @@ const form = useForm({
 // Subscribe to individual fields (performance optimization)
 const name = form.useFormValue("name");
 const email = form.useFormValue("email");
+
+// submit function still returns boolean
+const handleSubmit = async () => {
+    const success = await form.submit();
+    if (success) {
+        console.log("Submission successful!");
+    } else {
+        console.log("Submission failed!");
+    }
+};
 ```
+
+**💡 onSubmit Return Value Handling:**
+
+-   `true` or `undefined`: Submission success
+-   `false`: Submission failure (no need to throw exceptions)
+-   Exception thrown: Automatically treated as submission failure
 
 📚 **[Detailed Form Usage Examples →](./examples-en.md#useform-examples)**
 
@@ -315,8 +338,8 @@ interface UseGlobalFormProps<T> {
     initialValues?: Partial<T>;
     /** Whether to auto-cleanup on component unmount (default: true) */
     autoCleanup?: boolean;
-    /** Form submission handler */
-    onSubmit?: (values: T) => Promise<void> | void;
+    /** Form submission handler - return false to indicate submission failure */
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     /** Form validation handler - returns true if validation passes */
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** Callback after form submission completion */
@@ -1143,7 +1166,7 @@ Parameter type for the useForm hook.
 ```typescript
 interface UseFormProps<T extends Record<string, any>> {
     initialValues: T;
-    onSubmit?: (values: T) => Promise<void> | void;
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     onValidate?: (values: T) => Promise<boolean> | boolean;
     onComplete?: (values: T) => void;
     _externalStore?: FieldStore<T>;
@@ -1159,7 +1182,7 @@ interface UseGlobalFormProps<T extends Record<string, any>> {
     formId: string;
     initialValues?: Partial<T>;
     autoCleanup?: boolean;
-    onSubmit?: (values: T) => Promise<void> | void;
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     onValidate?: (values: T) => Promise<boolean> | boolean;
     onComplete?: (values: T) => void;
 }

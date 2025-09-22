@@ -915,7 +915,7 @@ state.setBatch({
 -   **Memory Efficient**: Less garbage collection pressure
 
 📚 **[Detailed setBatch examples →](./examples-en.md#setbatch-examples)**  
-🔗 **[Performance optimization with setBatch →](./performance-guide-en.md#setbatch-optimization)**
+🔗 **[Bulk Data Optimization Guide →](./performance-warnings-en.md#-mass-data-batch-processing-optimization)**
 
 ---
 

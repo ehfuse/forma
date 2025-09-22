@@ -424,11 +424,8 @@ function SearchResultsListBad() {
         </div>
     );
 }
-```
 
 // ✅ Correct way: Separate components to use useValue
-
-```tsx
 function SearchResultsList() {
     const { useValue } = useFormaState({ searchResults: [] }); // Extract useValue function
     const searchResults = useValue("searchResults");

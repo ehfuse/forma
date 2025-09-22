@@ -424,11 +424,8 @@ function SearchResultsListBad() {
         </div>
     );
 }
-```
 
 // ✅ 올바른 방법: 별도 컴포넌트로 분리하여 useValue 사용
-
-```tsx
 function SearchResultsList() {
     const { useValue } = useFormaState({ searchResults: [] }); // useValue 함수 추출
     const searchResults = useValue("searchResults");

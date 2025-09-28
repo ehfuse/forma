@@ -58,11 +58,16 @@ export class FieldStore<T extends Record<string, any>> {
     /**
      * 특정 필드 값 가져오기 / Get specific field value
      * Dot notation 지원 / Supports dot notation
-     * @param fieldName 필드명 또는 dot notation 경로 / Field name or dot notation path
+     * @param fieldName 필드명 또는 dot notation 경로 또는 "*" (전체) / Field name or dot notation path or "*" (all)
      * @returns 필드 값 / Field value
      */
     getValue(fieldName: keyof T | string): any {
         const fieldNameStr = fieldName as string;
+
+        // "*" 패턴: 전체 상태 반환 / "*" pattern: return all state
+        if (fieldNameStr === "*") {
+            return this.getValues();
+        }
 
         // dot notation이 포함된 경우 중첩 객체 접근 / Access nested object for dot notation
         if (fieldNameStr.includes(".")) {
@@ -78,12 +83,20 @@ export class FieldStore<T extends Record<string, any>> {
     /**
      * 특정 필드 구독 / Subscribe to specific field
      * Dot notation 지원 / Supports dot notation
-     * @param fieldName 필드명 또는 dot notation 경로 / Field name or dot notation path
+     * @param fieldName 필드명 또는 dot notation 경로 또는 "*" (전체) / Field name or dot notation path or "*" (all)
      * @param listener 변경 시 호출될 콜백 / Callback to call on change
      * @returns 구독 해제 함수 / Unsubscribe function
      */
     subscribe(fieldName: keyof T | string, listener: () => void) {
         const fieldNameStr = fieldName as string;
+
+        // "*" 패턴: 전체 상태 변경 구독 / "*" pattern: subscribe to all state changes
+        if (fieldNameStr === "*") {
+            this.globalListeners.add(listener);
+            return () => {
+                this.globalListeners.delete(listener);
+            };
+        }
 
         // dot notation이 포함된 경우 정확한 경로로 구독 / Subscribe to exact path for dot notation
         if (fieldNameStr.includes(".")) {

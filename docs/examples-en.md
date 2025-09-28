@@ -9,6 +9,7 @@ This document provides various usage examples of the Forma library. It explains 
     -   [Array State Management](#array-state-management)
     -   [Dynamic Field Management](#dynamic-field-management)
     -   [Array Length Subscription](#array-length-subscription)
+    -   [Global State Subscription Utilization](#global-state-subscription-utilization)
     -   [Field Refresh Utilization](#field-refresh-utilization)
     -   [Batch Updates (setBatch) Utilization](#batch-updates-setbatch-utilization)
 -   [useForm Examples](#useform-examples)

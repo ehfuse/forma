@@ -9,6 +9,7 @@
     -   [배열 상태 관리](#배열-상태-관리)
     -   [동적 필드 관리](#동적-필드-관리)
     -   [배열 길이 구독](#배열-길이-구독)
+    -   [전체 상태 구독 활용](#전체-상태-구독-활용)
     -   [필드 새로고침 활용](#필드-새로고침-활용)
     -   [배치 업데이트 (setBatch) 활용](#배치-업데이트-setbatch-활용)
 -   [useForm 예제](#useform-예제)
@@ -336,6 +337,214 @@ const updateSelectedItems = (selectedIds: number[], newStatus: string) => {
 -   📝 **코드 가독성**: 여러 필드 변경을 한 번에 표현
 -   🔄 **데이터 일관성**: 모든 변경사항이 동시에 반영
 -   ⏱️ **편의성**: 개별 setValue 대신 객체로 한 번에 처리
+
+### 전체 상태 구독 활용
+
+`useValue("*")` 패턴을 사용하여 전체 상태를 한 번에 구독할 수 있습니다. 이는 여러 필드를 개별 구독하는 대신 **성능 최적화**를 위해 사용합니다.
+
+```typescript
+import { useFormaState } from "forma";
+
+// 다이얼로그 상태 관리 예제
+function DialogComponent({ stateId }: { stateId: string }) {
+    const dialogState = useGlobalFormaState({
+        stateId: `${stateId}_dialog`,
+        initialValues: {
+            tabValue: 0,
+            activeTabIndex: 0,
+            scrollToSectionIndex: 0,
+            isScrolling: false,
+            autoTabChange: true,
+            autoScroll: false,
+            message: "Hello World",
+        },
+    });
+
+    // 🌟 전체 상태를 "*" 패턴으로 구독 - 1회 리렌더링만!
+    const allValues = dialogState.useValue("*");
+
+    // 여러 필드를 한 번에 업데이트
+    const handleTabChange = (newTabIndex: number) => {
+        dialogState.setValues({
+            tabValue: newTabIndex,
+            activeTabIndex: newTabIndex,
+            scrollToSectionIndex: newTabIndex,
+            isScrolling: true,
+            autoTabChange: false,
+            autoScroll: true,
+        }); // 6개 필드 변경이지만 1회만 리렌더링!
+    };
+
+    return (
+        <div>
+            <h3>다이얼로그 상태</h3>
+
+            {/* 전체 상태 표시 */}
+            <div>
+                <strong>현재 탭:</strong> {allValues?.tabValue}
+                <br />
+                <strong>활성 인덱스:</strong> {allValues?.activeTabIndex}
+                <br />
+                <strong>스크롤 중:</strong>{" "}
+                {allValues?.isScrolling ? "예" : "아니오"}
+                <br />
+                <strong>자동 탭 변경:</strong>{" "}
+                {allValues?.autoTabChange ? "활성화" : "비활성화"}
+                <br />
+                <strong>메시지:</strong> {allValues?.message}
+            </div>
+
+            {/* 탭 버튼들 */}
+            <div>
+                {[0, 1, 2, 3].map((index) => (
+                    <button
+                        key={index}
+                        onClick={() => handleTabChange(index)}
+                        style={{
+                            backgroundColor:
+                                allValues?.activeTabIndex === index
+                                    ? "#007bff"
+                                    : "#f0f0f0",
+                            color:
+                                allValues?.activeTabIndex === index
+                                    ? "white"
+                                    : "black",
+                            border: "none",
+                            padding: "8px 16px",
+                            margin: "4px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                        }}
+                    >
+                        탭 {index + 1}
+                    </button>
+                ))}
+            </div>
+
+            {/* 디버그 정보 */}
+            <details style={{ marginTop: "16px" }}>
+                <summary>전체 상태 (디버그용)</summary>
+                <pre
+                    style={{
+                        background: "#f5f5f5",
+                        padding: "8px",
+                        fontSize: "12px",
+                    }}
+                >
+                    {JSON.stringify(allValues, null, 2)}
+                </pre>
+            </details>
+        </div>
+    );
+}
+```
+
+**성능 비교:**
+
+```typescript
+// ❌ 개별 필드 구독 (6번의 개별 리렌더링 가능)
+const tabValue = dialogState.useValue("tabValue");
+const activeTabIndex = dialogState.useValue("activeTabIndex");
+const scrollToSectionIndex = dialogState.useValue("scrollToSectionIndex");
+const isScrolling = dialogState.useValue("isScrolling");
+const autoTabChange = dialogState.useValue("autoTabChange");
+const autoScroll = dialogState.useValue("autoScroll");
+
+// ✅ 전체 상태 구독 (1번의 리렌더링만)
+const allValues = dialogState.useValue("*");
+const {
+    tabValue,
+    activeTabIndex,
+    scrollToSectionIndex,
+    isScrolling,
+    autoTabChange,
+    autoScroll,
+} = allValues || {};
+```
+
+**🎯 실전 활용 사례:**
+
+```typescript
+// 대시보드 위젯 - 모든 데이터를 함께 표시
+function DashboardWidget() {
+    const dashboardState = useFormaState({
+        metrics: { sales: 0, visitors: 0, conversion: 0 },
+        settings: { period: "daily", showTrends: true },
+        loading: false,
+        lastUpdated: null,
+    });
+
+    // 전체 상태 구독으로 위젯 전체 리렌더링
+    const widgetData = dashboardState.useValue("*");
+
+    const refreshData = async () => {
+        dashboardState.setValue("loading", true);
+
+        const newData = await fetchDashboardData();
+
+        // 모든 데이터를 한 번에 업데이트
+        dashboardState.setValues({
+            metrics: newData.metrics,
+            settings: { ...widgetData.settings, ...newData.settings },
+            loading: false,
+            lastUpdated: Date.now(),
+        });
+    };
+
+    if (widgetData?.loading) {
+        return <div>로딩 중...</div>;
+    }
+
+    return (
+        <div className="dashboard-widget">
+            <div className="metrics">
+                <div>매출: {widgetData?.metrics?.sales}</div>
+                <div>방문자: {widgetData?.metrics?.visitors}</div>
+                <div>전환율: {widgetData?.metrics?.conversion}%</div>
+            </div>
+
+            <div className="controls">
+                <select
+                    value={widgetData?.settings?.period}
+                    onChange={(e) =>
+                        dashboardState.setValue(
+                            "settings.period",
+                            e.target.value
+                        )
+                    }
+                >
+                    <option value="daily">일별</option>
+                    <option value="weekly">주별</option>
+                    <option value="monthly">월별</option>
+                </select>
+
+                <button onClick={refreshData}>새로고침</button>
+            </div>
+
+            {widgetData?.lastUpdated && (
+                <small>
+                    마지막 업데이트:{" "}
+                    {new Date(widgetData.lastUpdated).toLocaleString()}
+                </small>
+            )}
+        </div>
+    );
+}
+```
+
+**🔄 언제 사용할까?**
+
+-   ✅ **다중 필드 표시**: 여러 필드 값을 동시에 화면에 보여줄 때
+-   ✅ **상태 디버깅**: 개발 중 전체 상태를 한 눈에 확인하고 싶을 때
+-   ✅ **배치 업데이트**: 여러 필드가 자주 함께 변경되는 경우
+-   ✅ **위젯/대시보드**: 모든 데이터가 함께 업데이트되어야 하는 컴포넌트
+-   ✅ **성능 최적화**: 개별 필드 구독보다 전체 구독이 더 효율적인 경우
+
+**⚠️ 주의사항:**
+
+-   전체 상태를 구독하므로 **어떤 필드가 변경되어도 리렌더링**됩니다
+-   필드별로 세분화된 최적화가 필요한 경우에는 개별 필드 구독을 사용하세요
+-   `allValues`가 `undefined`일 수 있으므로 **옵셔널 체이닝(?.)** 사용을 권장합니다
 
 ---
 

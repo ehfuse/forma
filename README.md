@@ -15,6 +15,7 @@ Forma는 React 애플리케이션에서 폼과 상태를 **간편하면서도 �
 
 -   🎯 **Complete Zero-Config**: Start immediately without any configuration
 -   ✅ **Individual Field Subscription**: Optimized performance through selective re-rendering per field
+-   🌟 **Global State Subscription**: Subscribe to entire state with `useValue("*")` pattern for optimal performance
 -   ✅ **General State Management**: Efficient management of non-form states with `useFormaState`
 -   ✅ **Dot Notation Optimization**: Access nested objects like `user.profile.name`
 -   ✅ **Full MUI Compatibility**: Perfect integration with Material-UI components
@@ -27,6 +28,7 @@ Forma는 React 애플리케이션에서 폼과 상태를 **간편하면서도 �
 
 -   🎯 **완전한 Zero-Config**: 설정 없이 바로 사용 가능한 개발 경험
 -   ✅ **개별 필드 구독**: 필드별 선택적 리렌더링으로 최적화된 성능
+-   🌟 **전체 상태 구독**: `useValue("*")` 패턴으로 전체 상태를 한 번에 구독하여 최적 성능 제공
 -   ✅ **범용 상태 관리**: `useFormaState`로 폼 외 일반 상태도 효율적 관리
 -   ✅ **Dot Notation 최적화**: `user.profile.name` 형태의 중첩 객체 접근
 -   ✅ **MUI 완전 호환**: Material-UI 컴포넌트와 완벽한 통합

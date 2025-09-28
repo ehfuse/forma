@@ -322,8 +322,30 @@ export class FieldStore<T extends Record<string, any>> {
      * @param newValues 설정할 값들 / Values to set
      */
     setValues(newValues: Partial<T>) {
-        Object.keys(newValues).forEach((key) => {
-            this.setValue(key as keyof T, newValues[key]);
+        if (!newValues || Object.keys(newValues).length === 0) {
+            return;
+        }
+
+        // 성능 최적화: 영향받는 리스너들을 먼저 수집
+        const affectedListeners = new Set<() => void>();
+
+        // 각 업데이트를 개별적으로 처리하되, 리스너 실행은 마지막에 일괄 처리
+        Object.entries(newValues).forEach(([fieldName, value]) => {
+            this.setValueWithoutNotify(fieldName, value, affectedListeners);
+        });
+
+        // 글로벌 리스너들도 추가
+        this.globalListeners.forEach((listener) =>
+            affectedListeners.add(listener)
+        );
+
+        // 배치로 모든 영향받는 리스너들 실행
+        affectedListeners.forEach((listener) => {
+            try {
+                listener();
+            } catch (error) {
+                devError("setValues 리스너 실행 중 오류:", error);
+            }
         });
     }
 

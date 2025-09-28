@@ -121,9 +121,9 @@ export class FieldStore<T extends Record<string, any>> {
             // dot notation 필드가 구독될 때 기본값 생성 / Create default value when dot notation field is subscribed
             const currentValue = this.getValue(fieldNameStr);
             if (currentValue === undefined) {
-                // 기본값으로 빈 문자열 또는 null 설정 (타입에 따라 결정)
-                // Set default value as empty string or null (determined by type)
-                this.setValue(fieldNameStr, null);
+                // 기본값은 undefined로 유지 (필요시에만 설정)
+                // Keep default value as undefined (set only when needed)
+                // this.setValue(fieldNameStr, undefined); // 주석 처리: 불필요한 초기화 방지
             }
 
             return () => {
@@ -142,7 +142,7 @@ export class FieldStore<T extends Record<string, any>> {
         if (!field) {
             // 필드가 없으면 생성 / Create field if not exists
             field = {
-                value: null, // undefined 대신 null로 초기화
+                value: undefined, // 초기값은 undefined로 설정
                 listeners: new Set(),
             };
             this.fields.set(fieldName as keyof T, field);
@@ -334,9 +334,9 @@ export class FieldStore<T extends Record<string, any>> {
     getValues(): T {
         const values: any = {};
         this.fields.forEach((field, key) => {
-            // undefined 값을 null로 변환하여 API 전송 시 필드가 누락되지 않도록 함
-            // Convert undefined to null to prevent field omission during API transmission
-            values[key] = field.value === undefined ? null : field.value;
+            // 와일드카드 구독을 위해 undefined 값을 그대로 유지
+            // Keep undefined values as-is for wildcard subscriptions
+            values[key] = field.value;
         });
         return values as T;
     }

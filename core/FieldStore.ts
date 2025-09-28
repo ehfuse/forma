@@ -67,11 +67,16 @@ export class FieldStore<T extends Record<string, any>> {
         // "*" 패턴: 전체 상태 반환 / "*" pattern: return all state
         if (fieldNameStr === "*") {
             const allValues = this.getValues();
-            // 빈 객체인 경우 undefined 반환하여 구독자가 초기 상태임을 알 수 있게 함
-            // Return undefined for empty objects so subscribers know it's initial state
-            if (Object.keys(allValues).length === 0) {
+            // 빈 객체이거나 모든 값이 undefined/null인 경우 undefined 반환
+            // Return undefined for empty objects or when all values are undefined/null
+            const hasValidData = Object.values(allValues).some(
+                (value) => value !== undefined && value !== null && value !== ""
+            );
+
+            if (!hasValidData) {
                 return undefined;
             }
+
             return allValues;
         }
 

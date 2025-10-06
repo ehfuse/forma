@@ -14,6 +14,7 @@
     -   [useUnregisterGlobalForm](#useunregisterglobalform)
     -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
     -   [useModal](#usemodal)
+    -   [useBreakpoint](#usebreakpoint)
 -   [Methods](#methods)
     -   [setBatch](#setbatch)
 -   [Components](#components)
@@ -1027,6 +1028,157 @@ function FormModal() {
 -   `initialOpen={true}`로 시작하는 경우 주의가 필요합니다 (히스토리 스택 고려).
 
 ---
+
+———
+
+### useBreakpoint
+
+화면 크기에 따른 반응형 브레이크포인트 상태를 관리하는 훅입니다. 모바일, 태블릿, 데스크톱 등 다양한 화면 크기에 대응하는 UI를 구현할 때 사용합니다.
+
+#### Signature
+
+```typescript
+function useBreakpoint(): UseBreakpointReturn;
+```
+
+#### Parameters
+
+없음 (no parameters)
+
+#### Returns
+
+```typescript
+interface UseBreakpointReturn {
+    /** Extra small: < 600px */
+    xs: boolean;
+    /** Small: < 900px */
+    sm: boolean;
+    /** Medium: < 1200px */
+    md: boolean;
+    /** Large: < 1536px */
+    lg: boolean;
+    /** Extra large: < 1920px */
+    xl: boolean;
+    /** Extra extra large: >= 1920px */
+    xxl: boolean;
+    /** >= 0px */
+    xsUp: boolean;
+    /** >= 600px */
+    smUp: boolean;
+    /** >= 900px */
+    mdUp: boolean;
+    /** >= 1200px */
+    lgUp: boolean;
+    /** >= 1536px */
+    xlUp: boolean;
+    /** >= 1920px */
+    xxlUp: boolean;
+    /** 브레이크포인트 상태 객체 (루트 레벨과 동일) */
+    breakpoint: BreakpointState;
+}
+```
+
+#### 브레이크포인트 정의
+
+| 브레이크포인트 | 크기 범위 |
+| ------------ | ------------- |
+| `xs`         | 0px ~ 599px   |
+| `sm`         | 600px ~ 899px |
+| `md`         | 900px ~ 1199px|
+| `lg`         | 1200px ~ 1535px|
+| `xl`         | 1536px ~ 1919px|
+| `xxl`        | 1920px 이상  |
+
+#### 특징
+
+-   **"down" 상태**: `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - 해당 브레이크포인트 **이하**인지 판별
+-   **"up" 상태**: `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - 해당 브레이크포인트 **이상**인지 판별
+-   **자동 업데이트**: 창 크기 변경 시 자동으로 상태 갱신
+-   **SSR 안전**: 서버 사이드 렌더링 환경에서도 안전하게 동작
+
+#### 기본 사용 예제
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function ResponsiveComponent() {
+    const breakpoint = useBreakpoint();
+
+    return (
+        <div>
+            {breakpoint.smUp ? (
+                <DesktopNavigation />
+            ) : (
+                <MobileNavigation />
+            )}
+        </div>
+    );
+}
+```
+
+#### 조건부 렌더링
+
+```typescript
+function Dashboard() {
+    const { mdUp, lgUp } = useBreakpoint();
+
+    return (
+        <div>
+            <MainContent />
+            {mdUp && <Sidebar />}
+            {lgUp && <AdditionalPanel />}
+        </div>
+    );
+}
+```
+
+#### 모바일/태블릿/데스크톱 분기
+
+```typescript
+function ArticleLayout() {
+    const { xs, sm, mdUp } = useBreakpoint();
+
+    if (xs) {
+        return <MobileArticleView />;
+    }
+
+    if (sm) {
+        return <TabletArticleView />;
+    }
+
+    return <DesktopArticleView />;
+}
+```
+
+#### 동적 컴포넌트 크기 조정
+
+```typescript
+function ImageGallery() {
+    const { xs, sm, md, lg } = useBreakpoint();
+
+    const columns = xs ? 1 : sm ? 2 : md ? 3 : lg ? 4 : 5;
+
+    return (
+        <Grid container spacing={2}>
+            {images.map((img) => (
+                <Grid item xs={12 / columns} key={img.id}>
+                    <img src={img.url} alt={img.title} />
+                </Grid>
+            ))}
+        </Grid>
+    );
+}
+```
+
+#### 주의사항
+
+-   창 크기 변경 시 리렌더링이 발생합니다.
+-   성능을 위해 필요한 경우에만 사용하세요 (CSS 미디어 쿼리로 처리 가능한 경우 CSS 사용 권장).
+-   서버 사이드 렌더링 시 초기값은 0px로 설정됩니다.
+
+📚 **[브레이크포인트 상세 예제 →](./examples-ko.md#usebreakpoint-예제)**
+
+———
 
 ## Methods
 

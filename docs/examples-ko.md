@@ -25,7 +25,11 @@
 -   [useModal 예제](#usemodal-예제)
     -   [기본 모달 사용](#기본-모달-사용)
     -   [중첩 모달 관리](#중첩-모달-관리)
-    -   [폼이 포함된 모달](#폼이-포함된-모달)
+    -   [펼이 포함된 모달](#폼이-포함된-모달)
+-   [useBreakpoint 예제](#usebreakpoint-예제)
+    -   [기본 사용법](#반응형-기본-사용법)
+    -   [모바일/데스크톱 분기](#모바일데스크톱-분기)
+    -   [동적 레이아웃](#동적-레이아웃)
 -   [등록/해제 훅 예제](#등록해제-훅-예제)
 
 ---
@@ -1143,6 +1147,237 @@ function App() {
 ```
 
 ---
+
+———
+
+## useBreakpoint 예제
+
+`useBreakpoint` 훅은 화면 크기에 따른 반응형 UI를 구현할 때 사용합니다. 모바일, 태블릿, 데스크톱 등 다양한 화면 크기에 대응하는 컴포넌트를 만들 수 있습니다.
+
+### 반응형 기본 사용법
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function ResponsiveNavigation() {
+    const { smUp } = useBreakpoint();
+
+    return (
+        <header>
+            {smUp ? (
+                // 데스크톱: 수평 네비게이션
+                <nav>
+                    <a href="/home">홈</a>
+                    <a href="/about">소개</a>
+                    <a href="/contact">연락처</a>
+                </nav>
+            ) : (
+                // 모바일: 햄버거 메뉴
+                <HamburgerMenu />
+            )}
+        </header>
+    );
+}
+```
+
+### 모바일/데스크톱 분기
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function ProductPage() {
+    const { xs, sm, mdUp } = useBreakpoint();
+
+    // 화면 크기에 따라 다른 레이아웃 사용
+    if (xs) {
+        return (
+            <div>
+                <MobileProductView />
+                <MobileImageCarousel />
+                <MobileReviews />
+            </div>
+        );
+    }
+
+    if (sm) {
+        return (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr" }}>
+                <TabletProductView />
+                <TabletImageGallery />
+                <TabletReviews />
+            </div>
+        );
+    }
+
+    // 데스크톱 (md 이상)
+    return (
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr" }}>
+            <div>
+                <DesktopProductView />
+                <DesktopImageGallery />
+            </div>
+            <div>
+                <Sidebar>
+                    <PriceInfo />
+                    <AddToCart />
+                </Sidebar>
+            </div>
+        </div>
+    );
+}
+```
+
+### 동적 레이아웃
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function Dashboard() {
+    const { xs, sm, md, mdUp, lgUp } = useBreakpoint();
+
+    // 화면 크기에 따라 그리드 열 수 조정
+    const columns = xs ? 1 : sm ? 2 : md ? 3 : 4;
+
+    return (
+        <div>
+            <MainContent />
+            
+            {/* 중간 크기부터 사이드바 표시 */}
+            {mdUp && (
+                <Sidebar>
+                    <QuickStats />
+                    <RecentActivity />
+                </Sidebar>
+            )}
+            
+            {/* 큰 화면에서만 추가 패널 표시 */}
+            {lgUp && (
+                <RightPanel>
+                    <Notifications />
+                    <Calendar />
+                </RightPanel>
+            )}
+            
+            <Grid container spacing={2}>
+                {cards.map((card) => (
+                    <Grid item xs={12 / columns} key={card.id}>
+                        <Card {...card} />
+                    </Grid>
+                ))}
+            </Grid>
+        </div>
+    );
+}
+```
+
+#### 이미지 갤러리 예제
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function ImageGallery({ images }) {
+    const { xs, sm, md, lg, xlUp } = useBreakpoint();
+
+    // 화면 크기별 열 수 결정
+    const getColumns = () => {
+        if (xs) return 1;
+        if (sm) return 2;
+        if (md) return 3;
+        if (lg) return 4;
+        if (xlUp) return 5;
+        return 3; // 기본값
+    };
+
+    const columns = getColumns();
+    const columnWidth = `${100 / columns}%`;
+
+    return (
+        <div style={{ display: "flex", flexWrap: "wrap" }}>
+            {images.map((image) => (
+                <div
+                    key={image.id}
+                    style={{
+                        width: columnWidth,
+                        padding: "8px",
+                    }}
+                >
+                    <img
+                        src={image.url}
+                        alt={image.title}
+                        style={{ width: "100%", height: "auto" }}
+                    />
+                </div>
+            ))}
+        </div>
+    );
+}
+```
+
+#### 반응형 폰트 크기
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function Article({ title, content }) {
+    const { xs, sm, mdUp } = useBreakpoint();
+
+    const titleFontSize = xs ? "24px" : sm ? "32px" : "48px";
+    const contentFontSize = xs ? "14px" : sm ? "16px" : "18px";
+    const maxWidth = mdUp ? "800px" : "100%";
+
+    return (
+        <article style={{ maxWidth, margin: "0 auto", padding: "16px" }}>
+            <h1 style={{ fontSize: titleFontSize }}>{title}</h1>
+            <p style={{ fontSize: contentFontSize, lineHeight: 1.6 }}>
+                {content}
+            </p>
+        </article>
+    );
+}
+```
+
+#### 조건부 컴포넌트 렌더링
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function VideoPlayer() {
+    const { smUp, mdUp } = useBreakpoint();
+
+    return (
+        <div>
+            <video controls>
+                <source src="video.mp4" type="video/mp4" />
+            </video>
+            
+            {/* 작은 화면에서는 기본 컨트롤만 */}
+            {smUp && <VideoControls />}
+            
+            {/* 중간 크기부터 재생목록 */}
+            {mdUp && <Playlist />}
+            
+            {/* 큰 화면에서는 추천 동영상 */}
+            {mdUp && <RecommendedVideos />}
+        </div>
+    );
+}
+```
+
+#### 주요 활용 케이스
+
+1. **네비게이션 패턴**: 데스크톱은 수평 메뉴, 모바일은 햄버거
+2. **레이아웃 변경**: 화면 크기에 따라 1열/2열/3열 그리드
+3. **조건부 컴포넌트**: 큰 화면에서만 사이드바/패널 표시
+4. **동적 스타일링**: 화면 크기별 폰트/여백 조정
+5. **콘텐츠 최적화**: 모바일/데스크톱별 다른 컴포넌트 사용
+
+#### 주의사항
+
+-   창 크기 변경 시 리렌더링이 발생하므로 성능을 고려하여 사용하세요.
+-   단순한 스타일 변경은 CSS 미디어 쿼리를 사용하는 것이 더 효율적입니다.
+-   컴포넌트의 표시/비표시나 구조적 변경이 필요한 경우에 사용하세요.
+
+———
 
 ## 등록/해제 훅 예제
 

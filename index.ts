@@ -37,6 +37,7 @@ export { useGlobalFormaState } from "./hooks/useGlobalFormaState";
 export { useRegisterGlobalFormaState } from "./hooks/useRegisterGlobalFormaState";
 export { useUnregisterGlobalFormaState } from "./hooks/useUnregisterGlobalFormaState";
 export { useModal } from "./hooks/useModal";
+export { useBreakpoint } from "./hooks/useBreakpoint";
 
 // ===== Context & Providers =====
 export {
@@ -88,6 +89,9 @@ export type {
     GlobalFormMiddleware,
     ExtendedGlobalFormaProviderProps,
 } from "./types/globalForm";
+
+// Breakpoint Types
+export type { BreakpointState, UseBreakpointReturn } from "./types/breakpoint";
 
 /**
  * Forma library version

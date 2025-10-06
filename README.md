@@ -18,6 +18,7 @@ Forma는 React 애플리케이션에서 폼과 상태를 **간편하면서도 �
 -   🌟 **Global State Subscription**: Subscribe to entire state with `useValue("*")` pattern for optimal performance
 -   ✅ **General State Management**: Efficient management of non-form states with `useFormaState`
 -   🎭 **Modal Stack Management**: Mobile-friendly modal handling with back button support via `useModal`
+-   📱 **Responsive Breakpoint Management**: Screen size detection and adaptive UI with `useBreakpoint`
 -   ✅ **Dot Notation Optimization**: Access nested objects like `user.profile.name`
 -   ✅ **Full MUI Compatibility**: Perfect integration with Material-UI components
 -   ✅ **Global Form State**: Share form state across multiple components
@@ -32,6 +33,7 @@ Forma는 React 애플리케이션에서 폼과 상태를 **간편하면서도 �
 -   🌟 **전체 상태 구독**: `useValue("*")` 패턴으로 전체 상태를 한 번에 구독하여 최적 성능 제공
 -   ✅ **범용 상태 관리**: `useFormaState`로 폼 외 일반 상태도 효율적 관리
 -   🎭 **모달 스택 관리**: `useModal`로 뒤로가기 지원하는 모바일 친화적 모달 처리
+-   📱 **반응형 브레이크포인트 관리**: `useBreakpoint`로 화면 크기 감지 및 적응형 UI 구현
 -   ✅ **Dot Notation 최적화**: `user.profile.name` 형태의 중첩 객체 접근
 -   ✅ **MUI 완전 호환**: Material-UI 컴포넌트와 완벽한 통합
 -   ✅ **글로벌 폼 상태**: 여러 컴포넌트 간 폼 상태 공유

@@ -14,6 +14,7 @@ This document provides a detailed reference for all APIs in the Forma library.
     -   [useUnregisterGlobalForm](#useunregisterglobalform)
     -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
     -   [useModal](#usemodal)
+    -   [useBreakpoint](#usebreakpoint)
 -   [Methods](#methods)
     -   [setBatch](#setbatch)
 -   [Components](#components)
@@ -1029,6 +1030,157 @@ function FormModal() {
 -   Be cautious when using `initialOpen={true}` (consider history stack).
 
 ---
+
+———
+
+### useBreakpoint
+
+A hook for managing responsive breakpoint state based on screen size. Use this to implement UI that adapts to mobile, tablet, desktop, and other screen sizes.
+
+#### Signature
+
+```typescript
+function useBreakpoint(): UseBreakpointReturn;
+```
+
+#### Parameters
+
+None
+
+#### Returns
+
+```typescript
+interface UseBreakpointReturn {
+    /** Extra small: < 600px */
+    xs: boolean;
+    /** Small: < 900px */
+    sm: boolean;
+    /** Medium: < 1200px */
+    md: boolean;
+    /** Large: < 1536px */
+    lg: boolean;
+    /** Extra large: < 1920px */
+    xl: boolean;
+    /** Extra extra large: >= 1920px */
+    xxl: boolean;
+    /** >= 0px */
+    xsUp: boolean;
+    /** >= 600px */
+    smUp: boolean;
+    /** >= 900px */
+    mdUp: boolean;
+    /** >= 1200px */
+    lgUp: boolean;
+    /** >= 1536px */
+    xlUp: boolean;
+    /** >= 1920px */
+    xxlUp: boolean;
+    /** Breakpoint state object (same as root level) */
+    breakpoint: BreakpointState;
+}
+```
+
+#### Breakpoint Definitions
+
+| Breakpoint | Size Range    |
+| ---------- | ------------- |
+| `xs`       | 0px ~ 599px   |
+| `sm`       | 600px ~ 899px |
+| `md`       | 900px ~ 1199px|
+| `lg`       | 1200px ~ 1535px|
+| `xl`       | 1536px ~ 1919px|
+| `xxl`      | 1920px and up |
+
+#### Features
+
+-   **"down" states**: `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - Check if screen is **below or at** the breakpoint
+-   **"up" states**: `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - Check if screen is **at or above** the breakpoint
+-   **Auto-update**: State automatically updates on window resize
+-   **SSR Safe**: Works safely in server-side rendering environments
+
+#### Basic Usage Example
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function ResponsiveComponent() {
+    const breakpoint = useBreakpoint();
+
+    return (
+        <div>
+            {breakpoint.smUp ? (
+                <DesktopNavigation />
+            ) : (
+                <MobileNavigation />
+            )}
+        </div>
+    );
+}
+```
+
+#### Conditional Rendering
+
+```typescript
+function Dashboard() {
+    const { mdUp, lgUp } = useBreakpoint();
+
+    return (
+        <div>
+            <MainContent />
+            {mdUp && <Sidebar />}
+            {lgUp && <AdditionalPanel />}
+        </div>
+    );
+}
+```
+
+#### Mobile/Tablet/Desktop Branching
+
+```typescript
+function ArticleLayout() {
+    const { xs, sm, mdUp } = useBreakpoint();
+
+    if (xs) {
+        return <MobileArticleView />;
+    }
+
+    if (sm) {
+        return <TabletArticleView />;
+    }
+
+    return <DesktopArticleView />;
+}
+```
+
+#### Dynamic Component Sizing
+
+```typescript
+function ImageGallery() {
+    const { xs, sm, md, lg } = useBreakpoint();
+
+    const columns = xs ? 1 : sm ? 2 : md ? 3 : lg ? 4 : 5;
+
+    return (
+        <Grid container spacing={2}>
+            {images.map((img) => (
+                <Grid item xs={12 / columns} key={img.id}>
+                    <img src={img.url} alt={img.title} />
+                </Grid>
+            ))}
+        </Grid>
+    );
+}
+```
+
+#### Important Notes
+
+-   Re-renders occur on window resize.
+-   Use only when necessary for performance (prefer CSS media queries when possible).
+-   Initial value is 0px during server-side rendering.
+
+📚 **[Detailed Breakpoint Examples →](./examples-en.md#usebreakpoint-examples)**
+
+———
 
 ## Methods
 

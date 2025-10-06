@@ -71,3 +71,6 @@ export { GlobalFormError } from "./globalForm";
 
 // 모달 관련 타입들
 export type { UseModalProps, UseModalReturn } from "./modal";
+
+// 브레이크포인트 관련 타입들
+export type { BreakpointState, UseBreakpointReturn } from "./breakpoint";

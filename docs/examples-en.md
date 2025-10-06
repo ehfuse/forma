@@ -26,6 +26,10 @@ This document provides various usage examples of the Forma library. It explains 
     -   [Basic Modal Usage](#basic-modal-usage)
     -   [Nested Modal Management](#nested-modal-management)
     -   [Modal with Form](#modal-with-form)
+-   [useBreakpoint Examples](#usebreakpoint-examples)
+    -   [Basic Usage](#responsive-basic-usage)
+    -   [Mobile/Desktop Branching](#mobiledesktop-branching)
+    -   [Dynamic Layout](#dynamic-layout)
 -   [Register/Unregister Hook Examples](#registerunregister-hook-examples)
 
 ---
@@ -943,6 +947,237 @@ function App() {
 ```
 
 ---
+
+———
+
+## useBreakpoint Examples
+
+The `useBreakpoint` hook is used to implement responsive UI based on screen size. It enables building components that adapt to mobile, tablet, desktop, and other screen sizes.
+
+### Responsive Basic Usage
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function ResponsiveNavigation() {
+    const { smUp } = useBreakpoint();
+
+    return (
+        <header>
+            {smUp ? (
+                // Desktop: Horizontal navigation
+                <nav>
+                    <a href="/home">Home</a>
+                    <a href="/about">About</a>
+                    <a href="/contact">Contact</a>
+                </nav>
+            ) : (
+                // Mobile: Hamburger menu
+                <HamburgerMenu />
+            )}
+        </header>
+    );
+}
+```
+
+### Mobile/Desktop Branching
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function ProductPage() {
+    const { xs, sm, mdUp } = useBreakpoint();
+
+    // Use different layouts based on screen size
+    if (xs) {
+        return (
+            <div>
+                <MobileProductView />
+                <MobileImageCarousel />
+                <MobileReviews />
+            </div>
+        );
+    }
+
+    if (sm) {
+        return (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr" }}>
+                <TabletProductView />
+                <TabletImageGallery />
+                <TabletReviews />
+            </div>
+        );
+    }
+
+    // Desktop (md and up)
+    return (
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr" }}>
+            <div>
+                <DesktopProductView />
+                <DesktopImageGallery />
+            </div>
+            <div>
+                <Sidebar>
+                    <PriceInfo />
+                    <AddToCart />
+                </Sidebar>
+            </div>
+        </div>
+    );
+}
+```
+
+### Dynamic Layout
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function Dashboard() {
+    const { xs, sm, md, mdUp, lgUp } = useBreakpoint();
+
+    // Adjust grid columns based on screen size
+    const columns = xs ? 1 : sm ? 2 : md ? 3 : 4;
+
+    return (
+        <div>
+            <MainContent />
+            
+            {/* Show sidebar from medium size */}
+            {mdUp && (
+                <Sidebar>
+                    <QuickStats />
+                    <RecentActivity />
+                </Sidebar>
+            )}
+            
+            {/* Show additional panel only on large screens */}
+            {lgUp && (
+                <RightPanel>
+                    <Notifications />
+                    <Calendar />
+                </RightPanel>
+            )}
+            
+            <Grid container spacing={2}>
+                {cards.map((card) => (
+                    <Grid item xs={12 / columns} key={card.id}>
+                        <Card {...card} />
+                    </Grid>
+                ))}
+            </Grid>
+        </div>
+    );
+}
+```
+
+#### Image Gallery Example
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function ImageGallery({ images }) {
+    const { xs, sm, md, lg, xlUp } = useBreakpoint();
+
+    // Determine columns based on screen size
+    const getColumns = () => {
+        if (xs) return 1;
+        if (sm) return 2;
+        if (md) return 3;
+        if (lg) return 4;
+        if (xlUp) return 5;
+        return 3; // default
+    };
+
+    const columns = getColumns();
+    const columnWidth = `${100 / columns}%`;
+
+    return (
+        <div style={{ display: "flex", flexWrap: "wrap" }}>
+            {images.map((image) => (
+                <div
+                    key={image.id}
+                    style={{
+                        width: columnWidth,
+                        padding: "8px",
+                    }}
+                >
+                    <img
+                        src={image.url}
+                        alt={image.title}
+                        style={{ width: "100%", height: "auto" }}
+                    />
+                </div>
+            ))}
+        </div>
+    );
+}
+```
+
+#### Responsive Font Sizes
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function Article({ title, content }) {
+    const { xs, sm, mdUp } = useBreakpoint();
+
+    const titleFontSize = xs ? "24px" : sm ? "32px" : "48px";
+    const contentFontSize = xs ? "14px" : sm ? "16px" : "18px";
+    const maxWidth = mdUp ? "800px" : "100%";
+
+    return (
+        <article style={{ maxWidth, margin: "0 auto", padding: "16px" }}>
+            <h1 style={{ fontSize: titleFontSize }}>{title}</h1>
+            <p style={{ fontSize: contentFontSize, lineHeight: 1.6 }}>
+                {content}
+            </p>
+        </article>
+    );
+}
+```
+
+#### Conditional Component Rendering
+
+```typescript
+import { useBreakpoint } from "@ehfuse/forma";
+
+function VideoPlayer() {
+    const { smUp, mdUp } = useBreakpoint();
+
+    return (
+        <div>
+            <video controls>
+                <source src="video.mp4" type="video/mp4" />
+            </video>
+            
+            {/* Basic controls only on small screens */}
+            {smUp && <VideoControls />}
+            
+            {/* Playlist from medium size */}
+            {mdUp && <Playlist />}
+            
+            {/* Recommended videos on large screens */}
+            {mdUp && <RecommendedVideos />}
+        </div>
+    );
+}
+```
+
+#### Key Use Cases
+
+1. **Navigation Patterns**: Horizontal menu on desktop, hamburger on mobile
+2. **Layout Changes**: 1-column/2-column/3-column grid based on screen size
+3. **Conditional Components**: Show sidebar/panels only on larger screens
+4. **Dynamic Styling**: Adjust font sizes/spacing by screen size
+5. **Content Optimization**: Use different components for mobile/desktop
+
+#### Important Notes
+
+-   Re-renders occur on window resize, so use with performance in mind.
+-   For simple style changes, CSS media queries are more efficient.
+-   Use when you need to show/hide components or make structural changes.
+
+———
 
 ## Register/Unregister Hook Examples
 

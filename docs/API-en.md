@@ -1082,14 +1082,14 @@ interface UseBreakpointReturn {
 
 #### Breakpoint Definitions
 
-| Breakpoint | Size Range    |
-| ---------- | ------------- |
-| `xs`       | 0px ~ 599px   |
-| `sm`       | 600px ~ 899px |
-| `md`       | 900px ~ 1199px|
-| `lg`       | 1200px ~ 1535px|
-| `xl`       | 1536px ~ 1919px|
-| `xxl`      | 1920px and up |
+| Breakpoint | Size Range      |
+| ---------- | --------------- |
+| `xs`       | 0px ~ 599px     |
+| `sm`       | 600px ~ 899px   |
+| `md`       | 900px ~ 1199px  |
+| `lg`       | 1200px ~ 1535px |
+| `xl`       | 1536px ~ 1919px |
+| `xxl`      | 1920px and up   |
 
 #### Features
 
@@ -1108,11 +1108,7 @@ function ResponsiveComponent() {
 
     return (
         <div>
-            {breakpoint.smUp ? (
-                <DesktopNavigation />
-            ) : (
-                <MobileNavigation />
-            )}
+            {breakpoint.smUp ? <DesktopNavigation /> : <MobileNavigation />}
         </div>
     );
 }

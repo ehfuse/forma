@@ -1080,14 +1080,14 @@ interface UseBreakpointReturn {
 
 #### 브레이크포인트 정의
 
-| 브레이크포인트 | 크기 범위 |
-| ------------ | ------------- |
-| `xs`         | 0px ~ 599px   |
-| `sm`         | 600px ~ 899px |
-| `md`         | 900px ~ 1199px|
-| `lg`         | 1200px ~ 1535px|
-| `xl`         | 1536px ~ 1919px|
-| `xxl`        | 1920px 이상  |
+| 브레이크포인트 | 크기 범위       |
+| -------------- | --------------- |
+| `xs`           | 0px ~ 599px     |
+| `sm`           | 600px ~ 899px   |
+| `md`           | 900px ~ 1199px  |
+| `lg`           | 1200px ~ 1535px |
+| `xl`           | 1536px ~ 1919px |
+| `xxl`          | 1920px 이상     |
 
 #### 특징
 
@@ -1106,11 +1106,7 @@ function ResponsiveComponent() {
 
     return (
         <div>
-            {breakpoint.smUp ? (
-                <DesktopNavigation />
-            ) : (
-                <MobileNavigation />
-            )}
+            {breakpoint.smUp ? <DesktopNavigation /> : <MobileNavigation />}
         </div>
     );
 }

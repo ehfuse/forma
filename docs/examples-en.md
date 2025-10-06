@@ -1041,7 +1041,7 @@ function Dashboard() {
     return (
         <div>
             <MainContent />
-            
+
             {/* Show sidebar from medium size */}
             {mdUp && (
                 <Sidebar>
@@ -1049,7 +1049,7 @@ function Dashboard() {
                     <RecentActivity />
                 </Sidebar>
             )}
-            
+
             {/* Show additional panel only on large screens */}
             {lgUp && (
                 <RightPanel>
@@ -1057,7 +1057,7 @@ function Dashboard() {
                     <Calendar />
                 </RightPanel>
             )}
-            
+
             <Grid container spacing={2}>
                 {cards.map((card) => (
                     <Grid item xs={12 / columns} key={card.id}>
@@ -1149,13 +1149,13 @@ function VideoPlayer() {
             <video controls>
                 <source src="video.mp4" type="video/mp4" />
             </video>
-            
+
             {/* Basic controls only on small screens */}
             {smUp && <VideoControls />}
-            
+
             {/* Playlist from medium size */}
             {mdUp && <Playlist />}
-            
+
             {/* Recommended videos on large screens */}
             {mdUp && <RecommendedVideos />}
         </div>

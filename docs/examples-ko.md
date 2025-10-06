@@ -1241,7 +1241,7 @@ function Dashboard() {
     return (
         <div>
             <MainContent />
-            
+
             {/* 중간 크기부터 사이드바 표시 */}
             {mdUp && (
                 <Sidebar>
@@ -1249,7 +1249,7 @@ function Dashboard() {
                     <RecentActivity />
                 </Sidebar>
             )}
-            
+
             {/* 큰 화면에서만 추가 패널 표시 */}
             {lgUp && (
                 <RightPanel>
@@ -1257,7 +1257,7 @@ function Dashboard() {
                     <Calendar />
                 </RightPanel>
             )}
-            
+
             <Grid container spacing={2}>
                 {cards.map((card) => (
                     <Grid item xs={12 / columns} key={card.id}>
@@ -1349,13 +1349,13 @@ function VideoPlayer() {
             <video controls>
                 <source src="video.mp4" type="video/mp4" />
             </video>
-            
+
             {/* 작은 화면에서는 기본 컨트롤만 */}
             {smUp && <VideoControls />}
-            
+
             {/* 중간 크기부터 재생목록 */}
             {mdUp && <Playlist />}
-            
+
             {/* 큰 화면에서는 추천 동영상 */}
             {mdUp && <RecommendedVideos />}
         </div>

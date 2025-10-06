@@ -68,3 +68,6 @@ export type {
 
 // 에러 클래스
 export { GlobalFormError } from "./globalForm";
+
+// 모달 관련 타입들
+export type { UseModalProps, UseModalReturn } from "./modal";

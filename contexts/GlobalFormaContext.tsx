@@ -5,8 +5,7 @@
  * 여러 컴포넌트 간 폼 상태 공유를 위한 React Context | React Context for sharing form state across multiple components
  *
  * @license MIT License
- * @copyright 2025 KIM YOUNG JIN (Kim Young Jin)
- * @author KIM YOUNG JIN (ehfuse@gmail.com)
+ * @copyright 2025 KIM YOUNG JIN (ehfuse@gmail.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +26,14 @@
  * SOFTWARE.
  */
 
-import { createContext, useRef, ReactNode } from "react";
+import {
+    createContext,
+    useRef,
+    ReactNode,
+    useState,
+    useEffect,
+    useCallback,
+} from "react";
 import { FieldStore } from "../core/FieldStore";
 import { GlobalFormaContextType } from "../types/globalForm";
 
@@ -35,6 +41,7 @@ import { GlobalFormaContextType } from "../types/globalForm";
  * 글로벌 폼 상태 관리를 위한 React Context | React Context for global form state management
  */
 export const GlobalFormaContext = createContext<GlobalFormaContextType>({
+    // FieldStore 관련
     getOrCreateStore: () => {
         throw new Error(
             "GlobalFormaContext must be used within GlobalFormaProvider"
@@ -66,6 +73,22 @@ export const GlobalFormaContext = createContext<GlobalFormaContextType>({
         );
     },
     validateAndStoreAutoCleanupSetting: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
+    // 모달 스택 관리
+    appendOpenModal: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
+    removeOpenModal: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
+    closeLastModal: () => {
         throw new Error(
             "GlobalFormaContext must be used within GlobalFormaProvider"
         );
@@ -109,6 +132,11 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
     const autoCleanupRefCountsRef = useRef<Map<string, number>>(new Map());
     // formId별 autoCleanup 설정을 추적하는 Map | Map tracking autoCleanup settings by formId
     const autoCleanupSettingsRef = useRef<Map<string, boolean>>(new Map());
+
+    // ========== 모달 스택 관리 상태 ==========
+    const [openModalIds, setOpenModalIds] = useState<string[]>([]);
+    const openModalIdsRef = useRef<string[]>([]);
+    const modalTrackingRef = useRef<string[]>([]);
 
     /**
      * formId에 해당하는 FieldStore를 가져오거나 새로 생성합니다. | Get or create FieldStore for the given formId.
@@ -294,7 +322,80 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // ========== 모달 및 네비게이션 관련 함수 ==========
+
+    /**
+     * 모달 등록
+     */
+    const appendOpenModal = useCallback((modalId: string) => {
+        if (modalTrackingRef.current.includes(modalId)) return;
+        modalTrackingRef.current.push(modalId);
+
+        setOpenModalIds((prevIds) => {
+            const newOpenIds = [...prevIds, modalId];
+            return newOpenIds;
+        });
+
+        window.history.pushState(
+            { modalOpen: modalId },
+            "",
+            window.location.href
+        );
+    }, []);
+
+    /**
+     * 모달 등록 해제
+     */
+    const removeOpenModal = useCallback((modalId: string) => {
+        setOpenModalIds((prevIds) => {
+            if (prevIds.includes(modalId)) {
+                const newOpenIds = prevIds.filter((id) => id !== modalId);
+                modalTrackingRef.current = modalTrackingRef.current.filter(
+                    (id) => id !== modalId
+                );
+                return newOpenIds;
+            }
+            return prevIds;
+        });
+    }, []);
+
+    /**
+     * 마지막으로 열린 모달 닫기
+     */
+    const closeLastModal = useCallback((): boolean => {
+        if (openModalIds.length === 0) return false;
+
+        const lastModalId = openModalIds[openModalIds.length - 1];
+        window.dispatchEvent(new CustomEvent(`modal:close:${lastModalId}`));
+
+        return true;
+    }, [openModalIds]);
+
+    // 모달 ID 추적을 위해 ref 업데이트
+    useEffect(() => {
+        openModalIdsRef.current = openModalIds;
+    }, [openModalIds]);
+
+    // popstate 이벤트 핸들러 (뒤로가기 시 모달 닫기)
+    useEffect(() => {
+        const handlePopState = (e: PopStateEvent) => {
+            // 열린 모달이 있으면 모달을 닫기
+            if (openModalIdsRef.current.length > 0) {
+                e.preventDefault();
+                closeLastModal();
+                return;
+            }
+        };
+
+        window.addEventListener("popstate", handlePopState);
+
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [closeLastModal]);
+
     const contextValue: GlobalFormaContextType = {
+        // FieldStore 관련
         getOrCreateStore,
         registerStore,
         unregisterStore,
@@ -302,6 +403,10 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         incrementRef,
         decrementRef,
         validateAndStoreAutoCleanupSetting,
+        // 모달 스택 관리
+        appendOpenModal,
+        removeOpenModal,
+        closeLastModal,
     };
 
     return (

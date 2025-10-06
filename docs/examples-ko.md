@@ -22,6 +22,10 @@
     -   [기본 사용법](#글로벌-상태-기본-사용법)
     -   [동적 상태 관리](#동적-상태-관리)
     -   [쇼핑카트 예제](#쇼핑카트-예제)
+-   [useModal 예제](#usemodal-예제)
+    -   [기본 모달 사용](#기본-모달-사용)
+    -   [중첩 모달 관리](#중첩-모달-관리)
+    -   [폼이 포함된 모달](#폼이-포함된-모달)
 -   [등록/해제 훅 예제](#등록해제-훅-예제)
 
 ---
@@ -931,6 +935,211 @@ function ComponentB() {
 
 // Component A 언마운트 → 참조 카운트: 1 (상태 유지)
 // Component B 언마운트 → 참조 카운트: 0 → 🗑️ 자동 정리!
+```
+
+---
+
+## useModal 예제
+
+`useModal` 훅은 모바일 환경에서 뒤로가기 버튼을 지원하는 모달 상태 관리를 제공합니다.
+
+### 기본 모달 사용
+
+```typescript
+import { useModal } from "@ehfuse/forma";
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+} from "@mui/material";
+
+function UserProfileDialog() {
+    const modal = useModal({
+        onClose: () => {
+            console.log("모달이 닫혔습니다");
+        },
+    });
+
+    return (
+        <>
+            <button onClick={modal.open}>프로필 보기</button>
+
+            <Dialog open={modal.isOpen} onClose={modal.close}>
+                <DialogTitle>사용자 프로필</DialogTitle>
+                <DialogContent>
+                    <p>이름: 홍길동</p>
+                    <p>이메일: hong@example.com</p>
+                    <p>
+                        특징: 모바일에서 뒤로가기 버튼을 누르면
+                        <br />
+                        페이지 이동 대신 모달만 닫힙니다!
+                    </p>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={modal.close}>닫기</Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### 주요 기능
+
+-   **모바일 뒤로가기 지원**: 뒤로가기 버튼을 누르면 페이지 이동 대신 모달만 닫힙니다.
+-   **자동 정리**: 컴포넌트 언마운트 시 모달 스택에서 자동 제거됩니다.
+-   **onClose 콜백**: 모달이 닫힐 때마다 호출됩니다.
+
+### 중첩 모달 관리
+
+```typescript
+import { useModal } from "@ehfuse/forma";
+import { Dialog, DialogTitle, DialogContent, Button } from "@mui/material";
+
+function NestedModalExample() {
+    const firstModal = useModal();
+    const secondModal = useModal();
+    const thirdModal = useModal();
+
+    return (
+        <>
+            <button onClick={firstModal.open}>첫 번째 모달 열기</button>
+
+            {/* 첫 번째 모달 */}
+            <Dialog open={firstModal.isOpen} onClose={firstModal.close}>
+                <DialogTitle>첫 번째 모달</DialogTitle>
+                <DialogContent>
+                    <p>레벨 1 모달</p>
+                    <Button onClick={secondModal.open}>
+                        두 번째 모달 열기
+                    </Button>
+                </DialogContent>
+            </Dialog>
+
+            {/* 두 번째 모달 */}
+            <Dialog open={secondModal.isOpen} onClose={secondModal.close}>
+                <DialogTitle>두 번째 모달</DialogTitle>
+                <DialogContent>
+                    <p>레벨 2 모달</p>
+                    <Button onClick={thirdModal.open}>세 번째 모달 열기</Button>
+                </DialogContent>
+            </Dialog>
+
+            {/* 세 번째 모달 */}
+            <Dialog open={thirdModal.isOpen} onClose={thirdModal.close}>
+                <DialogTitle>세 번째 모달</DialogTitle>
+                <DialogContent>
+                    <p>레벨 3 모달</p>
+                    <p>
+                        모바일에서 뒤로가기를 누르면 가장 마지막에 열린 모달부터
+                        닫힙니다.
+                    </p>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### 중첩 모달 동작
+
+1. 모달을 열 때마다 글로벌 모달 스택에 추가됩니다.
+2. 뒤로가기 버튼을 누르면 가장 마지막 모달만 닫힙니다.
+3. 각 모달은 독립적으로 관리되며, 언마운트 시 자동으로 스택에서 제거됩니다.
+
+### 폼이 포함된 모달
+
+```typescript
+import { useModal, useForm } from "@ehfuse/forma";
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    TextField,
+} from "@mui/material";
+
+function EditUserModal({ userId, onSave }) {
+    const modal = useModal({
+        onClose: () => {
+            // 모달이 닫힐 때 폼도 리셋
+            form.reset();
+        },
+    });
+
+    const form = useForm({
+        initialValues: {
+            name: "",
+            email: "",
+        },
+    });
+
+    const name = form.useFormValue("name");
+    const email = form.useFormValue("email");
+
+    const handleSubmit = () => {
+        const values = form.getValues();
+        onSave(values);
+        modal.close();
+    };
+
+    return (
+        <>
+            <button onClick={modal.open}>사용자 정보 수정</button>
+
+            <Dialog open={modal.isOpen} onClose={modal.close}>
+                <DialogTitle>사용자 정보 수정</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="이름"
+                        value={name}
+                        onChange={(e) => form.setValue("name", e.target.value)}
+                        fullWidth
+                        margin="normal"
+                    />
+                    <TextField
+                        label="이메일"
+                        value={email}
+                        onChange={(e) => form.setValue("email", e.target.value)}
+                        fullWidth
+                        margin="normal"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={modal.close}>취소</Button>
+                    <Button onClick={handleSubmit} variant="contained">
+                        저장
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### 폼과 모달 통합
+
+-   **onClose에서 리셋**: 모달이 닫힐 때 폼도 함께 초기화할 수 있습니다.
+-   **저장 후 닫기**: 데이터 저장 후 `modal.close()`로 모달을 닫습니다.
+-   **뒤로가기 안전**: 모바일에서 뒤로가기를 누르면 폼 데이터가 손실되지 않습니다 (모달만 닫힘).
+
+#### 중요 사항
+
+`useModal`을 사용하려면 앱의 최상단에 `GlobalFormaProvider`로 감싸야 합니다:
+
+```typescript
+import { GlobalFormaProvider } from "@ehfuse/forma";
+
+function App() {
+    return (
+        <GlobalFormaProvider>
+            <YourApp />
+        </GlobalFormaProvider>
+    );
+}
 ```
 
 ---

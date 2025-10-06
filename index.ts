@@ -36,6 +36,7 @@ export { useFormaState, useFieldSubscription } from "./hooks/useFormaState";
 export { useGlobalFormaState } from "./hooks/useGlobalFormaState";
 export { useRegisterGlobalFormaState } from "./hooks/useRegisterGlobalFormaState";
 export { useUnregisterGlobalFormaState } from "./hooks/useUnregisterGlobalFormaState";
+export { useModal } from "./hooks/useModal";
 
 // ===== Context & Providers =====
 export {

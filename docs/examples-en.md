@@ -22,6 +22,10 @@ This document provides various usage examples of the Forma library. It explains 
     -   [Basic Usage](#global-state-basic-usage)
     -   [Dynamic State Management](#dynamic-state-management)
     -   [Shopping Cart Example](#shopping-cart-example)
+-   [useModal Examples](#usemodal-examples)
+    -   [Basic Modal Usage](#basic-modal-usage)
+    -   [Nested Modal Management](#nested-modal-management)
+    -   [Modal with Form](#modal-with-form)
 -   [Register/Unregister Hook Examples](#registerunregister-hook-examples)
 
 ---
@@ -731,6 +735,211 @@ function ComponentB() {
 
 // Component A unmounts → reference count: 1 (state preserved)
 // Component B unmounts → reference count: 0 → 🗑️ Automatic cleanup!
+```
+
+---
+
+## useModal Examples
+
+The `useModal` hook provides modal state management with back button support for mobile environments.
+
+### Basic Modal Usage
+
+```typescript
+import { useModal } from "@ehfuse/forma";
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+} from "@mui/material";
+
+function UserProfileDialog() {
+    const modal = useModal({
+        onClose: () => {
+            console.log("Modal closed");
+        },
+    });
+
+    return (
+        <>
+            <button onClick={modal.open}>View Profile</button>
+
+            <Dialog open={modal.isOpen} onClose={modal.close}>
+                <DialogTitle>User Profile</DialogTitle>
+                <DialogContent>
+                    <p>Name: John Doe</p>
+                    <p>Email: john@example.com</p>
+                    <p>
+                        Feature: Press back button on mobile
+                        <br />
+                        and only the modal closes (not the page)!
+                    </p>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={modal.close}>Close</Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### Key Features
+
+-   **Mobile Back Button Support**: Back button closes only the modal, not the page.
+-   **Automatic Cleanup**: Modal is automatically removed from stack on component unmount.
+-   **onClose Callback**: Called every time the modal closes.
+
+### Nested Modal Management
+
+```typescript
+import { useModal } from "@ehfuse/forma";
+import { Dialog, DialogTitle, DialogContent, Button } from "@mui/material";
+
+function NestedModalExample() {
+    const firstModal = useModal();
+    const secondModal = useModal();
+    const thirdModal = useModal();
+
+    return (
+        <>
+            <button onClick={firstModal.open}>Open First Modal</button>
+
+            {/* First Modal */}
+            <Dialog open={firstModal.isOpen} onClose={firstModal.close}>
+                <DialogTitle>First Modal</DialogTitle>
+                <DialogContent>
+                    <p>Level 1 Modal</p>
+                    <Button onClick={secondModal.open}>
+                        Open Second Modal
+                    </Button>
+                </DialogContent>
+            </Dialog>
+
+            {/* Second Modal */}
+            <Dialog open={secondModal.isOpen} onClose={secondModal.close}>
+                <DialogTitle>Second Modal</DialogTitle>
+                <DialogContent>
+                    <p>Level 2 Modal</p>
+                    <Button onClick={thirdModal.open}>Open Third Modal</Button>
+                </DialogContent>
+            </Dialog>
+
+            {/* Third Modal */}
+            <Dialog open={thirdModal.isOpen} onClose={thirdModal.close}>
+                <DialogTitle>Third Modal</DialogTitle>
+                <DialogContent>
+                    <p>Level 3 Modal</p>
+                    <p>
+                        Press back button on mobile - modals close from last
+                        opened.
+                    </p>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### Nested Modal Behavior
+
+1. Each time a modal opens, it's added to the global modal stack.
+2. Back button press closes only the last opened modal.
+3. Each modal is managed independently and automatically removed from stack on unmount.
+
+### Modal with Form
+
+```typescript
+import { useModal, useForm } from "@ehfuse/forma";
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    TextField,
+} from "@mui/material";
+
+function EditUserModal({ userId, onSave }) {
+    const modal = useModal({
+        onClose: () => {
+            // Reset form when modal closes
+            form.reset();
+        },
+    });
+
+    const form = useForm({
+        initialValues: {
+            name: "",
+            email: "",
+        },
+    });
+
+    const name = form.useFormValue("name");
+    const email = form.useFormValue("email");
+
+    const handleSubmit = () => {
+        const values = form.getValues();
+        onSave(values);
+        modal.close();
+    };
+
+    return (
+        <>
+            <button onClick={modal.open}>Edit User Info</button>
+
+            <Dialog open={modal.isOpen} onClose={modal.close}>
+                <DialogTitle>Edit User Information</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="Name"
+                        value={name}
+                        onChange={(e) => form.setValue("name", e.target.value)}
+                        fullWidth
+                        margin="normal"
+                    />
+                    <TextField
+                        label="Email"
+                        value={email}
+                        onChange={(e) => form.setValue("email", e.target.value)}
+                        fullWidth
+                        margin="normal"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={modal.close}>Cancel</Button>
+                    <Button onClick={handleSubmit} variant="contained">
+                        Save
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### Form and Modal Integration
+
+-   **Reset in onClose**: Form can be reset when modal closes.
+-   **Close After Save**: Close modal with `modal.close()` after saving data.
+-   **Back Button Safe**: On mobile, back button only closes modal without losing form data.
+
+#### Important Note
+
+To use `useModal`, wrap your app with `GlobalFormaProvider` at the top level:
+
+```typescript
+import { GlobalFormaProvider } from "@ehfuse/forma";
+
+function App() {
+    return (
+        <GlobalFormaProvider>
+            <YourApp />
+        </GlobalFormaProvider>
+    );
+}
 ```
 
 ---

@@ -13,6 +13,7 @@ This document provides a detailed reference for all APIs in the Forma library.
     -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
     -   [useUnregisterGlobalForm](#useunregisterglobalform)
     -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
+    -   [useModal](#usemodal)
 -   [Methods](#methods)
     -   [setBatch](#setbatch)
 -   [Components](#components)
@@ -861,6 +862,171 @@ clearStates();
 ```
 
 📚 **[Detailed Register/Unregister Hook Examples →](./examples-en.md#register-unregister-hook-examples)**
+
+---
+
+### useModal
+
+A hook for managing modal state and handling back navigation. On mobile, when a modal is open and the back button is pressed, the modal closes instead of navigating back.
+
+#### Signature
+
+```typescript
+function useModal(props?: UseModalProps): UseModalReturn;
+```
+
+#### Parameters
+
+```typescript
+interface UseModalProps {
+    /** Initial open state (default: false) */
+    initialOpen?: boolean;
+    /** Callback function executed when modal closes */
+    onClose?: () => void;
+}
+```
+
+#### Returns
+
+```typescript
+interface UseModalReturn {
+    /** Modal open state */
+    isOpen: boolean;
+    /** Function to open modal */
+    open: () => void;
+    /** Function to close modal */
+    close: () => void;
+    /** Function to toggle modal */
+    toggle: () => void;
+    /** Unique modal ID */
+    modalId: string;
+}
+```
+
+#### Features
+
+-   **Mobile-Friendly**: Back button closes modal, page stays
+-   **Modal Stack Management**: Multiple nested modals close in correct order
+-   **Auto Cleanup**: Automatically removes from modal stack on unmount
+-   **Unique ID Generation**: Each modal gets a unique ID automatically
+
+#### Basic Usage
+
+```typescript
+function MyComponent() {
+    const modal = useModal({
+        onClose: () => console.log("Modal closed"),
+    });
+
+    return (
+        <>
+            <button onClick={modal.open}>Open Modal</button>
+
+            <Dialog open={modal.isOpen} onClose={modal.close}>
+                <DialogTitle>Title</DialogTitle>
+                <DialogContent>Content</DialogContent>
+                <DialogActions>
+                    <Button onClick={modal.close}>Close</Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### Nested Modal Example
+
+```typescript
+function ParentComponent() {
+    const parentModal = useModal();
+    const childModal = useModal();
+
+    return (
+        <>
+            <button onClick={parentModal.open}>Open Parent Modal</button>
+
+            <Dialog open={parentModal.isOpen} onClose={parentModal.close}>
+                <DialogTitle>Parent Modal</DialogTitle>
+                <DialogContent>
+                    <button onClick={childModal.open}>Open Child Modal</button>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={childModal.isOpen} onClose={childModal.close}>
+                <DialogTitle>Child Modal</DialogTitle>
+                <DialogContent>
+                    Back button will only close this modal.
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### Form Modal Example
+
+```typescript
+function FormModal() {
+    const [formData, setFormData] = useState({ name: "", email: "" });
+
+    const modal = useModal({
+        onClose: () => {
+            // Reset form when modal closes
+            setFormData({ name: "", email: "" });
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log("Submit:", formData);
+        modal.close();
+    };
+
+    return (
+        <>
+            <button onClick={modal.open}>Open Form Modal</button>
+
+            <Dialog open={modal.isOpen} onClose={modal.close}>
+                <form onSubmit={handleSubmit}>
+                    <DialogTitle>User Information</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            label="Name"
+                            value={formData.name}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            label="Email"
+                            value={formData.email}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    email: e.target.value,
+                                }))
+                            }
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={modal.close}>Cancel</Button>
+                        <Button type="submit">Submit</Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### Important Notes
+
+-   Must wrap your app with `GlobalFormaProvider` for proper functionality.
+-   Always use `modal.close()` to close modals (manages history internally).
+-   Be cautious when using `initialOpen={true}` (consider history stack).
 
 ---
 

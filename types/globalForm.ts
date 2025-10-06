@@ -387,8 +387,10 @@ export interface ExtendedGlobalFormaProviderProps
 
 /**
  * 글로벌 Forma 컨텍스트 타입 / Global Forma context type
+ * 폼 스토어 관리와 모달 스택 관리 기능을 제공
  */
 export interface GlobalFormaContextType {
+    // ========== FieldStore 관련 ==========
     getOrCreateStore: <T extends Record<string, any>>(
         formId: string
     ) => FieldStore<T>;
@@ -407,4 +409,12 @@ export interface GlobalFormaContextType {
         formId: string,
         autoCleanup: boolean
     ) => void;
+
+    // ========== 모달 스택 관리 ==========
+    /** 모달을 스택에 추가 | Add modal to stack */
+    appendOpenModal: (modalId: string) => void;
+    /** 모달을 스택에서 제거 | Remove modal from stack */
+    removeOpenModal: (modalId: string) => void;
+    /** 마지막 모달 닫기 | Close last modal */
+    closeLastModal: () => boolean;
 }

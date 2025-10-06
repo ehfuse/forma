@@ -13,6 +13,7 @@
     -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
     -   [useUnregisterGlobalForm](#useunregisterglobalform)
     -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
+    -   [useModal](#usemodal)
 -   [Methods](#methods)
     -   [setBatch](#setbatch)
 -   [Components](#components)
@@ -859,6 +860,171 @@ clearStates();
 ```
 
 📚 **[등록/해제 훅 상세 예제 →](./examples-ko.md#등록해제-훅-예제)**
+
+---
+
+### useModal
+
+모달 상태 관리 및 뒤로가기 처리를 위한 훅입니다. 모바일 환경에서 모달이 열려있을 때 뒤로가기 버튼을 누르면 페이지가 뒤로 가는 것이 아니라 모달이 닫히도록 처리합니다.
+
+#### Signature
+
+```typescript
+function useModal(props?: UseModalProps): UseModalReturn;
+```
+
+#### Parameters
+
+```typescript
+interface UseModalProps {
+    /** 초기 열림 상태 (기본값: false) */
+    initialOpen?: boolean;
+    /** 모달이 닫힐 때 실행될 콜백 함수 */
+    onClose?: () => void;
+}
+```
+
+#### Returns
+
+```typescript
+interface UseModalReturn {
+    /** 모달 열림 상태 */
+    isOpen: boolean;
+    /** 모달 열기 함수 */
+    open: () => void;
+    /** 모달 닫기 함수 */
+    close: () => void;
+    /** 모달 토글 함수 */
+    toggle: () => void;
+    /** 모달 고유 ID */
+    modalId: string;
+}
+```
+
+#### 특징
+
+-   **모바일 친화적**: 뒤로가기 시 모달만 닫히고 페이지는 유지
+-   **모달 스택 관리**: 여러 모달이 중첩되어도 올바른 순서로 닫힘
+-   **자동 정리**: 컴포넌트 언마운트 시 자동으로 모달 스택에서 제거
+-   **고유 ID 생성**: 각 모달에 자동으로 고유 ID 부여
+
+#### 기본 사용법
+
+```typescript
+function MyComponent() {
+    const modal = useModal({
+        onClose: () => console.log("Modal closed"),
+    });
+
+    return (
+        <>
+            <button onClick={modal.open}>모달 열기</button>
+
+            <Dialog open={modal.isOpen} onClose={modal.close}>
+                <DialogTitle>제목</DialogTitle>
+                <DialogContent>내용</DialogContent>
+                <DialogActions>
+                    <Button onClick={modal.close}>닫기</Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### 중첩 모달 예제
+
+```typescript
+function ParentComponent() {
+    const parentModal = useModal();
+    const childModal = useModal();
+
+    return (
+        <>
+            <button onClick={parentModal.open}>부모 모달 열기</button>
+
+            <Dialog open={parentModal.isOpen} onClose={parentModal.close}>
+                <DialogTitle>부모 모달</DialogTitle>
+                <DialogContent>
+                    <button onClick={childModal.open}>자식 모달 열기</button>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={childModal.isOpen} onClose={childModal.close}>
+                <DialogTitle>자식 모달</DialogTitle>
+                <DialogContent>
+                    뒤로가기를 누르면 이 모달만 닫힙니다.
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### 폼이 있는 모달 예제
+
+```typescript
+function FormModal() {
+    const [formData, setFormData] = useState({ name: "", email: "" });
+
+    const modal = useModal({
+        onClose: () => {
+            // 모달 닫힐 때 폼 초기화
+            setFormData({ name: "", email: "" });
+        },
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log("Submit:", formData);
+        modal.close();
+    };
+
+    return (
+        <>
+            <button onClick={modal.open}>폼 모달 열기</button>
+
+            <Dialog open={modal.isOpen} onClose={modal.close}>
+                <form onSubmit={handleSubmit}>
+                    <DialogTitle>사용자 정보</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            label="이름"
+                            value={formData.name}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            label="이메일"
+                            value={formData.email}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    email: e.target.value,
+                                }))
+                            }
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={modal.close}>취소</Button>
+                        <Button type="submit">제출</Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+        </>
+    );
+}
+```
+
+#### 주의사항
+
+-   `GlobalFormaProvider`로 앱을 감싸야 정상 동작합니다.
+-   모달을 닫을 때는 반드시 `modal.close()`를 사용하세요 (내부적으로 히스토리 관리).
+-   `initialOpen={true}`로 시작하는 경우 주의가 필요합니다 (히스토리 스택 고려).
 
 ---
 

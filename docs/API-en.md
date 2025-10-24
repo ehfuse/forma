@@ -280,7 +280,7 @@ interface UseFormReturn<T> {
     handleDatePickerChange: (fieldName: string) => DatePickerChangeHandler;
 
     // Form actions
-    submit: (e?: React.FormEvent) => Promise<boolean>;
+    submit: () => Promise<boolean>;
     resetForm: () => void;
     validateForm: () => Promise<boolean>;
 
@@ -345,7 +345,7 @@ const handleSubmit = async () => {
 | `setInitialFormValues`   | `(values: T) => void`                            | Update initial form values.                                           |
 | `handleFormChange`       | `(e: FormChangeEvent) => void`                   | Handle form input change events.                                      |
 | `handleDatePickerChange` | `(fieldName: string) => DatePickerChangeHandler` | Create date picker change handler for specific field.                 |
-| `submit`                 | `(e?: React.FormEvent) => Promise<boolean>`      | Submit the form, returns validation result.                           |
+| `submit`                 | `() => Promise<boolean>`                         | Submit the form, returns validation result.                           |
 | `resetForm`              | `() => void`                                     | Reset form to initial values.                                         |
 | `validateForm`           | `() => Promise<boolean>`                         | Validate the form, returns validation result.                         |
 | `values`                 | `T`                                              | All form values (not recommended - causes full re-render).            |
@@ -512,15 +512,15 @@ function Step2() {
 
 `useGlobalForm` extends `useForm` with additional properties and parameters:
 
-| Category       | Item            | Signature                                                        | Description                                                                           |
-| -------------- | --------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **Properties** | `formId`        | `string`                                                         | Unique identifier for the global form.                                                |
-|                | `_store`        | `FieldStore<T>`                                                  | Direct access to the global store instance.                                           |
-| **Parameters** | `initialValues` | `Partial<T>`                                                     | Initial values (optional).                                                            |
-|                | `autoCleanup`   | `boolean`                                                        | Auto cleanup on component unmount (default: true).                                    |
-|                | `onSubmit`      | `(values: T) => Promise<boolean \| void> \| boolean \| void`    | Form submit handler - return false to treat as submission failure (optional).         |
-|                | `onValidate`    | `(values: T) => Promise<boolean> \| boolean`                    | Form validation handler - return true for validation success (optional).              |
-|                | `onComplete`    | `(values: T) => void`                                            | Callback after form submission completion (optional).                                 |
+| Category       | Item            | Signature                                                    | Description                                                                   |
+| -------------- | --------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| **Properties** | `formId`        | `string`                                                     | Unique identifier for the global form.                                        |
+|                | `_store`        | `FieldStore<T>`                                              | Direct access to the global store instance.                                   |
+| **Parameters** | `initialValues` | `Partial<T>`                                                 | Initial values (optional).                                                    |
+|                | `autoCleanup`   | `boolean`                                                    | Auto cleanup on component unmount (default: true).                            |
+|                | `onSubmit`      | `(values: T) => Promise<boolean \| void> \| boolean \| void` | Form submit handler - return false to treat as submission failure (optional). |
+|                | `onValidate`    | `(values: T) => Promise<boolean> \| boolean`                 | Form validation handler - return true for validation success (optional).      |
+|                | `onComplete`    | `(values: T) => void`                                        | Callback after form submission completion (optional).                         |
 
 **Inherited Functions:**
 

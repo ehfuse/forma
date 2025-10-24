@@ -280,7 +280,7 @@ interface UseFormReturn<T> {
     handleDatePickerChange: (fieldName: string) => DatePickerChangeHandler;
 
     // 폼 액션
-    submit: (e?: React.FormEvent) => Promise<boolean>;
+    submit: () => Promise<boolean>;
     resetForm: () => void;
     validateForm: () => Promise<boolean>;
 
@@ -345,7 +345,7 @@ const handleSubmit = async () => {
 | `setInitialFormValues`   | `(values: T) => void`                            | 초기 폼 값 업데이트.                          |
 | `handleFormChange`       | `(e: FormChangeEvent) => void`                   | 폼 입력 변경 이벤트 처리.                     |
 | `handleDatePickerChange` | `(fieldName: string) => DatePickerChangeHandler` | 특정 필드용 date picker 변경 핸들러 생성.     |
-| `submit`                 | `(e?: React.FormEvent) => Promise<boolean>`      | 폼 제출, 검증 결과 반환.                      |
+| `submit`                 | `() => Promise<boolean>`                         | 폼 제출, 검증 후 결과 반환.                   |
 | `resetForm`              | `() => void`                                     | 폼을 초기값으로 재설정.                       |
 | `validateForm`           | `() => Promise<boolean>`                         | 폼 검증, 검증 결과 반환.                      |
 | `values`                 | `T`                                              | 모든 폼 값 (전체 리렌더링 발생하므로 비권장). |
@@ -426,15 +426,15 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 
 `useGlobalForm`은 `useForm`의 모든 함수들을 포함하며, 다음과 같은 추가 속성과 파라미터들이 있습니다:
 
-| 카테고리     | 항목                | Signature                                                        | Description                                                                |
-| ------------ | ------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| **속성**     | `formId`            | `string`                                                         | 글로벌 폼의 고유 식별자.                                                    |
-|              | `_store`            | `FieldStore<T>`                                                  | 글로벌 스토어 인스턴스 직접 접근.                                           |
-| **파라미터** | `initialValues`     | `Partial<T>`                                                     | 초기값 (옵션).                                                              |
-|              | `autoCleanup`       | `boolean`                                                        | 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true).                         |
-|              | `onSubmit`          | `(values: T) => Promise<boolean \| void> \| boolean \| void`    | 폼 제출 핸들러 - false 반환 시 제출 실패로 처리 (선택사항).               |
-|              | `onValidate`        | `(values: T) => Promise<boolean> \| boolean`                    | 폼 검증 핸들러 - true 반환 시 검증 통과 (선택사항).                        |
-|              | `onComplete`        | `(values: T) => void`                                            | 폼 제출 완료 후 콜백 (선택사항).                                            |
+| 카테고리     | 항목            | Signature                                                    | Description                                                 |
+| ------------ | --------------- | ------------------------------------------------------------ | ----------------------------------------------------------- |
+| **속성**     | `formId`        | `string`                                                     | 글로벌 폼의 고유 식별자.                                    |
+|              | `_store`        | `FieldStore<T>`                                              | 글로벌 스토어 인스턴스 직접 접근.                           |
+| **파라미터** | `initialValues` | `Partial<T>`                                                 | 초기값 (옵션).                                              |
+|              | `autoCleanup`   | `boolean`                                                    | 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true).         |
+|              | `onSubmit`      | `(values: T) => Promise<boolean \| void> \| boolean \| void` | 폼 제출 핸들러 - false 반환 시 제출 실패로 처리 (선택사항). |
+|              | `onValidate`    | `(values: T) => Promise<boolean> \| boolean`                 | 폼 검증 핸들러 - true 반환 시 검증 통과 (선택사항).         |
+|              | `onComplete`    | `(values: T) => void`                                        | 폼 제출 완료 후 콜백 (선택사항).                            |
 
 **상속된 함수들:**
 

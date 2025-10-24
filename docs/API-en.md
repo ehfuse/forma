@@ -31,21 +31,21 @@ A basic hook for managing general state such as arrays and objects. Optimizes pe
 
 #### Quick Reference
 
-| Category             | Method                  | Description                                                            |
-| -------------------- | ----------------------- | ---------------------------------------------------------------------- |
-| **Get Values**       | `useValue(path)`        | Subscribe to specific field value (performance optimized, recommended) |
-|                      | `getValue(path)`        | Get specific field value (no subscription)                             |
-|                      | `getValues()`           | Get all field values (no subscription)                                 |
-| **Set Values**       | `setValue(path, value)` | Set specific field value                                               |
-|                      | `setValues(values)`     | Set multiple field values at once                                      |
-|                      | `setBatch(updates)`     | Efficiently batch update multiple fields                               |
-| **Field Management** | `hasField(path)`        | Check if field exists                                                  |
-|                      | `removeField(path)`     | Remove a field                                                         |
-| **State Management** | `reset()`               | Reset to initial values                                                |
-|                      | `refreshFields(prefix)` | Refresh fields with specific prefix                                    |
-|                      | `handleChange(event)`   | Handle form events                                                     |
-| **Subscription**     | `subscribe(callback)`   | Subscribe to all state changes                                         |
-|                      | `_store`                | Direct access to internal store                                        |
+| Category             | Method                  | Description                                                            | Return          |
+| -------------------- | ----------------------- | ---------------------------------------------------------------------- | --------------- |
+| **Get Values**       | `useValue(path)`        | Subscribe to specific field value (performance optimized, recommended) | `any`           |
+|                      | `getValue(path)`        | Get specific field value (no subscription)                             | `any`           |
+|                      | `getValues()`           | Get all field values (no subscription)                                 | `T`             |
+| **Set Values**       | `setValue(path, value)` | Set specific field value                                               | `void`          |
+|                      | `setValues(values)`     | Set multiple field values at once                                      | `void`          |
+|                      | `setBatch(updates)`     | Efficiently batch update multiple fields                               | `void`          |
+| **Field Management** | `hasField(path)`        | Check if field exists                                                  | `boolean`       |
+|                      | `removeField(path)`     | Remove a field                                                         | `void`          |
+| **State Management** | `reset()`               | Reset to initial values                                                | `void`          |
+|                      | `refreshFields(prefix)` | Refresh fields with specific prefix                                    | `void`          |
+|                      | `handleChange(event)`   | Handle form events                                                     | `void`          |
+| **Subscription**     | `subscribe(callback)`   | Subscribe to all state changes                                         | `() => void`    |
+|                      | `_store`                | Direct access to internal store                                        | `FieldStore<T>` |
 
 #### Signature
 
@@ -211,23 +211,23 @@ A basic hook for managing local form state.
 
 #### Quick Reference
 
-| Category          | Method                              | Description                                                            |
-| ----------------- | ----------------------------------- | ---------------------------------------------------------------------- |
-| **Status**        | `isSubmitting`                      | Whether form is currently being submitted                              |
-|                   | `isValidating`                      | Whether form is currently being validated                              |
-|                   | `isModified`                        | Whether form has been modified from initial values                     |
-| **Get Values**    | `useFormValue(fieldName)`           | Subscribe to specific field value (performance optimized, recommended) |
-|                   | `getFormValue(fieldName)`           | Get specific field value (no subscription)                             |
-|                   | `getFormValues()`                   | Get all field values (no subscription)                                 |
-| **Set Values**    | `setFormValue(name, value)`         | Set specific field value                                               |
-|                   | `setFormValues(values)`             | Set multiple field values at once                                      |
-|                   | `setInitialFormValues(values)`      | Change initial values                                                  |
-| **Events**        | `handleFormChange(event)`           | Handle form input change events                                        |
-|                   | `handleDatePickerChange(fieldName)` | Create date picker change handler                                      |
-| **Form Actions**  | `submit(e?)`                        | Submit form (with validation)                                          |
-|                   | `resetForm()`                       | Reset form to initial values                                           |
-|                   | `validateForm()`                    | Run form validation                                                    |
-| **Compatibility** | `values`                            | All field values (not recommended, causes full re-render)              |
+| Category          | Method                              | Description                                                            | Return                    |
+| ----------------- | ----------------------------------- | ---------------------------------------------------------------------- | ------------------------- |
+| **Status**        | `isSubmitting`                      | Whether form is currently being submitted                              | `boolean`                 |
+|                   | `isValidating`                      | Whether form is currently being validated                              | `boolean`                 |
+|                   | `isModified`                        | Whether form has been modified from initial values                     | `boolean`                 |
+| **Get Values**    | `useFormValue(fieldName)`           | Subscribe to specific field value (performance optimized, recommended) | `any`                     |
+|                   | `getFormValue(fieldName)`           | Get specific field value (no subscription)                             | `any`                     |
+|                   | `getFormValues()`                   | Get all field values (no subscription)                                 | `T`                       |
+| **Set Values**    | `setFormValue(name, value)`         | Set specific field value                                               | `void`                    |
+|                   | `setFormValues(values)`             | Set multiple field values at once                                      | `void`                    |
+|                   | `setInitialFormValues(values)`      | Change initial values                                                  | `void`                    |
+| **Events**        | `handleFormChange(event)`           | Handle form input change events                                        | `void`                    |
+|                   | `handleDatePickerChange(fieldName)` | Create date picker change handler                                      | `DatePickerChangeHandler` |
+| **Form Actions**  | `submit()`                          | Submit form (with validation, returns Promise<boolean>)                | `Promise<boolean>`        |
+|                   | `resetForm()`                       | Reset form to initial values                                           | `void`                    |
+|                   | `validateForm()`                    | Run form validation                                                    | `Promise<boolean>`        |
+| **Compatibility** | `values`                            | All field values (not recommended, causes full re-render)              | `T`                       |
 
 #### Signature
 
@@ -431,7 +431,12 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 const form = useGlobalForm({
     formId: "user-form",
     initialValues: { name: "", email: "" },
+    onValidate: async (values) => {
+        // Return false on validation failure → onSubmit will NOT execute
+        return values.email.includes("@");
+    },
     onSubmit: async (values) => {
+        // Only executes when onValidate returns true
         await api.submitUser(values);
     },
 });
@@ -441,6 +446,12 @@ const sharedForm = useGlobalForm({
     formId: "user-form", // Share state with same ID
 });
 ```
+
+**Key Points:**
+
+-   `onValidate` returns `false` → `onSubmit` will NOT execute
+-   `onValidate` returns `true` → `onSubmit` will execute
+-   Validation must pass before data submission
 
 ##### Multi-step Form
 
@@ -499,14 +510,21 @@ function Step2() {
 
 #### Functions
 
-`useGlobalForm` extends `useForm` and adds the following functions:
+`useGlobalForm` extends `useForm` with additional properties and parameters:
 
-| Function | Signature       | Description                                 |
-| -------- | --------------- | ------------------------------------------- |
-| `formId` | `string`        | Unique identifier for the global form.      |
-| `_store` | `FieldStore<T>` | Direct access to the global store instance. |
+| Category       | Item            | Signature                                                        | Description                                                                           |
+| -------------- | --------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Properties** | `formId`        | `string`                                                         | Unique identifier for the global form.                                                |
+|                | `_store`        | `FieldStore<T>`                                                  | Direct access to the global store instance.                                           |
+| **Parameters** | `initialValues` | `Partial<T>`                                                     | Initial values (optional).                                                            |
+|                | `autoCleanup`   | `boolean`                                                        | Auto cleanup on component unmount (default: true).                                    |
+|                | `onSubmit`      | `(values: T) => Promise<boolean \| void> \| boolean \| void`    | Form submit handler - return false to treat as submission failure (optional).         |
+|                | `onValidate`    | `(values: T) => Promise<boolean> \| boolean`                    | Form validation handler - return true for validation success (optional).              |
+|                | `onComplete`    | `(values: T) => void`                                            | Callback after form submission completion (optional).                                 |
 
-All other functions from `useForm` are available.
+**Inherited Functions:**
+
+All functions from `useForm` are available (status, value retrieval, value setting, event handlers, form actions, compatibility, etc.).
 
 #### 🔄 **Auto Memory Cleanup (autoCleanup)**
 

@@ -31,21 +31,21 @@
 
 #### 빠른 참조
 
-| 카테고리      | 메서드                  | 설명                                  |
-| ------------- | ----------------------- | ------------------------------------- |
-| **값 조회**   | `useValue(path)`        | 특정 필드 값 구독 (성능 최적화, 권장) |
-|               | `getValue(path)`        | 특정 필드 값 조회 (구독 없음)         |
-|               | `getValues()`           | 모든 필드 값 조회 (구독 없음)         |
-| **값 설정**   | `setValue(path, value)` | 특정 필드 값 설정                     |
-|               | `setValues(values)`     | 여러 필드 값 한 번에 설정             |
-|               | `setBatch(updates)`     | 여러 필드를 효율적으로 일괄 업데이트  |
-| **필드 관리** | `hasField(path)`        | 필드 존재 여부 확인                   |
-|               | `removeField(path)`     | 필드 제거                             |
-| **상태 관리** | `reset()`               | 초기값으로 재설정                     |
-|               | `refreshFields(prefix)` | 특정 prefix 필드들 새로고침           |
-|               | `handleChange(event)`   | 폼 이벤트 처리                        |
-| **구독**      | `subscribe(callback)`   | 모든 상태 변경 구독                   |
-|               | `_store`                | 내부 스토어 직접 접근                 |
+| 카테고리      | 메서드                  | 설명                                  | 반환값          |
+| ------------- | ----------------------- | ------------------------------------- | --------------- |
+| **값 조회**   | `useValue(path)`        | 특정 필드 값 구독 (성능 최적화, 권장) | `any`           |
+|               | `getValue(path)`        | 특정 필드 값 조회 (구독 없음)         | `any`           |
+|               | `getValues()`           | 모든 필드 값 조회 (구독 없음)         | `T`             |
+| **값 설정**   | `setValue(path, value)` | 특정 필드 값 설정                     | `void`          |
+|               | `setValues(values)`     | 여러 필드 값 한 번에 설정             | `void`          |
+|               | `setBatch(updates)`     | 여러 필드를 효율적으로 일괄 업데이트  | `void`          |
+| **필드 관리** | `hasField(path)`        | 필드 존재 여부 확인                   | `boolean`       |
+|               | `removeField(path)`     | 필드 제거                             | `void`          |
+| **상태 관리** | `reset()`               | 초기값으로 재설정                     | `void`          |
+|               | `refreshFields(prefix)` | 특정 prefix 필드들 새로고침           | `void`          |
+|               | `handleChange(event)`   | 폼 이벤트 처리                        | `void`          |
+| **구독**      | `subscribe(callback)`   | 모든 상태 변경 구독                   | `() => void`    |
+|               | `_store`                | 내부 스토어 직접 접근                 | `FieldStore<T>` |
 
 #### Signature
 
@@ -211,23 +211,23 @@ state.refreshFields("user");
 
 #### 빠른 참조
 
-| 카테고리    | 메서드                              | 설명                                  |
-| ----------- | ----------------------------------- | ------------------------------------- |
-| **상태**    | `isSubmitting`                      | 폼이 현재 제출 중인지 여부            |
-|             | `isValidating`                      | 폼이 현재 검증 중인지 여부            |
-|             | `isModified`                        | 폼이 초기값에서 수정되었는지 여부     |
-| **값 조회** | `useFormValue(fieldName)`           | 특정 필드 값 구독 (성능 최적화, 권장) |
-|             | `getFormValue(fieldName)`           | 특정 필드 값 조회 (구독 없음)         |
-|             | `getFormValues()`                   | 모든 필드 값 조회 (구독 없음)         |
-| **값 설정** | `setFormValue(name, value)`         | 특정 필드 값 설정                     |
-|             | `setFormValues(values)`             | 여러 필드 값 한 번에 설정             |
-|             | `setInitialFormValues(values)`      | 초기값 변경                           |
-| **이벤트**  | `handleFormChange(event)`           | 폼 입력 변경 이벤트 처리              |
-|             | `handleDatePickerChange(fieldName)` | 날짜 선택기 변경 핸들러 생성          |
-| **폼 액션** | `submit(e?)`                        | 폼 제출 (검증 후)                     |
-|             | `resetForm()`                       | 초기값으로 폼 재설정                  |
-|             | `validateForm()`                    | 폼 검증 실행                          |
-| **호환성**  | `values`                            | 모든 필드 값 (비권장, 전체 리렌더링)  |
+| 카테고리    | 메서드                              | 설명                                  | 반환값                    |
+| ----------- | ----------------------------------- | ------------------------------------- | ------------------------- |
+| **상태**    | `isSubmitting`                      | 폼이 현재 제출 중인지 여부            | `boolean`                 |
+|             | `isValidating`                      | 폼이 현재 검증 중인지 여부            | `boolean`                 |
+|             | `isModified`                        | 폼이 초기값에서 수정되었는지 여부     | `boolean`                 |
+| **값 조회** | `useFormValue(fieldName)`           | 특정 필드 값 구독 (성능 최적화, 권장) | `any`                     |
+|             | `getFormValue(fieldName)`           | 특정 필드 값 조회 (구독 없음)         | `any`                     |
+|             | `getFormValues()`                   | 모든 필드 값 조회 (구독 없음)         | `T`                       |
+| **값 설정** | `setFormValue(name, value)`         | 특정 필드 값 설정                     | `void`                    |
+|             | `setFormValues(values)`             | 여러 필드 값 한 번에 설정             | `void`                    |
+|             | `setInitialFormValues(values)`      | 초기값 변경                           | `void`                    |
+| **이벤트**  | `handleFormChange(event)`           | 폼 입력 변경 이벤트 처리              | `void`                    |
+|             | `handleDatePickerChange(fieldName)` | 날짜 선택기 변경 핸들러 생성          | `DatePickerChangeHandler` |
+| **폼 액션** | `submit()`                          | 폼 제출 (검증 후, Promise<boolean>)   | `Promise<boolean>`        |
+|             | `resetForm()`                       | 초기값으로 폼 재설정                  | `void`                    |
+|             | `validateForm()`                    | 폼 검증 실행                          | `Promise<boolean>`        |
+| **호환성**  | `values`                            | 모든 필드 값 (비권장, 전체 리렌더링)  | `T`                       |
 
 #### Signature
 
@@ -424,14 +424,21 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 
 #### Functions
 
-`useGlobalForm`은 `useForm`을 확장하며 다음 함수들을 추가합니다:
+`useGlobalForm`은 `useForm`의 모든 함수들을 포함하며, 다음과 같은 추가 속성과 파라미터들이 있습니다:
 
-| Function | Signature       | Description                       |
-| -------- | --------------- | --------------------------------- |
-| `formId` | `string`        | 글로벌 폼의 고유 식별자.          |
-| `_store` | `FieldStore<T>` | 글로벌 스토어 인스턴스 직접 접근. |
+| 카테고리     | 항목                | Signature                                                        | Description                                                                |
+| ------------ | ------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **속성**     | `formId`            | `string`                                                         | 글로벌 폼의 고유 식별자.                                                    |
+|              | `_store`            | `FieldStore<T>`                                                  | 글로벌 스토어 인스턴스 직접 접근.                                           |
+| **파라미터** | `initialValues`     | `Partial<T>`                                                     | 초기값 (옵션).                                                              |
+|              | `autoCleanup`       | `boolean`                                                        | 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true).                         |
+|              | `onSubmit`          | `(values: T) => Promise<boolean \| void> \| boolean \| void`    | 폼 제출 핸들러 - false 반환 시 제출 실패로 처리 (선택사항).               |
+|              | `onValidate`        | `(values: T) => Promise<boolean> \| boolean`                    | 폼 검증 핸들러 - true 반환 시 검증 통과 (선택사항).                        |
+|              | `onComplete`        | `(values: T) => void`                                            | 폼 제출 완료 후 콜백 (선택사항).                                            |
 
-`useForm`의 모든 함수들이 사용 가능합니다.
+**상속된 함수들:**
+
+`useForm`의 모든 함수들이 사용 가능합니다 (상태, 값 조회, 값 설정, 이벤트, 폼 액션, 호환성 등).
 
 #### Examples
 
@@ -442,7 +449,12 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 const form = useGlobalForm({
     formId: "user-form",
     initialValues: { name: "", email: "" },
+    onValidate: async (values) => {
+        // 검증 실패 시 false 반환 → onSubmit 실행 안됨
+        return values.email.includes("@");
+    },
     onSubmit: async (values) => {
+        // onValidate에서 true 반환할 때만 실행됨
         await api.submitUser(values);
     },
 });
@@ -452,6 +464,12 @@ const sharedForm = useGlobalForm({
     formId: "user-form", // 같은 ID로 상태 공유
 });
 ```
+
+**핵심 포인트:**
+
+-   `onValidate`에서 `false` 반환 → `onSubmit` 실행 안됨
+-   `onValidate`에서 `true` 반환 → `onSubmit` 실행됨
+-   검증 단계를 거쳐야 데이터 제출 가능
 
 ##### 다단계 폼
 

@@ -445,7 +445,7 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 ##### 기본 사용법
 
 ```typescript
-// 글로벌 폼 생성
+// 컴포넌트 A: 핸들러와 함께 글로벌 폼 생성
 const form = useGlobalForm({
     formId: "user-form",
     initialValues: { name: "", email: "" },
@@ -459,17 +459,41 @@ const form = useGlobalForm({
     },
 });
 
-// 다른 컴포넌트에서 같은 폼 상태 공유
+// 컴포넌트 B: 같은 폼 상태와 핸들러 자동 공유
 const sharedForm = useGlobalForm({
-    formId: "user-form", // 같은 ID로 상태 공유
+    formId: "user-form", // 같은 ID로 데이터와 핸들러 모두 공유
 });
+
+// ✅ 컴포넌트 B에서도 submit() 동작!
+// 컴포넌트 A에서 등록한 onValidate, onSubmit 자동으로 사용
+sharedForm.submit();
 ```
 
 **핵심 포인트:**
 
--   `onValidate`에서 `false` 반환 → `onSubmit` 실행 안됨
--   `onValidate`에서 `true` 반환 → `onSubmit` 실행됨
--   검증 단계를 거쳐야 데이터 제출 가능
+-   **핸들러 자동 공유**: 첫 번째 컴포넌트가 등록한 `onValidate`, `onSubmit`, `onComplete`가 자동으로 글로벌하게 공유됨
+-   **직관적인 동작**: 같은 `formId`를 사용하면 데이터와 핸들러가 모두 공유되어 예상대로 동작
+-   **유연한 오버라이드**: 특정 컴포넌트에서만 다른 핸들러를 사용하고 싶으면 로컬에서 재정의 가능
+-   **검증 단계**: `onValidate`에서 `false` 반환 → `onSubmit` 실행 안됨 / `true` 반환 → `onSubmit` 실행됨
+
+**핸들러 우선순위:**
+
+```typescript
+// 로컬 핸들러가 있으면 로컬 우선
+const customForm = useGlobalForm({
+    formId: "user-form",
+    onSubmit: async (values) => {
+        // 이 컴포넌트만 다른 제출 로직 사용
+        await customApi.submit(values);
+    },
+});
+
+// 로컬 핸들러가 없으면 글로벌 핸들러 자동 사용
+const defaultForm = useGlobalForm({
+    formId: "user-form",
+    // onSubmit 없음 → 글로벌에 등록된 핸들러 사용
+});
+```
 
 ##### 다단계 폼
 

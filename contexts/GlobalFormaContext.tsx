@@ -35,7 +35,10 @@ import {
     useCallback,
 } from "react";
 import { FieldStore } from "../core/FieldStore";
-import { GlobalFormaContextType } from "../types/globalForm";
+import {
+    GlobalFormaContextType,
+    GlobalFormHandlers,
+} from "../types/globalForm";
 
 /**
  * 글로벌 폼 상태 관리를 위한 React Context | React Context for global form state management
@@ -73,6 +76,17 @@ export const GlobalFormaContext = createContext<GlobalFormaContextType>({
         );
     },
     validateAndStoreAutoCleanupSetting: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
+    // 핸들러 관리
+    registerHandlers: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
+    getHandlers: () => {
         throw new Error(
             "GlobalFormaContext must be used within GlobalFormaProvider"
         );
@@ -132,6 +146,8 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
     const autoCleanupRefCountsRef = useRef<Map<string, number>>(new Map());
     // formId별 autoCleanup 설정을 추적하는 Map | Map tracking autoCleanup settings by formId
     const autoCleanupSettingsRef = useRef<Map<string, boolean>>(new Map());
+    // formId별 핸들러를 저장하는 Map | Map storing handlers by formId
+    const handlersRef = useRef<Map<string, GlobalFormHandlers<any>>>(new Map());
 
     // ========== 모달 스택 관리 상태 ==========
     const [openModalIds, setOpenModalIds] = useState<string[]>([]);
@@ -309,6 +325,7 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
                     refCounts.delete(formId);
                     autoCleanupRefCounts.delete(formId);
                     autoCleanupSettingsRef.current.delete(formId);
+                    handlersRef.current.delete(formId); // 핸들러도 함께 정리
                 }
             }
         }
@@ -320,6 +337,41 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
                 autoCleanupRefCounts.delete(formId);
             }
         }
+    };
+
+    /**
+     * 글로벌 폼 핸들러 등록 | Register global form handlers
+     *
+     * @param formId 폼 식별자 | Form identifier
+     * @param handlers 핸들러들 | Handlers
+     */
+    const registerHandlers = <T extends Record<string, any>>(
+        formId: string,
+        handlers: GlobalFormHandlers<T>
+    ): void => {
+        const existingHandlers = handlersRef.current.get(formId);
+
+        // 이미 핸들러가 등록되어 있으면 새로운 핸들러로 업데이트
+        if (existingHandlers) {
+            handlersRef.current.set(formId, {
+                ...existingHandlers,
+                ...handlers,
+            });
+        } else {
+            handlersRef.current.set(formId, handlers);
+        }
+    };
+
+    /**
+     * 글로벌 폼 핸들러 조회 | Get global form handlers
+     *
+     * @param formId 폼 식별자 | Form identifier
+     * @returns 핸들러들 또는 undefined | Handlers or undefined
+     */
+    const getHandlers = <T extends Record<string, any>>(
+        formId: string
+    ): GlobalFormHandlers<T> | undefined => {
+        return handlersRef.current.get(formId);
     };
 
     // ========== 모달 및 네비게이션 관련 함수 ==========
@@ -403,6 +455,9 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         incrementRef,
         decrementRef,
         validateAndStoreAutoCleanupSetting,
+        // 핸들러 관리
+        registerHandlers,
+        getHandlers,
         // 모달 스택 관리
         appendOpenModal,
         removeOpenModal,

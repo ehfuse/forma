@@ -386,6 +386,15 @@ export interface ExtendedGlobalFormaProviderProps
 }
 
 /**
+ * 글로벌 폼 핸들러 타입 / Global form handlers type
+ */
+export interface GlobalFormHandlers<T extends Record<string, any>> {
+    onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
+    onValidate?: (values: T) => Promise<boolean> | boolean;
+    onComplete?: (values: T) => void;
+}
+
+/**
  * 글로벌 Forma 컨텍스트 타입 / Global Forma context type
  * 폼 스토어 관리와 모달 스택 관리 기능을 제공
  */
@@ -409,6 +418,17 @@ export interface GlobalFormaContextType {
         formId: string,
         autoCleanup: boolean
     ) => void;
+
+    // ========== 핸들러 관리 ==========
+    /** 글로벌 폼 핸들러 등록 | Register global form handlers */
+    registerHandlers: <T extends Record<string, any>>(
+        formId: string,
+        handlers: GlobalFormHandlers<T>
+    ) => void;
+    /** 글로벌 폼 핸들러 조회 | Get global form handlers */
+    getHandlers: <T extends Record<string, any>>(
+        formId: string
+    ) => GlobalFormHandlers<T> | undefined;
 
     // ========== 모달 스택 관리 ==========
     /** 모달을 스택에 추가 | Add modal to stack */

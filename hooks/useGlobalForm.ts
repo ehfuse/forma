@@ -83,6 +83,8 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
         incrementRef,
         decrementRef,
         validateAndStoreAutoCleanupSetting,
+        registerHandlers,
+        getHandlers,
     } = context;
 
     // autoCleanup 설정 일관성 검증
@@ -91,13 +93,32 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
     // 글로벌 스토어 가져오기 또는 생성 / Get or create global store
     const store = getOrCreateStore<T>(formId);
 
+    // 핸들러가 제공되면 글로벌에 등록 / Register handlers to global if provided
+    useEffect(() => {
+        if (onSubmit || onValidate || onComplete) {
+            registerHandlers<T>(formId, {
+                onSubmit,
+                onValidate,
+                onComplete,
+            });
+        }
+    }, [formId, onSubmit, onValidate, onComplete, registerHandlers]);
+
+    // 글로벌 핸들러 가져오기 / Get global handlers
+    const globalHandlers = getHandlers<T>(formId);
+
+    // 로컬 핸들러가 없으면 글로벌 핸들러 사용 / Use global handlers if local handlers are not provided
+    const effectiveOnSubmit = onSubmit || globalHandlers?.onSubmit;
+    const effectiveOnValidate = onValidate || globalHandlers?.onValidate;
+    const effectiveOnComplete = onComplete || globalHandlers?.onComplete;
+
     // useForm에 외부 스토어와 핸들러들 전달 / Pass external store and handlers to useForm
     const form = useForm<T>({
         initialValues: (initialValues as T) || ({} as T),
         _externalStore: store,
-        onSubmit,
-        onValidate,
-        onComplete,
+        onSubmit: effectiveOnSubmit,
+        onValidate: effectiveOnValidate,
+        onComplete: effectiveOnComplete,
     });
 
     // 초기값이 있고 스토어가 비어있다면 초기값 설정 (올바른 방법으로)

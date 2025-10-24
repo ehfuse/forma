@@ -452,10 +452,44 @@ function GlobalFormExample() {
     );
 }
 
-// Share the same form state in another component
+// Component A: Define form logic and handlers
+function UserFormEditor() {
+    const form = useGlobalForm({
+        formId: "user-form",
+        initialValues: { name: "", email: "" },
+        onValidate: async (values) => {
+            // Email validation
+            return values.email.includes("@");
+        },
+        onSubmit: async (values) => {
+            // Actual submission logic
+            await api.submitUser(values);
+        },
+    });
+
+    return (
+        <form onSubmit={form.submit}>
+            <input
+                name="name"
+                value={form.useFormValue("name")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="email"
+                value={form.useFormValue("email")}
+                onChange={form.handleFormChange}
+            />
+            <button type="submit" disabled={form.isSubmitting}>
+                {form.isSubmitting ? "Submitting..." : "Submit"}
+            </button>
+        </form>
+    );
+}
+
+// Component B: Automatically shares same form data and handlers
 function FormViewer() {
     const form = useGlobalForm({
-        formId: "user-form", // Share state with same ID
+        formId: "user-form", // Share both data and handlers with same ID
     });
 
     return (
@@ -463,19 +497,34 @@ function FormViewer() {
             <p>Current name: {form.useFormValue("name")}</p>
             <p>Current email: {form.useFormValue("email")}</p>
             <p>Modified: {form.isModified ? "Yes" : "No"}</p>
+
+            {/* ✅ submit() works here too! */}
+            {/* Automatically uses onValidate, onSubmit from Component A */}
+            <button onClick={form.submit} disabled={form.isSubmitting}>
+                Submit from elsewhere
+            </button>
         </div>
     );
 }
 ```
 
+**Core Concepts:**
+
+-   **Automatic handler sharing**: `onValidate`, `onSubmit`, `onComplete` registered first are shared globally
+-   **Intuitive behavior**: Same `formId` shares both data and handlers as expected
+-   **Submit anywhere**: Can call `submit()` from any component
+-   **Consistent validation**: Same validation logic applies across all components
+
+````
+
 ### Multi-Step Form
 
 ```typescript
-// Step 1 Component
+// Step 1 Component: Basic info + set initial values
 function Step1() {
     const form = useGlobalForm({
         formId: "user-registration",
-        initialValues: { name: "", email: "", phone: "" },
+        initialValues: { name: "", email: "", phone: "" }, // Set initial values here only
     });
 
     return (
@@ -487,11 +536,11 @@ function Step1() {
     );
 }
 
-// Step 2 Component (shares same form state)
+// Step 2 Component: Share same form state (initialValues not needed)
 function Step2() {
     const form = useGlobalForm({
-        formId: "user-registration", // Same ID
-        initialValues: { name: "", email: "", phone: "" },
+        formId: "user-registration", // Share data with same ID
+        // initialValues omitted - already created in Step1 (ignored even if provided)
     });
 
     return (
@@ -503,14 +552,17 @@ function Step2() {
     );
 }
 
-// Final step - validation and submission
+// Final step: Register validation and submission handlers (initialValues not needed)
 function FinalStep() {
     const form = useGlobalForm({
         formId: "user-registration", // Same form state
+        // initialValues omitted - already set in Step1 (ignored even if provided)
         onValidate: async (values) => {
+            // Validate all fields
             return values.name && values.email && values.phone;
         },
         onSubmit: async (values) => {
+            // Actual submission logic
             await api.registerUser(values);
         },
     });
@@ -520,13 +572,37 @@ function FinalStep() {
             <p>Name: {form.useFormValue("name")}</p>
             <p>Email: {form.useFormValue("email")}</p>
             <p>Phone: {form.useFormValue("phone")}</p>
+
+            {/* Calling submit here executes onValidate and onSubmit above */}
             <button onClick={form.submit} disabled={form.isSubmitting}>
                 Complete Registration
             </button>
         </div>
     );
 }
-```
+
+// 💡 Pro tip: Can submit from other components too!
+function QuickSubmitButton() {
+    const form = useGlobalForm({
+        formId: "user-registration", // Same ID
+        // No handlers - automatically uses handlers registered in FinalStep
+    });
+
+    return (
+        <button onClick={form.submit} disabled={form.isSubmitting}>
+            Quick Register
+        </button>
+    );
+}
+````
+
+**Key Points:**
+
+-   ✅ **initialValues only first**: Set `initialValues` only in the first component that creates the global form
+-   ✅ **Omit later**: Other components accessing the same `formId` don't need `initialValues`
+-   ✅ **Handlers when needed**: Register `onSubmit`, `onValidate` etc. only in components that need them
+
+````
 
 ### Automatic Memory Cleanup Example
 
@@ -556,7 +632,7 @@ function PersistentForm() {
     });
     return <input name="importantData" />;
 }
-```
+````
 
 ---
 
@@ -610,7 +686,7 @@ function UserProfile() {
 function UserSettings() {
     const state = useGlobalFormaState({
         stateId: "user-data", // Share state with same ID
-        initialValues: {}, // Ignored since state already exists
+        // initialValues omitted - already created in UserProfile (ignored even if provided)
     });
 
     const theme = state.useValue("preferences.theme");

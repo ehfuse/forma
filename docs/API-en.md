@@ -427,7 +427,7 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 ##### Basic Usage
 
 ```typescript
-// Create global form
+// Component A: Create global form with handlers
 const form = useGlobalForm({
     formId: "user-form",
     initialValues: { name: "", email: "" },
@@ -441,17 +441,41 @@ const form = useGlobalForm({
     },
 });
 
-// Share same form state in another component
+// Component B: Automatically shares same form state and handlers
 const sharedForm = useGlobalForm({
-    formId: "user-form", // Share state with same ID
+    formId: "user-form", // Share both data and handlers with same ID
 });
+
+// ✅ submit() works in Component B too!
+// Automatically uses onValidate, onSubmit registered in Component A
+sharedForm.submit();
 ```
 
 **Key Points:**
 
--   `onValidate` returns `false` → `onSubmit` will NOT execute
--   `onValidate` returns `true` → `onSubmit` will execute
--   Validation must pass before data submission
+-   **Automatic handler sharing**: `onValidate`, `onSubmit`, `onComplete` registered first are shared globally
+-   **Intuitive behavior**: Same `formId` shares both data and handlers as expected
+-   **Flexible override**: Specific components can use different handlers by redefining locally
+-   **Validation flow**: `onValidate` returns `false` → `onSubmit` will NOT execute / returns `true` → `onSubmit` will execute
+
+**Handler Priority:**
+
+```typescript
+// Local handler takes precedence
+const customForm = useGlobalForm({
+    formId: "user-form",
+    onSubmit: async (values) => {
+        // This component uses different submission logic
+        await customApi.submit(values);
+    },
+});
+
+// No local handler → uses global handler automatically
+const defaultForm = useGlobalForm({
+    formId: "user-form",
+    // No onSubmit → uses globally registered handler
+});
+```
 
 ##### Multi-step Form
 

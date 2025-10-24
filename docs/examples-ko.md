@@ -656,10 +656,44 @@ function GlobalFormExample() {
     );
 }
 
-// 다른 컴포넌트에서 같은 폼 상태 공유
+// 컴포넌트 A: 폼 로직과 핸들러 정의
+function UserFormEditor() {
+    const form = useGlobalForm({
+        formId: "user-form",
+        initialValues: { name: "", email: "" },
+        onValidate: async (values) => {
+            // 이메일 검증
+            return values.email.includes("@");
+        },
+        onSubmit: async (values) => {
+            // 실제 제출 로직
+            await api.submitUser(values);
+        },
+    });
+
+    return (
+        <form onSubmit={form.submit}>
+            <input
+                name="name"
+                value={form.useFormValue("name")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="email"
+                value={form.useFormValue("email")}
+                onChange={form.handleFormChange}
+            />
+            <button type="submit" disabled={form.isSubmitting}>
+                {form.isSubmitting ? "제출 중..." : "제출"}
+            </button>
+        </form>
+    );
+}
+
+// 컴포넌트 B: 같은 폼의 데이터와 핸들러 자동 공유
 function FormViewer() {
     const form = useGlobalForm({
-        formId: "user-form", // 같은 ID로 상태 공유
+        formId: "user-form", // 같은 ID로 데이터와 핸들러 모두 공유
     });
 
     return (
@@ -667,19 +701,34 @@ function FormViewer() {
             <p>현재 이름: {form.useFormValue("name")}</p>
             <p>현재 이메일: {form.useFormValue("email")}</p>
             <p>수정 여부: {form.isModified ? "수정됨" : "수정 안됨"}</p>
+
+            {/* ✅ 여기서도 submit() 동작! */}
+            {/* 컴포넌트 A의 onValidate, onSubmit 자동으로 사용됨 */}
+            <button onClick={form.submit} disabled={form.isSubmitting}>
+                다른 곳에서 제출
+            </button>
         </div>
     );
 }
 ```
 
+**핵심 개념:**
+
+-   **자동 핸들러 공유**: 첫 번째로 등록된 `onValidate`, `onSubmit`, `onComplete`가 글로벌하게 공유됨
+-   **직관적 동작**: `formId`만 같으면 데이터와 핸들러 모두 공유되어 예상대로 동작
+-   **어디서든 submit**: 어느 컴포넌트에서든 `submit()` 호출 가능
+-   **일관된 검증**: 모든 컴포넌트에서 동일한 검증 로직 적용됨
+
+````
+
 ### 다단계 폼
 
 ```typescript
-// Step 1 Component
+// Step 1 Component: 기본 정보 입력 + 초기값 설정
 function Step1() {
     const form = useGlobalForm({
         formId: "user-registration",
-        initialValues: { name: "", email: "", phone: "" },
+        initialValues: { name: "", email: "", phone: "" }, // 여기서만 초기값 설정
     });
 
     return (
@@ -691,11 +740,11 @@ function Step1() {
     );
 }
 
-// Step 2 Component (같은 폼 상태 공유)
+// Step 2 Component: 같은 폼 상태 공유 (initialValues 불필요)
 function Step2() {
     const form = useGlobalForm({
-        formId: "user-registration", // 같은 ID
-        initialValues: { name: "", email: "", phone: "" },
+        formId: "user-registration", // 같은 ID로 데이터 공유
+        // initialValues 생략 - 이미 Step1에서 생성됨 (여기서 써도 무시됨)
     });
 
     return (
@@ -707,14 +756,17 @@ function Step2() {
     );
 }
 
-// 최종 단계 - 검증과 제출
+// 최종 단계: 검증과 제출 핸들러 등록 (initialValues 불필요)
 function FinalStep() {
     const form = useGlobalForm({
         formId: "user-registration", // 같은 폼 상태
+        // initialValues 생략 - 이미 Step1에서 설정됨 (여기서 써도 무시됨)
         onValidate: async (values) => {
+            // 모든 필드 검증
             return values.name && values.email && values.phone;
         },
         onSubmit: async (values) => {
+            // 실제 제출 로직
             await api.registerUser(values);
         },
     });
@@ -724,12 +776,38 @@ function FinalStep() {
             <p>이름: {form.useFormValue("name")}</p>
             <p>이메일: {form.useFormValue("email")}</p>
             <p>전화번호: {form.useFormValue("phone")}</p>
+
+            {/* 여기서 submit 호출하면 위의 onValidate, onSubmit 실행됨 */}
             <button onClick={form.submit} disabled={form.isSubmitting}>
                 등록 완료
             </button>
         </div>
     );
 }
+
+// 💡 추가 팁: 다른 컴포넌트에서도 submit 가능!
+function QuickSubmitButton() {
+    const form = useGlobalForm({
+        formId: "user-registration", // 같은 ID
+        // 핸들러 없어도 FinalStep에서 등록한 핸들러 자동 사용
+    });
+
+    return (
+        <button onClick={form.submit} disabled={form.isSubmitting}>
+            빠른 등록
+        </button>
+    );
+}
+````
+
+**핵심 포인트:**
+
+-   ✅ **initialValues는 첫 번째만**: 처음 글로벌 폼을 생성하는 컴포넌트에서만 `initialValues` 설정
+-   ✅ **이후에는 생략**: 같은 `formId`로 접근하는 다른 컴포넌트는 `initialValues` 불필요
+-   ✅ **핸들러는 필요할 때만**: `onSubmit`, `onValidate` 등도 필요한 컴포넌트에서만 등록
+
+```
+
 ```
 
 ### 자동 메모리 정리 예제
@@ -814,7 +892,7 @@ function UserProfile() {
 function UserSettings() {
     const state = useGlobalFormaState({
         stateId: "user-data", // 같은 ID로 상태 공유
-        initialValues: {}, // 이미 생성된 상태이므로 무시됨
+        // initialValues 생략 - UserProfile에서 이미 생성됨 (여기서 써도 무시됨)
     });
 
     const theme = state.useValue("preferences.theme");

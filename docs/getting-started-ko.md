@@ -362,6 +362,38 @@ const form2 = useGlobalForm<UserForm>({
 });
 ```
 
+### initialValues 변경하는 방법
+
+이미 생성된 폼의 값을 초기화하려면 `setInitialFormValues()` 메서드를 사용하세요:
+
+```tsx
+const form = useGlobalForm<UserForm>({
+    formId: "user-registration",
+    initialValues: { name: "", email: "" },
+});
+
+// 나중에 폼 값을 다시 초기화
+function resetFormValues() {
+    form.setInitialFormValues({
+        name: "john",
+        email: "john@example.com",
+    });
+}
+
+// 특정 필드만 업데이트
+function updateName() {
+    form.setFormValue("name", "jane");
+}
+
+// 여러 필드를 한 번에 업데이트
+function updateMultiple() {
+    form.setValues({
+        name: "bob",
+        email: "bob@example.com",
+    });
+}
+```
+
 **📋 자세한 글로벌 폼 예제:**
 
 -   [다단계 폼 구현 가이드](./useGlobalForm-guide-ko.md)

@@ -29,6 +29,24 @@
 
 배열, 객체 등의 일반적인 상태 관리를 위한 기본 훅입니다. 개별 필드 구독을 통해 성능을 최적화합니다.
 
+#### 빠른 참조
+
+| 카테고리      | 메서드                  | 설명                                  |
+| ------------- | ----------------------- | ------------------------------------- |
+| **값 조회**   | `useValue(path)`        | 특정 필드 값 구독 (성능 최적화, 권장) |
+|               | `getValue(path)`        | 특정 필드 값 조회 (구독 없음)         |
+|               | `getValues()`           | 모든 필드 값 조회 (구독 없음)         |
+| **값 설정**   | `setValue(path, value)` | 특정 필드 값 설정                     |
+|               | `setValues(values)`     | 여러 필드 값 한 번에 설정             |
+|               | `setBatch(updates)`     | 여러 필드를 효율적으로 일괄 업데이트  |
+| **필드 관리** | `hasField(path)`        | 필드 존재 여부 확인                   |
+|               | `removeField(path)`     | 필드 제거                             |
+| **상태 관리** | `reset()`               | 초기값으로 재설정                     |
+|               | `refreshFields(prefix)` | 특정 prefix 필드들 새로고침           |
+|               | `handleChange(event)`   | 폼 이벤트 처리                        |
+| **구독**      | `subscribe(callback)`   | 모든 상태 변경 구독                   |
+|               | `_store`                | 내부 스토어 직접 접근                 |
+
 #### Signature
 
 ```typescript
@@ -191,6 +209,26 @@ state.refreshFields("user");
 
 로컬 폼 상태를 관리하는 기본 훅입니다.
 
+#### 빠른 참조
+
+| 카테고리    | 메서드                              | 설명                                  |
+| ----------- | ----------------------------------- | ------------------------------------- |
+| **상태**    | `isSubmitting`                      | 폼이 현재 제출 중인지 여부            |
+|             | `isValidating`                      | 폼이 현재 검증 중인지 여부            |
+|             | `isModified`                        | 폼이 초기값에서 수정되었는지 여부     |
+| **값 조회** | `useFormValue(fieldName)`           | 특정 필드 값 구독 (성능 최적화, 권장) |
+|             | `getFormValue(fieldName)`           | 특정 필드 값 조회 (구독 없음)         |
+|             | `getFormValues()`                   | 모든 필드 값 조회 (구독 없음)         |
+| **값 설정** | `setFormValue(name, value)`         | 특정 필드 값 설정                     |
+|             | `setFormValues(values)`             | 여러 필드 값 한 번에 설정             |
+|             | `setInitialFormValues(values)`      | 초기값 변경                           |
+| **이벤트**  | `handleFormChange(event)`           | 폼 입력 변경 이벤트 처리              |
+|             | `handleDatePickerChange(fieldName)` | 날짜 선택기 변경 핸들러 생성          |
+| **폼 액션** | `submit(e?)`                        | 폼 제출 (검증 후)                     |
+|             | `resetForm()`                       | 초기값으로 폼 재설정                  |
+|             | `validateForm()`                    | 폼 검증 실행                          |
+| **호환성**  | `values`                            | 모든 필드 값 (비권장, 전체 리렌더링)  |
+
 #### Signature
 
 ```typescript
@@ -311,6 +349,32 @@ const handleSubmit = async () => {
 | `resetForm`              | `() => void`                                     | 폼을 초기값으로 재설정.                       |
 | `validateForm`           | `() => Promise<boolean>`                         | 폼 검증, 검증 결과 반환.                      |
 | `values`                 | `T`                                              | 모든 폼 값 (전체 리렌더링 발생하므로 비권장). |
+
+#### setInitialFormValues 메서드
+
+이미 생성된 폼의 초기값을 변경합니다. 새로운 초기값이 설정되고, 폼 값도 이에 맞게 업데이트됩니다.
+
+```typescript
+// 기본 사용법
+const form = useForm({
+    initialValues: { name: "", email: "" },
+});
+
+// 초기값을 새로운 값으로 재설정
+form.setInitialFormValues({
+    name: "John Doe",
+    email: "john@example.com",
+});
+
+// 이후 resetForm()을 호출하면 새로운 초기값으로 리셋됨
+form.resetForm(); // name: "John Doe", email: "john@example.com"
+```
+
+**주요 특징:**
+
+-   이미 생성된 폼의 초기값을 동적으로 변경 가능
+-   새로운 초기값이 설정되고, 폼의 현재 상태도 업데이트됨
+-   `resetForm()`을 호출하면 새로운 초기값으로 되돌아감
 
 ---
 

@@ -362,6 +362,38 @@ const form2 = useGlobalForm<UserForm>({
 });
 ```
 
+### How to Change initialValues
+
+To reset form values that have already been created, use the `setInitialFormValues()` method:
+
+```tsx
+const form = useGlobalForm<UserForm>({
+    formId: "user-registration",
+    initialValues: { name: "", email: "" },
+});
+
+// Reset form values later
+function resetFormValues() {
+    form.setInitialFormValues({
+        name: "john",
+        email: "john@example.com",
+    });
+}
+
+// Update a specific field
+function updateName() {
+    form.setFormValue("name", "jane");
+}
+
+// Update multiple fields at once
+function updateMultiple() {
+    form.setValues({
+        name: "bob",
+        email: "bob@example.com",
+    });
+}
+```
+
 **📋 Detailed Global Form Examples:**
 
 -   [Multi-Step Form Implementation Guide](./useGlobalForm-guide-en.md)

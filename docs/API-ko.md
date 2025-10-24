@@ -2,26 +2,24 @@
 
 이 문서는 Forma 라이브러리의 모든 API에 대한 상세한 레퍼런스를 제공합니다.
 
-## Table of Contents
+## 📑 목차
 
--   [Hooks](#hooks)
-    -   [useFormaState](#useformastate)
-    -   [useForm](#useform)
-    -   [useGlobalForm](#useglobalform)
-    -   [useGlobalFormaState](#useglobalformastate)
-    -   [useRegisterGlobalForm](#useregisterglobalform)
-    -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
-    -   [useUnregisterGlobalForm](#useunregisterglobalform)
-    -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
-    -   [useModal](#usemodal)
-    -   [useBreakpoint](#usebreakpoint)
--   [Methods](#methods)
-    -   [setBatch](#setbatch)
--   [Components](#components)
-    -   [GlobalFormaProvider](#globalformaprovider)
--   [Core Classes](#core-classes)
-    -   [FieldStore](#fieldstore)
--   [TypeScript Types](#typescript-types)
+| 카테고리         | API                                                             | 설명                     |
+| ---------------- | --------------------------------------------------------------- | ------------------------ |
+| **Hooks**        | [useFormaState](#useformastate)                                 | 일반 상태 관리용 기본 훅 |
+|                  | [useForm](#useform)                                             | 폼 상태 관리 훅          |
+|                  | [useGlobalForm](#useglobalform)                                 | 글로벌 폼 상태 공유 훅   |
+|                  | [useGlobalFormaState](#useglobalformastate)                     | 글로벌 일반 상태 공유 훅 |
+|                  | [useRegisterGlobalForm](#useregisterglobalform)                 | 글로벌 폼 등록 훅        |
+|                  | [useRegisterGlobalFormaState](#useregisterglobalformastate)     | 글로벌 상태 등록 훅      |
+|                  | [useUnregisterGlobalForm](#useunregisterglobalform)             | 글로벌 폼 등록 해제 훅   |
+|                  | [useUnregisterGlobalFormaState](#useunregisterglobalformastate) | 글로벌 상태 등록 해제 훅 |
+|                  | [useModal](#usemodal)                                           | 모달 관리 훅             |
+|                  | [useBreakpoint](#usebreakpoint)                                 | 반응형 디자인 훅         |
+| **Methods**      | [setBatch](#setbatch)                                           | 일괄 업데이트 메서드     |
+| **Components**   | [GlobalFormaProvider](#globalformaprovider)                     | 글로벌 Forma 상태 제공자 |
+| **Core Classes** | [FieldStore](#fieldstore)                                       | 핵심 상태 관리 클래스    |
+| **Types**        | [TypeScript Types](#typescript-types)                           | 모든 타입 정의           |
 
 ---
 

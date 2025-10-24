@@ -286,8 +286,80 @@ function Step1() {
     });
 
     const name = form.useFormValue("name");
-    // ... 폼 로직
+    const email = form.useFormValue("email");
+
+    return (
+        <div>
+            <input
+                value={name}
+                onChange={(e) => form.setFormValue("name", e.target.value)}
+                placeholder="이름"
+            />
+            <input
+                value={email}
+                onChange={(e) => form.setFormValue("email", e.target.value)}
+                placeholder="이메일"
+            />
+        </div>
+    );
 }
+
+// 다른 컴포넌트에서 동일한 폼 상태 공유
+function Step2() {
+    const form = useGlobalForm<UserForm>({
+        formId: "user-registration", // 같은 ID로 Step1에서 등록한 폼 꺼내오기
+    });
+
+    const name = form.useFormValue("name");
+    const email = form.useFormValue("email");
+
+    return (
+        <div>
+            <h2>확인 페이지</h2>
+            <p>이름: {name}</p>
+            <p>이메일: {email}</p>
+            <button onClick={() => form.submit()}>제출하기</button>
+        </div>
+    );
+}
+```
+
+### ⚠️ 중요: initialValues 동작
+
+같은 `formId`를 사용할 때 **`initialValues`는 첫 번째 호출에서만 적용**됩니다.
+
+```tsx
+// 첫 번째 호출 - initialValues 적용됨
+const form1 = useGlobalForm<UserForm>({
+    formId: "user-registration",
+    initialValues: { name: "", email: "" }, // ✅ 적용됨
+});
+
+// 두 번째 호출 - initialValues 무시됨
+const form2 = useGlobalForm<UserForm>({
+    formId: "user-registration",
+    initialValues: { name: "james", email: "" }, // ❌ 무시됨 (스토어가 이미 생성됨)
+});
+```
+
+**결과:**
+
+-   `form1`과 `form2`는 **동일한 스토어**를 공유
+-   `form2`의 `initialValues`는 무시됨
+-   스토어의 데이터는 첫 번째 호출의 `initialValues`로 유지
+
+**다른 초기값이 필요하면 다른 `formId`를 사용하세요:**
+
+```tsx
+const form1 = useGlobalForm<UserForm>({
+    formId: "user-registration-1", // 다른 ID
+    initialValues: { name: "", email: "" },
+});
+
+const form2 = useGlobalForm<UserForm>({
+    formId: "user-registration-2", // 다른 ID
+    initialValues: { name: "james", email: "" }, // ✅ 적용됨
+});
 ```
 
 **📋 자세한 글로벌 폼 예제:**

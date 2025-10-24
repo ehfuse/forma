@@ -2,26 +2,24 @@
 
 This document provides a detailed reference for all APIs in the Forma library.
 
-## Table of Contents
+## 📑 Table of Contents
 
--   [Hooks](#hooks)
-    -   [useFormaState](#useformastate)
-    -   [useForm](#useform)
-    -   [useGlobalForm](#useglobalform)
-    -   [useGlobalFormaState](#useglobalformastate)
-    -   [useRegisterGlobalForm](#useregisterglobalform)
-    -   [useRegisterGlobalFormaState](#useregisterglobalformastate)
-    -   [useUnregisterGlobalForm](#useunregisterglobalform)
-    -   [useUnregisterGlobalFormaState](#useunregisterglobalformastate)
-    -   [useModal](#usemodal)
-    -   [useBreakpoint](#usebreakpoint)
--   [Methods](#methods)
-    -   [setBatch](#setbatch)
--   [Components](#components)
-    -   [GlobalFormaProvider](#globalformaprovider)
--   [Core Classes](#core-classes)
-    -   [FieldStore](#fieldstore)
--   [TypeScript Types](#typescript-types)
+| Category         | API                                                             | Description                             |
+| ---------------- | --------------------------------------------------------------- | --------------------------------------- |
+| **Hooks**        | [useFormaState](#useformastate)                                 | Basic hook for general state management |
+|                  | [useForm](#useform)                                             | Form state management hook              |
+|                  | [useGlobalForm](#useglobalform)                                 | Global form state sharing hook          |
+|                  | [useGlobalFormaState](#useglobalformastate)                     | Global general state sharing hook       |
+|                  | [useRegisterGlobalForm](#useregisterglobalform)                 | Global form registration hook           |
+|                  | [useRegisterGlobalFormaState](#useregisterglobalformastate)     | Global state registration hook          |
+|                  | [useUnregisterGlobalForm](#useunregisterglobalform)             | Global form unregistration hook         |
+|                  | [useUnregisterGlobalFormaState](#useunregisterglobalformastate) | Global state unregistration hook        |
+|                  | [useModal](#usemodal)                                           | Modal management hook                   |
+|                  | [useBreakpoint](#usebreakpoint)                                 | Responsive design hook                  |
+| **Methods**      | [setBatch](#setbatch)                                           | Batch update method                     |
+| **Components**   | [GlobalFormaProvider](#globalformaprovider)                     | Global Forma state provider             |
+| **Core Classes** | [FieldStore](#fieldstore)                                       | Core state management class             |
+| **Types**        | [TypeScript Types](#typescript-types)                           | All type definitions                    |
 
 ---
 

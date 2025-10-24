@@ -144,7 +144,7 @@ const theme = state.useValue("settings.theme");
 | `setValues`     | `(values: Partial<T>) => void`                    | 여러 값을 한 번에 설정. 영향을 받는 모든 구독자에게 리렌더링 트리거.         |
 | `setBatch`      | `(updates: Record<string, any>) => void`          | 여러 필드를 효율적으로 일괄 업데이트. 리렌더링 최소화.                       |
 | `reset`         | `() => void`                                      | 모든 필드를 초기값으로 재설정.                                               |
-| `refreshFields` | `(prefix: string) => void`                        | 특정 prefix를 가진 모든 필드 구독자를 강제로 새로고침. 대량 업데이트에 유용. |
+| `refreshFields` | `(prefix: string) => void`                        | 특정 prefix를 가진 모든 필드 구독자를 강제로 새로고침 (값 동일해도 UI 갱신). |
 | `handleChange`  | `(event: React.ChangeEvent<...>) => void`         | 표준 입력 변경 이벤트 처리. 해당 필드를 자동으로 업데이트.                   |
 | `hasField`      | `(path: string) => boolean`                       | 상태에 필드가 존재하는지 확인.                                               |
 | `removeField`   | `(path: string) => void`                          | 상태에서 필드 제거.                                                          |
@@ -611,7 +611,7 @@ interface UseGlobalFormaStateProps<T> {
 | `setValues`     | `(values: Partial<T>) => void`                    | 여러 값을 한 번에 설정. 영향을 받는 모든 구독자에게 리렌더링 트리거.         |
 | `setBatch`      | `(updates: Record<string, any>) => void`          | 여러 필드를 효율적으로 일괄 업데이트. 리렌더링 최소화.                       |
 | `reset`         | `() => void`                                      | 모든 필드를 초기값으로 재설정.                                               |
-| `refreshFields` | `(prefix: string) => void`                        | 특정 prefix를 가진 모든 필드 구독자를 강제로 새로고침. 대량 업데이트에 유용. |
+| `refreshFields` | `(prefix: string) => void`                        | 특정 prefix를 가진 모든 필드 구독자를 강제로 새로고침 (값 동일해도 UI 갱신). |
 | `handleChange`  | `(event: React.ChangeEvent<...>) => void`         | 표준 입력 변경 이벤트 처리. 해당 필드를 자동으로 업데이트.                   |
 | `hasField`      | `(path: string) => boolean`                       | 상태에 필드가 존재하는지 확인.                                               |
 | `removeField`   | `(path: string) => void`                          | 상태에서 필드 제거.                                                          |

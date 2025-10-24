@@ -10,6 +10,11 @@
             "types": "./dist/index.d.ts",
             "import": "./dist/esm/index.js",
             "require": "./dist/index.js"
+        },
+        "./min": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/esm/index.min.js",
+            "require": "./dist/index.min.js"
         }
     },
     "files": [
@@ -22,8 +27,9 @@
         "build:cjs": "tsc -p tsconfig.build.json",
         "build:esm": "tsc -p tsconfig.build.json --module esnext --outDir dist/esm",
         "build:types": "tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --outDir dist",
+        "build:min": "esbuild dist/index.js --minify --outfile=dist/index.min.js && esbuild dist/esm/index.js --minify --outfile=dist/esm/index.min.js",
         "clean": "rm -rf dist",
-        "prepublishOnly": "npm run build",
+        "prepublishOnly": "npm run build && npm run build:min",
         "test": "echo \"Tests will be added\" && exit 0",
         "lint": "eslint . --ext .ts,.tsx",
         "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -73,6 +79,7 @@
     },
     "devDependencies": {
         "@types/react": "^19.1.12",
+        "esbuild": "^0.23.0",
         "typescript": "^5.9.2"
     }
 }

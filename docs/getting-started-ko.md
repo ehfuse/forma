@@ -23,6 +23,42 @@ import {
 } from "@ehfuse/forma";
 ```
 
+### Minified 번들 사용 (프로덕션 최적화)
+
+Forma는 더 작은 번들 크기를 위한 minified 번들을 제공합니다:
+
+```tsx
+// Minified 번들 사용 (11-13% 더 작음)
+import {
+    useForm,
+    useFormaState,
+    GlobalFormProvider,
+    useGlobalForm,
+} from "@ehfuse/forma/min";
+```
+
+**번들 크기 비교:**
+
+| 형식 | 표준 | Minified | 축소율 |
+|------|------|----------|--------|
+| CommonJS | 6.3 KB | 5.6 KB | 11% |
+| ESM | 3.1 KB | 2.7 KB | 13% |
+
+**package.json 설정:**
+```json
+{
+    "dependencies": {
+        "@ehfuse/forma": "^1.8.0"
+    }
+}
+```
+
+**동적 Import (코드 분할 권장):**
+```tsx
+// Minified 번들을 지연 로드
+const { useForm } = await import("@ehfuse/forma/min");
+```
+
 ## 2단계: 첫 번째 폼 만들기
 
 ### 기본 폼

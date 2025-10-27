@@ -35,6 +35,7 @@ import {
     UseGlobalFormaStateReturn,
 } from "../types/globalForm";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
+import { mergeActions } from "../utils";
 
 /**
  * 글로벌 FormaState 관리 훅 / Global FormaState management hook
@@ -168,7 +169,11 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
     // actions가 제공되면 글로벌에 등록 / Register actions to global if provided
     useEffect(() => {
         if (actions) {
-            registerActions<T>(stateId, actions);
+            // 배열이면 병합해서 등록
+            const mergedActions = mergeActions(actions);
+            if (mergedActions) {
+                registerActions<T>(stateId, mergedActions);
+            }
         }
     }, [stateId, actions, registerActions]);
 

@@ -77,8 +77,8 @@ interface UseFormaStateOptions<T> {
     onError?: (error: Error) => void;
     /** Enable validation on all changes */
     validateOnChange?: boolean;
-    /** Custom actions (computed getters and handlers) */
-    actions?: Actions<T>;
+    /** Custom actions (computed getters and handlers) - can be object or array */
+    actions?: Actions<T> | Actions<T>[];
 }
 ```
 
@@ -140,6 +140,8 @@ const theme = state.useValue("settings.theme");
 
 Use `actions` to define custom logic with computed getters and handlers in one object.
 
+**Pass as Object (Basic):**
+
 ```typescript
 const state = useFormaState(
     {
@@ -180,6 +182,30 @@ const state = useFormaState(
 const count = state.actions.getCompletedCount(); // Computed getter
 state.actions.addTodo("New Task"); // Handler
 await state.actions.submitTodos(); // Workflow
+```
+
+**Pass as Array (Modular):**
+
+```typescript
+// Reusable actions modules
+const validationActions = {
+    validateEmail: (context) => context.values.email.includes("@"),
+    validateRequired: (context, field: string) => !!context.getValue(field),
+};
+
+const formattingActions = {
+    formatPrice: (context) => `$${context.values.price.toFixed(2)}`,
+    formatDate: (context) => new Date(context.values.date).toLocaleDateString(),
+};
+
+// Pass as array - automatically merged (later takes precedence)
+const state = useFormaState(initialValues, {
+    actions: [validationActions, formattingActions],
+});
+
+// All actions available
+state.actions.validateEmail();
+state.actions.formatPrice();
 ```
 
 📚 **[Detailed usage examples →](./examples-en.md#useformastate-examples)**
@@ -300,8 +326,8 @@ interface UseFormProps<T> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** Callback after form submission completion */
     onComplete?: (values: T) => void;
-    /** Custom actions (computed getters and handlers) */
-    actions?: Actions<T>;
+    /** Custom actions (computed getters and handlers) - can be object or array */
+    actions?: Actions<T> | Actions<T>[];
     /** Internal API: External store (used in useGlobalForm) */
     _externalStore?: FieldStore<T>;
 }
@@ -462,8 +488,8 @@ interface UseGlobalFormProps<T> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** Callback after form submission completion */
     onComplete?: (values: T) => void;
-    /** Custom actions (computed getters and handlers) */
-    actions?: Actions<T>;
+    /** Custom actions (computed getters and handlers) - can be object or array */
+    actions?: Actions<T> | Actions<T>[];
 }
 ```
 
@@ -611,7 +637,7 @@ function Step2() {
 |                | `onSubmit`      | `(values: T) => Promise<boolean \| void> \| boolean \| void` | Form submit handler - return false to treat as submission failure (optional). |
 |                | `onValidate`    | `(values: T) => Promise<boolean> \| boolean`                 | Form validation handler - return true for validation success (optional).      |
 |                | `onComplete`    | `(values: T) => void`                                        | Callback after form submission completion (optional).                         |
-|                | `actions`       | `Actions<T>`                                                 | Custom actions (computed getters and handlers) (optional).                    |
+|                | `actions`       | `Actions<T> \| Actions<T>[]`                                 | Custom actions (computed getters and handlers) - object or array (optional).  |
 
 **Inherited Functions:**
 
@@ -675,8 +701,8 @@ interface UseGlobalFormaStateProps<T> {
     initialValues?: T;
     /** Whether to auto-cleanup on component unmount (default: true) */
     autoCleanup?: boolean;
-    /** Custom actions (computed getters and handlers) */
-    actions?: Actions<T>;
+    /** Custom actions (computed getters and handlers) - can be object or array */
+    actions?: Actions<T> | Actions<T>[];
 }
 ```
 

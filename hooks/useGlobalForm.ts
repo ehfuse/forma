@@ -32,6 +32,7 @@ import { useContext, useEffect } from "react";
 import { useForm } from "./useForm";
 import { UseGlobalFormProps, UseGlobalFormReturn } from "../types/globalForm";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
+import { mergeActions } from "../utils";
 
 /**
  * 글로벌 폼 상태 관리 훅 / Global form state management hook
@@ -110,7 +111,11 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
     // actions가 제공되면 글로벌에 등록 / Register actions to global if provided
     useEffect(() => {
         if (actions) {
-            registerActions<T>(formId, actions);
+            // 배열이면 병합해서 등록
+            const mergedActions = mergeActions(actions);
+            if (mergedActions) {
+                registerActions<T>(formId, mergedActions);
+            }
         }
     }, [formId, actions, registerActions]);
 

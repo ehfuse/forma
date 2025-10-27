@@ -72,8 +72,8 @@ export interface UseFormProps<T extends Record<string, any>> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 | Callback after form submission completion */
     onComplete?: (values: T) => void;
-    /** 사용자 정의 액션 함수들 | User-defined action functions */
-    actions?: Actions<T>;
+    /** 사용자 정의 액션 함수들 (객체 또는 배열로 전달 가능) | User-defined action functions (can be object or array) */
+    actions?: Actions<T> | Actions<T>[];
     /** 내부 API - 전역 상태용 외부 스토어 | Internal API - external store for global state */
     _externalStore?: FieldStore<T>;
 }
@@ -92,8 +92,8 @@ export interface UseFormPropsOptional<
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 | Callback after form submission completion */
     onComplete?: (values: T) => void;
-    /** 사용자 정의 액션 함수들 | User-defined action functions */
-    actions?: Actions<T>;
+    /** 사용자 정의 액션 함수들 (객체 또는 배열로 전달 가능) | User-defined action functions (can be object or array) */
+    actions?: Actions<T> | Actions<T>[];
     /** 내부 API - 전역 상태용 외부 스토어 | Internal API - external store for global state */
     _externalStore?: FieldStore<T>;
 }

@@ -26,3 +26,24 @@
 
 export { getNestedValue, setNestedValue } from "./dotNotation";
 export { isDevelopment, devWarn, devError, devLog } from "./environment";
+
+/**
+ * Actions 배열을 단일 객체로 병합
+ * Merge actions array into single object
+ *
+ * @param actions - Actions 객체 또는 배열
+ * @returns 병합된 Actions 객체
+ */
+export function mergeActions<T extends Record<string, any>>(
+    actions?:
+        | import("../types/form").Actions<T>
+        | import("../types/form").Actions<T>[]
+): import("../types/form").Actions<T> | undefined {
+    if (!actions) return undefined;
+
+    // 이미 객체면 그대로 반환
+    if (!Array.isArray(actions)) return actions;
+
+    // 배열이면 모든 객체를 병합 (나중 것이 우선순위)
+    return Object.assign({}, ...actions);
+}

@@ -77,8 +77,8 @@ interface UseFormaStateOptions<T> {
     onError?: (error: Error) => void;
     /** 모든 변경에 대한 유효성 검사 활성화 */
     validateOnChange?: boolean;
-    /** 커스텀 액션 (computed getter 및 handler) */
-    actions?: Actions<T>;
+    /** 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열로 전달 가능 */
+    actions?: Actions<T> | Actions<T>[];
 }
 ```
 
@@ -140,6 +140,8 @@ const theme = state.useValue("settings.theme");
 
 `actions`를 사용하여 커스텀 로직을 정의할 수 있습니다. Computed getter와 handler를 하나의 객체로 관리합니다.
 
+**객체로 전달 (기본):**
+
 ```typescript
 const state = useFormaState(
     {
@@ -183,6 +185,30 @@ const state = useFormaState(
 const completedCount = state.actions.getCompletedCount(); // Computed getter
 state.actions.addTodo("New Task"); // Handler
 await state.actions.submitTodos(); // Complex workflow
+```
+
+**배열로 전달 (모듈화):**
+
+```typescript
+// 재사용 가능한 actions 모듈
+const validationActions = {
+    validateEmail: (context) => context.values.email.includes("@"),
+    validateRequired: (context, field: string) => !!context.getValue(field),
+};
+
+const formattingActions = {
+    formatPrice: (context) => `$${context.values.price.toFixed(2)}`,
+    formatDate: (context) => new Date(context.values.date).toLocaleDateString(),
+};
+
+// 배열로 전달하면 자동 병합 (나중 것이 우선순위)
+const state = useFormaState(initialValues, {
+    actions: [validationActions, formattingActions],
+});
+
+// 모든 actions 사용 가능
+state.actions.validateEmail();
+state.actions.formatPrice();
 ```
 
 **ActionContext 타입:**
@@ -318,8 +344,8 @@ interface UseFormProps<T> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 */
     onComplete?: (values: T) => void;
-    /** 커스텀 액션 (computed getter 및 handler) */
-    actions?: Actions<T>;
+    /** 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열로 전달 가능 */
+    actions?: Actions<T> | Actions<T>[];
     /** 내부 API: 외부 스토어 (useGlobalForm에서 사용) */
     _externalStore?: FieldStore<T>;
 }
@@ -545,8 +571,8 @@ interface UseGlobalFormProps<T> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 */
     onComplete?: (values: T) => void;
-    /** 커스텀 액션 (computed getter 및 handler) */
-    actions?: Actions<T>;
+    /** 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열로 전달 가능 */
+    actions?: Actions<T> | Actions<T>[];
 }
 ```
 
@@ -565,16 +591,16 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 
 `useGlobalForm`은 `useForm`의 모든 함수들을 포함하며, 다음과 같은 추가 속성과 파라미터들이 있습니다:
 
-| 카테고리     | 항목            | Signature                                                    | Description                                                 |
-| ------------ | --------------- | ------------------------------------------------------------ | ----------------------------------------------------------- |
-| **속성**     | `formId`        | `string`                                                     | 글로벌 폼의 고유 식별자.                                    |
-|              | `_store`        | `FieldStore<T>`                                              | 글로벌 스토어 인스턴스 직접 접근.                           |
-| **파라미터** | `initialValues` | `Partial<T>`                                                 | 초기값 (옵션).                                              |
-|              | `autoCleanup`   | `boolean`                                                    | 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true).         |
-|              | `onSubmit`      | `(values: T) => Promise<boolean \| void> \| boolean \| void` | 폼 제출 핸들러 - false 반환 시 제출 실패로 처리 (선택사항). |
-|              | `onValidate`    | `(values: T) => Promise<boolean> \| boolean`                 | 폼 검증 핸들러 - true 반환 시 검증 통과 (선택사항).         |
-|              | `onComplete`    | `(values: T) => void`                                        | 폼 제출 완료 후 콜백 (선택사항).                            |
-|              | `actions`       | `Actions<T>`                                                 | 커스텀 액션 (computed getter 및 handler) (선택사항).        |
+| 카테고리     | 항목            | Signature                                                    | Description                                                           |
+| ------------ | --------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
+| **속성**     | `formId`        | `string`                                                     | 글로벌 폼의 고유 식별자.                                              |
+|              | `_store`        | `FieldStore<T>`                                              | 글로벌 스토어 인스턴스 직접 접근.                                     |
+| **파라미터** | `initialValues` | `Partial<T>`                                                 | 초기값 (옵션).                                                        |
+|              | `autoCleanup`   | `boolean`                                                    | 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true).                   |
+|              | `onSubmit`      | `(values: T) => Promise<boolean \| void> \| boolean \| void` | 폼 제출 핸들러 - false 반환 시 제출 실패로 처리 (선택사항).           |
+|              | `onValidate`    | `(values: T) => Promise<boolean> \| boolean`                 | 폼 검증 핸들러 - true 반환 시 검증 통과 (선택사항).                   |
+|              | `onComplete`    | `(values: T) => void`                                        | 폼 제출 완료 후 콜백 (선택사항).                                      |
+|              | `actions`       | `Actions<T> \| Actions<T>[]`                                 | 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열 (선택사항). |
 
 **상속된 함수들:**
 
@@ -758,8 +784,8 @@ interface UseGlobalFormaStateProps<T> {
     initialValues?: T;
     /** 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true) */
     autoCleanup?: boolean;
-    /** 커스텀 액션 (computed getter 및 handler) */
-    actions?: Actions<T>;
+    /** 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열로 전달 가능 */
+    actions?: Actions<T> | Actions<T>[];
 }
 ```
 

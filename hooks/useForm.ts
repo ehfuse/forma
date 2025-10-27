@@ -36,7 +36,7 @@ import {
     UseFormReturn,
 } from "../types/form";
 import { useFormaState } from "./useFormaState";
-import { devError } from "../utils";
+import { devError, mergeActions } from "../utils";
 
 import React, {
     useEffect,
@@ -321,11 +321,13 @@ export function useForm<T extends Record<string, any>>(
         [onSubmit, onComplete, validateForm, fieldState.getValues]
     );
 
-    // Actions 바인딩 / Bind actions
+    // Actions 바인딩 - context와 함께 사용할 수 있도록 / Actions binding - to use with context
     const boundActions = useMemo(() => {
-        if (!userActions) {
-            return {} as any;
-        }
+        if (!userActions) return {} as any;
+
+        // 배열이면 병합, 객체면 그대로 사용
+        const mergedActions = mergeActions(userActions);
+        if (!mergedActions) return {} as any;
 
         const bound: any = {};
         const context = {
@@ -344,8 +346,8 @@ export function useForm<T extends Record<string, any>>(
         };
 
         // 모든 action 함수들을 context와 바인딩 / Bind all action functions with context
-        Object.keys(userActions).forEach((key) => {
-            const action = userActions[key];
+        Object.keys(mergedActions).forEach((key) => {
+            const action = mergedActions[key];
             if (typeof action === "function") {
                 bound[key] = (...args: any[]) => action(context, ...args);
             }
@@ -353,7 +355,6 @@ export function useForm<T extends Record<string, any>>(
 
         return bound;
     }, [userActions, fieldState, resetForm, submit, validateForm]);
-
     return useMemo(
         () => ({
             // 상태 / State

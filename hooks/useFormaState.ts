@@ -18,7 +18,12 @@ import {
     useReducer,
 } from "react";
 import { FieldStore } from "../core/FieldStore";
-import { getNestedValue, setNestedValue, devWarn } from "../utils";
+import {
+    getNestedValue,
+    setNestedValue,
+    devWarn,
+    mergeActions,
+} from "../utils";
 import { FormChangeEvent, ActionContext, Actions } from "../types/form";
 
 /**
@@ -41,8 +46,8 @@ export interface UseFormaStateOptions<T extends Record<string, any>> {
     /** Enable validation on every change | 모든 변경에 대한 유효성 검사 활성화 */
     validateOnChange?: boolean;
 
-    /** Custom actions (computed getters and handlers) | 커스텀 액션 (computed getter 및 handler) */
-    actions?: Actions<T>;
+    /** Custom actions (computed getters and handlers) - can be object or array | 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열 */
+    actions?: Actions<T> | Actions<T>[];
 }
 
 /**
@@ -324,6 +329,10 @@ export function useFormaState<T extends Record<string, any>>(
     const boundActions = useMemo(() => {
         if (!actionsDefinition) return {};
 
+        // 배열이면 병합, 객체면 그대로 사용
+        const mergedActions = mergeActions(actionsDefinition);
+        if (!mergedActions) return {};
+
         const context: ActionContext<T> = {
             values: store.getValues(),
             getValue: (field: string | keyof T) =>
@@ -340,7 +349,7 @@ export function useFormaState<T extends Record<string, any>>(
         };
 
         const bound: any = {};
-        for (const [key, action] of Object.entries(actionsDefinition)) {
+        for (const [key, action] of Object.entries(mergedActions)) {
             bound[key] = (...args: any[]) => {
                 // Update context.values with latest state
                 context.values = store.getValues();

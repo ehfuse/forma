@@ -59,6 +59,8 @@ export type {
     UseFormReturn,
     FormValidationResult,
     FormChangeEvent,
+    ActionContext,
+    Actions,
 } from "./types/form";
 
 // Field State Types

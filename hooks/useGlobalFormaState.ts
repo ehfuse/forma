@@ -113,6 +113,7 @@ export function useGlobalFormaState<T extends Record<string, any>>({
     stateId,
     initialValues,
     autoCleanup = true,
+    actions,
 }: UseGlobalFormaStateProps<T>): UseGlobalFormaStateReturn<T> {
     const context = useContext(GlobalFormaContext);
 
@@ -154,6 +155,8 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
         incrementRef,
         decrementRef,
         validateAndStoreAutoCleanupSetting,
+        registerActions,
+        getActions,
     } = context;
 
     // autoCleanup 설정 일관성 검증
@@ -162,9 +165,23 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
     // 글로벌 스토어 가져오기 또는 생성 / Get or create global store
     const store = getOrCreateStore<T>(stateId);
 
+    // actions가 제공되면 글로벌에 등록 / Register actions to global if provided
+    useEffect(() => {
+        if (actions) {
+            registerActions<T>(stateId, actions);
+        }
+    }, [stateId, actions, registerActions]);
+
+    // 글로벌 actions 가져오기 / Get global actions
+    const globalActions = getActions<T>(stateId);
+
+    // 로컬 actions가 없으면 글로벌 actions 사용 / Use global actions if local actions are not provided
+    const effectiveActions = actions || globalActions;
+
     // useFormaState에 초기값과 외부 스토어 전달 (올바른 방식)
     const formaState = useFormaState<T>((initialValues as T) || ({} as T), {
         _externalStore: store,
+        actions: effectiveActions,
     });
 
     // 초기값이 있고 스토어가 비어있다면 초기값 설정 (올바른 방법으로)

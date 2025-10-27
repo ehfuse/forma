@@ -53,6 +53,7 @@ export function useGlobalForm<T extends Record<string, any>>({
     onSubmit,
     onValidate,
     onComplete,
+    actions,
 }: UseGlobalFormProps<T>): UseGlobalFormReturn<T> {
     const context = useContext(GlobalFormaContext);
 
@@ -85,6 +86,8 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
         validateAndStoreAutoCleanupSetting,
         registerHandlers,
         getHandlers,
+        registerActions,
+        getActions,
     } = context;
 
     // autoCleanup 설정 일관성 검증
@@ -104,13 +107,26 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
         }
     }, [formId, onSubmit, onValidate, onComplete, registerHandlers]);
 
+    // actions가 제공되면 글로벌에 등록 / Register actions to global if provided
+    useEffect(() => {
+        if (actions) {
+            registerActions<T>(formId, actions);
+        }
+    }, [formId, actions, registerActions]);
+
     // 글로벌 핸들러 가져오기 / Get global handlers
     const globalHandlers = getHandlers<T>(formId);
+
+    // 글로벌 actions 가져오기 / Get global actions
+    const globalActions = getActions<T>(formId);
 
     // 로컬 핸들러가 없으면 글로벌 핸들러 사용 / Use global handlers if local handlers are not provided
     const effectiveOnSubmit = onSubmit || globalHandlers?.onSubmit;
     const effectiveOnValidate = onValidate || globalHandlers?.onValidate;
     const effectiveOnComplete = onComplete || globalHandlers?.onComplete;
+
+    // 로컬 actions가 없으면 글로벌 actions 사용 / Use global actions if local actions are not provided
+    const effectiveActions = actions || globalActions;
 
     // useForm에 외부 스토어와 핸들러들 전달 / Pass external store and handlers to useForm
     const form = useForm<T>({
@@ -119,6 +135,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
         onSubmit: effectiveOnSubmit,
         onValidate: effectiveOnValidate,
         onComplete: effectiveOnComplete,
+        actions: effectiveActions,
     });
 
     // 초기값이 있고 스토어가 비어있다면 초기값 설정 (올바른 방법으로)

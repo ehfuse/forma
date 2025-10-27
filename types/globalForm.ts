@@ -28,7 +28,7 @@
 
 import { ReactNode } from "react";
 import { FieldStore } from "../core/FieldStore";
-import { UseFormReturn } from "./form";
+import { UseFormReturn, Actions } from "./form";
 import { UseFormaStateReturn } from "../hooks/useFormaState";
 
 /**
@@ -55,6 +55,8 @@ export interface UseGlobalFormProps<T extends Record<string, any>> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 | Callback after form submission completion */
     onComplete?: (values: T) => void;
+    /** 커스텀 액션 (computed getter 및 handler) | Custom actions (computed getters and handlers) */
+    actions?: Actions<T>;
 }
 
 /**
@@ -68,6 +70,8 @@ export interface UseGlobalFormaStateProps<T extends Record<string, any>> {
     initialValues?: Partial<T>;
     /** 컴포넌트 언마운트 시 자동 정리 여부 | Auto cleanup on component unmount */
     autoCleanup?: boolean;
+    /** 커스텀 액션 (computed getter 및 handler) | Custom actions (computed getters and handlers) */
+    actions?: Actions<T>;
 }
 
 /**

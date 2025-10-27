@@ -462,6 +462,8 @@ interface UseGlobalFormProps<T> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** Callback after form submission completion */
     onComplete?: (values: T) => void;
+    /** Custom actions (computed getters and handlers) */
+    actions?: Actions<T>;
 }
 ```
 
@@ -493,23 +495,33 @@ const form = useGlobalForm({
         // Only executes when onValidate returns true
         await api.submitUser(values);
     },
+    actions: {
+        validateEmail: (context) => {
+            return context.values.email.includes("@");
+        },
+        clearForm: (context) => {
+            context.setValues({ name: "", email: "" });
+        },
+    },
 });
 
-// Component B: Automatically shares same form state and handlers
+// Component B: Automatically shares same form state, handlers, and actions
 const sharedForm = useGlobalForm({
-    formId: "user-form", // Share both data and handlers with same ID
+    formId: "user-form", // Share data, handlers, and actions with same ID
 });
 
-// ✅ submit() works in Component B too!
-// Automatically uses onValidate, onSubmit registered in Component A
+// ✅ submit() and actions work in Component B too!
+// Automatically uses onValidate, onSubmit, actions registered in Component A
 sharedForm.submit();
+sharedForm.actions.clearForm(); // actions also available
 ```
 
 **Key Points:**
 
--   **Automatic handler sharing**: `onValidate`, `onSubmit`, `onComplete` registered first are shared globally
--   **Intuitive behavior**: Same `formId` shares both data and handlers as expected
--   **Flexible override**: Specific components can use different handlers by redefining locally
+-   **Automatic Handler Sharing**: `onValidate`, `onSubmit`, `onComplete` registered by the first component are automatically shared globally
+-   **Automatic Actions Sharing**: `actions` registered by the first component are also automatically shared globally
+-   **Intuitive behavior**: Same `formId` shares data, handlers, and actions as expected
+-   **Flexible override**: Specific components can use different handlers or actions by redefining locally
 -   **Validation flow**: `onValidate` returns `false` → `onSubmit` will NOT execute / returns `true` → `onSubmit` will execute
 
 **Handler Priority:**
@@ -599,6 +611,7 @@ function Step2() {
 |                | `onSubmit`      | `(values: T) => Promise<boolean \| void> \| boolean \| void` | Form submit handler - return false to treat as submission failure (optional). |
 |                | `onValidate`    | `(values: T) => Promise<boolean> \| boolean`                 | Form validation handler - return true for validation success (optional).      |
 |                | `onComplete`    | `(values: T) => void`                                        | Callback after form submission completion (optional).                         |
+|                | `actions`       | `Actions<T>`                                                 | Custom actions (computed getters and handlers) (optional).                    |
 
 **Inherited Functions:**
 
@@ -662,14 +675,8 @@ interface UseGlobalFormaStateProps<T> {
     initialValues?: T;
     /** Whether to auto-cleanup on component unmount (default: true) */
     autoCleanup?: boolean;
-    /** Optional callback on state change */
-    onChange?: (values: T) => void;
-    /** Enable deep equality check for performance improvement */
-    deepEquals?: boolean;
-    /** Error handler for state operations */
-    onError?: (error: Error) => void;
-    /** Enable validation on all changes */
-    validateOnChange?: boolean;
+    /** Custom actions (computed getters and handlers) */
+    actions?: Actions<T>;
 }
 ```
 
@@ -726,6 +733,7 @@ const sharedState = useGlobalFormaState({
 | `removeField`   | `(path: string) => void`                          | Remove a field from the state.                                                                |
 | `getValue`      | `(path: string) => any`                           | Get single field value (not reactive).                                                        |
 | `subscribe`     | `(callback: (values: T) => void) => () => void`   | Subscribe to all state changes. Returns unsubscribe function.                                 |
+| `actions`       | `any`                                             | Custom actions (computed getters and handlers).                                               |
 | `_store`        | `FieldStore<T>`                                   | Direct access to internal store for advanced usage.                                           |
 
 ```typescript

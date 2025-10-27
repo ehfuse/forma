@@ -545,6 +545,8 @@ interface UseGlobalFormProps<T> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 */
     onComplete?: (values: T) => void;
+    /** 커스텀 액션 (computed getter 및 handler) */
+    actions?: Actions<T>;
 }
 ```
 
@@ -572,6 +574,7 @@ interface UseGlobalFormReturn<T> extends UseFormReturn<T> {
 |              | `onSubmit`      | `(values: T) => Promise<boolean \| void> \| boolean \| void` | 폼 제출 핸들러 - false 반환 시 제출 실패로 처리 (선택사항). |
 |              | `onValidate`    | `(values: T) => Promise<boolean> \| boolean`                 | 폼 검증 핸들러 - true 반환 시 검증 통과 (선택사항).         |
 |              | `onComplete`    | `(values: T) => void`                                        | 폼 제출 완료 후 콜백 (선택사항).                            |
+|              | `actions`       | `Actions<T>`                                                 | 커스텀 액션 (computed getter 및 handler) (선택사항).        |
 
 **상속된 함수들:**
 
@@ -594,23 +597,33 @@ const form = useGlobalForm({
         // onValidate에서 true 반환할 때만 실행됨
         await api.submitUser(values);
     },
+    actions: {
+        validateEmail: (context) => {
+            return context.values.email.includes("@");
+        },
+        clearForm: (context) => {
+            context.setValues({ name: "", email: "" });
+        },
+    },
 });
 
-// 컴포넌트 B: 같은 폼 상태와 핸들러 자동 공유
+// 컴포넌트 B: 같은 폼 상태와 핸들러, actions 자동 공유
 const sharedForm = useGlobalForm({
-    formId: "user-form", // 같은 ID로 데이터와 핸들러 모두 공유
+    formId: "user-form", // 같은 ID로 데이터, 핸들러, actions 모두 공유
 });
 
-// ✅ 컴포넌트 B에서도 submit() 동작!
-// 컴포넌트 A에서 등록한 onValidate, onSubmit 자동으로 사용
+// ✅ 컴포넌트 B에서도 submit()과 actions 동작!
+// 컴포넌트 A에서 등록한 onValidate, onSubmit, actions 자동으로 사용
 sharedForm.submit();
+sharedForm.actions.clearForm(); // actions도 사용 가능
 ```
 
 **핵심 포인트:**
 
 -   **핸들러 자동 공유**: 첫 번째 컴포넌트가 등록한 `onValidate`, `onSubmit`, `onComplete`가 자동으로 글로벌하게 공유됨
--   **직관적인 동작**: 같은 `formId`를 사용하면 데이터와 핸들러가 모두 공유되어 예상대로 동작
--   **유연한 오버라이드**: 특정 컴포넌트에서만 다른 핸들러를 사용하고 싶으면 로컬에서 재정의 가능
+-   **Actions 자동 공유**: 첫 번째 컴포넌트가 등록한 `actions`도 자동으로 글로벌하게 공유됨
+-   **직관적인 동작**: 같은 `formId`를 사용하면 데이터, 핸들러, actions가 모두 공유되어 예상대로 동작
+-   **유연한 오버라이드**: 특정 컴포넌트에서만 다른 핸들러나 actions를 사용하고 싶으면 로컬에서 재정의 가능
 -   **검증 단계**: `onValidate`에서 `false` 반환 → `onSubmit` 실행 안됨 / `true` 반환 → `onSubmit` 실행됨
 
 **핸들러 우선순위:**
@@ -745,14 +758,8 @@ interface UseGlobalFormaStateProps<T> {
     initialValues?: T;
     /** 컴포넌트 언마운트 시 자동 정리 여부 (기본값: true) */
     autoCleanup?: boolean;
-    /** 상태 변경 시 선택적 콜백 */
-    onChange?: (values: T) => void;
-    /** 성능 향상을 위한 깊은 동등성 검사 활성화 */
-    deepEquals?: boolean;
-    /** 상태 작업을 위한 에러 핸들러 */
-    onError?: (error: Error) => void;
-    /** 모든 변경에 대한 유효성 검사 활성화 */
-    validateOnChange?: boolean;
+    /** 커스텀 액션 (computed getter 및 handler) */
+    actions?: Actions<T>;
 }
 ```
 
@@ -778,6 +785,7 @@ interface UseGlobalFormaStateProps<T> {
 | `removeField`   | `(path: string) => void`                          | 상태에서 필드 제거.                                                          |
 | `getValue`      | `(path: string) => any`                           | 단일 필드 값 가져옴 (반응형 아님).                                           |
 | `subscribe`     | `(callback: (values: T) => void) => () => void`   | 모든 상태 변경에 구독. 구독 해제 함수 반환.                                  |
+| `actions`       | `any`                                             | 커스텀 액션 (computed getter 및 handler).                                    |
 | `_store`        | `FieldStore<T>`                                   | 고급 사용을 위한 내부 스토어 직접 접근.                                      |
 
 #### 특징

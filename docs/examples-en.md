@@ -1025,6 +1025,184 @@ function FormViewer() {
 -   **Submit anywhere**: Can call `submit()` from any component
 -   **Consistent validation**: Same validation logic applies across all components
 
+### Global Form with Actions
+
+```typescript
+// Component A: Define form logic, handlers, and actions
+function ProductFormEditor() {
+    const form = useGlobalForm({
+        formId: "product-form",
+        initialValues: {
+            name: "",
+            price: 0,
+            discount: 0,
+            stock: 0,
+        },
+        actions: {
+            // Computed getter - calculate discounted price
+            getDiscountedPrice: (context) => {
+                const price = context.values.price;
+                const discount = context.values.discount;
+                return price * (1 - discount / 100);
+            },
+
+            // Computed getter - stock status
+            getStockStatus: (context) => {
+                const stock = context.values.stock;
+                if (stock === 0) return "Out of stock";
+                if (stock < 10) return "Low stock";
+                return "In stock";
+            },
+
+            // Handler - validate price
+            validatePrice: (context) => {
+                const price = context.values.price;
+                const discountedPrice =
+                    context.actions.getDiscountedPrice(context);
+
+                if (price <= 0) {
+                    alert("Price must be greater than 0.");
+                    return false;
+                }
+
+                if (discountedPrice < 1000) {
+                    alert("Discounted price cannot be less than 1000.");
+                    return false;
+                }
+
+                return true;
+            },
+
+            // Handler - increase stock
+            increaseStock: (context, amount: number) => {
+                const currentStock = context.values.stock;
+                context.setValue("stock", currentStock + amount);
+            },
+
+            // Handler - apply discount
+            applyDiscount: (context, discountPercent: number) => {
+                if (discountPercent < 0 || discountPercent > 100) {
+                    alert("Discount must be between 0 and 100.");
+                    return;
+                }
+                context.setValue("discount", discountPercent);
+            },
+        },
+        onValidate: async (values) => {
+            if (!values.name.trim()) {
+                alert("Please enter product name.");
+                return false;
+            }
+            return true;
+        },
+        onSubmit: async (values) => {
+            console.log("Saving product:", values);
+            await api.saveProduct(values);
+        },
+    });
+
+    const discountedPrice = form.actions.getDiscountedPrice();
+    const stockStatus = form.actions.getStockStatus();
+
+    return (
+        <form onSubmit={form.submit}>
+            <h3>Product Editor</h3>
+            <input
+                name="name"
+                placeholder="Product name"
+                value={form.useFormValue("name")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="price"
+                type="number"
+                placeholder="Price"
+                value={form.useFormValue("price")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="discount"
+                type="number"
+                placeholder="Discount (%)"
+                value={form.useFormValue("discount")}
+                onChange={form.handleFormChange}
+            />
+            <p>Discounted price: ${discountedPrice.toLocaleString()}</p>
+
+            <div>
+                <button
+                    type="button"
+                    onClick={() => form.actions.applyDiscount(10)}
+                >
+                    10% off
+                </button>
+                <button
+                    type="button"
+                    onClick={() => form.actions.applyDiscount(20)}
+                >
+                    20% off
+                </button>
+            </div>
+
+            <button type="submit" disabled={form.isSubmitting}>
+                Save
+            </button>
+        </form>
+    );
+}
+
+// Component B: Automatically shares data, handlers, and actions
+function ProductSummary() {
+    const form = useGlobalForm({
+        formId: "product-form", // Share everything with same ID
+    });
+
+    // ✅ Actions are automatically available!
+    const discountedPrice = form.actions.getDiscountedPrice();
+    const stockStatus = form.actions.getStockStatus();
+
+    return (
+        <div>
+            <h3>Product Summary</h3>
+            <p>Name: {form.useFormValue("name")}</p>
+            <p>Price: ${form.useFormValue("price").toLocaleString()}</p>
+            <p>Discount: {form.useFormValue("discount")}%</p>
+            <p>Discounted: ${discountedPrice.toLocaleString()}</p>
+            <p>
+                Stock: {form.useFormValue("stock")} units ({stockStatus})
+            </p>
+
+            <div>
+                <button onClick={() => form.actions.increaseStock(10)}>
+                    Stock +10
+                </button>
+                <button onClick={() => form.actions.increaseStock(50)}>
+                    Stock +50
+                </button>
+            </div>
+
+            {/* Actions validation logic is also available */}
+            <button
+                onClick={() => {
+                    if (form.actions.validatePrice()) {
+                        form.submit();
+                    }
+                }}
+            >
+                Validate & Submit
+            </button>
+        </div>
+    );
+}
+```
+
+**Core Concepts:**
+
+-   **Automatic actions sharing**: `actions` registered first are shared globally
+-   **Business logic encapsulation**: Complex calculations and validation logic managed in actions
+-   **Reusability**: Same actions can be used from different components
+-   **Consistency**: Same logic applies across all components
+
 ````
 
 ### Multi-Step Form

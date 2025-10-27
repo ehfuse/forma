@@ -1229,6 +1229,184 @@ function FormViewer() {
 -   **어디서든 submit**: 어느 컴포넌트에서든 `submit()` 호출 가능
 -   **일관된 검증**: 모든 컴포넌트에서 동일한 검증 로직 적용됨
 
+### Actions와 함께 사용하는 글로벌 폼
+
+```typescript
+// 컴포넌트 A: 폼 로직, 핸들러, actions 정의
+function ProductFormEditor() {
+    const form = useGlobalForm({
+        formId: "product-form",
+        initialValues: {
+            name: "",
+            price: 0,
+            discount: 0,
+            stock: 0,
+        },
+        actions: {
+            // Computed getter - 할인된 가격 계산
+            getDiscountedPrice: (context) => {
+                const price = context.values.price;
+                const discount = context.values.discount;
+                return price * (1 - discount / 100);
+            },
+
+            // Computed getter - 재고 상태
+            getStockStatus: (context) => {
+                const stock = context.values.stock;
+                if (stock === 0) return "품절";
+                if (stock < 10) return "재고 부족";
+                return "재고 충분";
+            },
+
+            // Handler - 가격 검증
+            validatePrice: (context) => {
+                const price = context.values.price;
+                const discountedPrice =
+                    context.actions.getDiscountedPrice(context);
+
+                if (price <= 0) {
+                    alert("가격은 0보다 커야 합니다.");
+                    return false;
+                }
+
+                if (discountedPrice < 1000) {
+                    alert("할인 후 가격이 1000원 미만일 수 없습니다.");
+                    return false;
+                }
+
+                return true;
+            },
+
+            // Handler - 재고 증가
+            increaseStock: (context, amount: number) => {
+                const currentStock = context.values.stock;
+                context.setValue("stock", currentStock + amount);
+            },
+
+            // Handler - 할인 적용
+            applyDiscount: (context, discountPercent: number) => {
+                if (discountPercent < 0 || discountPercent > 100) {
+                    alert("할인율은 0~100 사이여야 합니다.");
+                    return;
+                }
+                context.setValue("discount", discountPercent);
+            },
+        },
+        onValidate: async (values) => {
+            if (!values.name.trim()) {
+                alert("상품명을 입력해주세요.");
+                return false;
+            }
+            return true;
+        },
+        onSubmit: async (values) => {
+            console.log("상품 저장:", values);
+            await api.saveProduct(values);
+        },
+    });
+
+    const discountedPrice = form.actions.getDiscountedPrice();
+    const stockStatus = form.actions.getStockStatus();
+
+    return (
+        <form onSubmit={form.submit}>
+            <h3>상품 편집</h3>
+            <input
+                name="name"
+                placeholder="상품명"
+                value={form.useFormValue("name")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="price"
+                type="number"
+                placeholder="가격"
+                value={form.useFormValue("price")}
+                onChange={form.handleFormChange}
+            />
+            <input
+                name="discount"
+                type="number"
+                placeholder="할인율 (%)"
+                value={form.useFormValue("discount")}
+                onChange={form.handleFormChange}
+            />
+            <p>할인가: {discountedPrice.toLocaleString()}원</p>
+
+            <div>
+                <button
+                    type="button"
+                    onClick={() => form.actions.applyDiscount(10)}
+                >
+                    10% 할인
+                </button>
+                <button
+                    type="button"
+                    onClick={() => form.actions.applyDiscount(20)}
+                >
+                    20% 할인
+                </button>
+            </div>
+
+            <button type="submit" disabled={form.isSubmitting}>
+                저장
+            </button>
+        </form>
+    );
+}
+
+// 컴포넌트 B: 같은 폼의 데이터, 핸들러, actions 자동 공유
+function ProductSummary() {
+    const form = useGlobalForm({
+        formId: "product-form", // 같은 ID로 모든 것 공유
+    });
+
+    // ✅ actions도 자동으로 사용 가능!
+    const discountedPrice = form.actions.getDiscountedPrice();
+    const stockStatus = form.actions.getStockStatus();
+
+    return (
+        <div>
+            <h3>상품 요약</h3>
+            <p>상품명: {form.useFormValue("name")}</p>
+            <p>원가: {form.useFormValue("price").toLocaleString()}원</p>
+            <p>할인율: {form.useFormValue("discount")}%</p>
+            <p>할인가: {discountedPrice.toLocaleString()}원</p>
+            <p>
+                재고: {form.useFormValue("stock")}개 ({stockStatus})
+            </p>
+
+            <div>
+                <button onClick={() => form.actions.increaseStock(10)}>
+                    재고 +10
+                </button>
+                <button onClick={() => form.actions.increaseStock(50)}>
+                    재고 +50
+                </button>
+            </div>
+
+            {/* actions의 검증 로직도 사용 가능 */}
+            <button
+                onClick={() => {
+                    if (form.actions.validatePrice()) {
+                        form.submit();
+                    }
+                }}
+            >
+                가격 검증 후 제출
+            </button>
+        </div>
+    );
+}
+```
+
+**핵심 개념:**
+
+-   **Actions 자동 공유**: 첫 번째로 등록된 `actions`도 글로벌하게 공유됨
+-   **비즈니스 로직 캡슐화**: 복잡한 계산과 검증 로직을 actions에 모아서 관리
+-   **재사용성**: 다른 컴포넌트에서도 같은 actions를 사용 가능
+-   **일관성**: 모든 컴포넌트에서 동일한 로직 적용
+
 ````
 
 ### 다단계 폼

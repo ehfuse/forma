@@ -72,6 +72,8 @@ export interface UseFormProps<T extends Record<string, any>> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 | Callback after form submission completion */
     onComplete?: (values: T) => void;
+    /** 사용자 정의 액션 함수들 | User-defined action functions */
+    actions?: Actions<T>;
     /** 내부 API - 전역 상태용 외부 스토어 | Internal API - external store for global state */
     _externalStore?: FieldStore<T>;
 }
@@ -90,6 +92,8 @@ export interface UseFormPropsOptional<
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 | Callback after form submission completion */
     onComplete?: (values: T) => void;
+    /** 사용자 정의 액션 함수들 | User-defined action functions */
+    actions?: Actions<T>;
     /** 내부 API - 전역 상태용 외부 스토어 | Internal API - external store for global state */
     _externalStore?: FieldStore<T>;
 }
@@ -126,6 +130,8 @@ export interface UseFormReturn<T extends Record<string, any>> {
     isSubmitting: boolean;
     /** 검증 중 여부 | Validating status */
     isValidating: boolean;
+    /** 사용자 정의 액션 함수들 (context 바인딩됨) | User-defined action functions (with bound context) */
+    actions: BoundActions<T>;
     /** 호환성을 위한 values 객체 (비권장) | Values object for compatibility (not recommended) */
     values: T;
     /** 내부 스토어 직접 접근 | Direct access to internal store */
@@ -153,3 +159,48 @@ export interface FormValidationResult {
     /** 전체 에러 메시지 | Overall error message */
     message?: string;
 }
+
+/**
+ * Action Context - actions 함수에 전달되는 컨텍스트 객체
+ * Context object passed to action functions
+ */
+export interface ActionContext<T extends Record<string, any>> {
+    /** 현재 폼/상태의 모든 값 | All current form/state values */
+    values: T;
+    /** 특정 필드 값 가져오기 | Get specific field value */
+    getValue: (fieldName: keyof T | string) => any;
+    /** 특정 필드 값 설정 | Set specific field value */
+    setValue: (fieldName: keyof T | string, value: any) => void;
+    /** 여러 필드 값 동시 설정 | Set multiple field values at once */
+    setValues: (values: Partial<T>) => void;
+    /** 폼/상태 리셋 | Reset form/state */
+    reset: () => void;
+    /** 폼 제출 (폼 전용) | Submit form (form only) */
+    submit?: () => Promise<boolean>;
+    /** 폼 검증 (폼 전용) | Validate form (form only) */
+    validate?: () => Promise<boolean>;
+    /** actions 자기 자신 참조 (action 간 호출용) | Self-reference to actions (for inter-action calls) */
+    actions: Actions<T>;
+}
+
+/**
+ * Actions 타입 - 사용자 정의 액션 함수들의 집합
+ * Actions type - Collection of user-defined action functions
+ */
+export type Actions<T extends Record<string, any>> = Record<
+    string,
+    (context: ActionContext<T>, ...args: any[]) => any
+>;
+
+/**
+ * Bound Actions - context가 바인딩된 actions
+ * Actions with bound context
+ */
+export type BoundActions<T extends Record<string, any>> = {
+    [K in keyof Actions<T>]: Actions<T>[K] extends (
+        context: ActionContext<T>,
+        ...args: infer Args
+    ) => infer R
+        ? (...args: Args) => R
+        : never;
+};

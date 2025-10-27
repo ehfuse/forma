@@ -90,6 +90,7 @@ export function useForm<T extends Record<string, any>>(
         onSubmit,
         onValidate,
         onComplete,
+        actions: userActions,
         _externalStore,
     } = props;
 
@@ -320,6 +321,39 @@ export function useForm<T extends Record<string, any>>(
         [onSubmit, onComplete, validateForm, fieldState.getValues]
     );
 
+    // Actions 바인딩 / Bind actions
+    const boundActions = useMemo(() => {
+        if (!userActions) {
+            return {} as any;
+        }
+
+        const bound: any = {};
+        const context = {
+            get values() {
+                return fieldState.getValues();
+            },
+            getValue: (fieldName: keyof T | string) =>
+                fieldState.getValue(fieldName as string),
+            setValue: (fieldName: keyof T | string, value: any) =>
+                fieldState.setValue(fieldName as string, value),
+            setValues: (values: Partial<T>) => fieldState.setValues(values),
+            reset: resetForm,
+            submit,
+            validate: validateForm,
+            actions: bound, // 순환 참조 / circular reference
+        };
+
+        // 모든 action 함수들을 context와 바인딩 / Bind all action functions with context
+        Object.keys(userActions).forEach((key) => {
+            const action = userActions[key];
+            if (typeof action === "function") {
+                bound[key] = (...args: any[]) => action(context, ...args);
+            }
+        });
+
+        return bound;
+    }, [userActions, fieldState, resetForm, submit, validateForm]);
+
     return useMemo(
         () => ({
             // 상태 / State
@@ -346,6 +380,9 @@ export function useForm<T extends Record<string, any>>(
             resetForm, // 폼 초기화 / reset form
             validateForm, // 폼 검증 / validate form
 
+            // Actions
+            actions: boundActions, // 사용자 정의 actions / user-defined actions
+
             // 호환성 / Compatibility
             values: fieldState.getValues(), // 호환성을 위한 values 객체 (비권장) / Values object for compatibility (not recommended)
 
@@ -367,6 +404,7 @@ export function useForm<T extends Record<string, any>>(
             submit,
             resetForm,
             validateForm,
+            boundActions, // actions 의존성 추가
             fieldState._store, // Store 의존성으로 대체
         ]
     );

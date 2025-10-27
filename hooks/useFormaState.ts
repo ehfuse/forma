@@ -19,7 +19,7 @@ import {
 } from "react";
 import { FieldStore } from "../core/FieldStore";
 import { getNestedValue, setNestedValue, devWarn } from "../utils";
-import { FormChangeEvent } from "../types/form";
+import { FormChangeEvent, ActionContext, Actions } from "../types/form";
 
 /**
  * Options for configuring useFormaState hook
@@ -40,6 +40,9 @@ export interface UseFormaStateOptions<T extends Record<string, any>> {
 
     /** Enable validation on every change | 모든 변경에 대한 유효성 검사 활성화 */
     validateOnChange?: boolean;
+
+    /** Custom actions (computed getters and handlers) | 커스텀 액션 (computed getter 및 handler) */
+    actions?: Actions<T>;
 }
 
 /**
@@ -85,6 +88,9 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
 
     /** Refresh all field subscribers with specific prefix | 특정 prefix를 가진 모든 필드 구독자들을 새로고침 */
     refreshFields: (prefix: string) => void;
+
+    /** Custom actions bound to this state | 이 상태에 바인딩된 커스텀 액션 */
+    actions: any;
 
     /** Direct access to the internal store for advanced usage | 고급 사용을 위한 내부 스토어 직접 접근 */
     _store: FieldStore<T>;
@@ -181,7 +187,12 @@ export function useFormaState<T extends Record<string, any>>(
     initialValues: T = {} as T,
     options: UseFormaStateOptions<T> = {}
 ): UseFormaStateReturn<T> {
-    const { onChange, deepEquals = false, _externalStore } = options;
+    const {
+        onChange,
+        deepEquals = false,
+        _externalStore,
+        actions: actionsDefinition,
+    } = options;
 
     // 초기값 안정화: 첫 번째 렌더링에서만 초기값을 고정
     // Stabilize initial values: fix initial values only on first render
@@ -308,6 +319,41 @@ export function useFormaState<T extends Record<string, any>>(
         [setValue]
     );
 
+    // Bind actions to context if provided
+    // actions가 제공된 경우 context에 바인딩
+    const boundActions = useMemo(() => {
+        if (!actionsDefinition) return {};
+
+        const context: ActionContext<T> = {
+            values: store.getValues(),
+            getValue: (field: string | keyof T) =>
+                store.getValue(field as string),
+            setValue: (field: string | keyof T, value: any) =>
+                store.setValue(field as string, value),
+            setValues: (values: Partial<T>) => {
+                const currentValues = store.getValues();
+                const newValues = { ...currentValues, ...values };
+                store.setValues(newValues as T);
+            },
+            reset: () => store.reset(),
+            actions: {} as any, // Will be filled after binding
+        };
+
+        const bound: any = {};
+        for (const [key, action] of Object.entries(actionsDefinition)) {
+            bound[key] = (...args: any[]) => {
+                // Update context.values with latest state
+                context.values = store.getValues();
+                return action(context, ...args);
+            };
+        }
+
+        // Fill context.actions with bound actions
+        context.actions = bound;
+
+        return bound;
+    }, [actionsDefinition, store]);
+
     return {
         useValue,
         setValue,
@@ -352,6 +398,7 @@ export function useFormaState<T extends Record<string, any>>(
             },
             [store] // store 의존성 추가
         ),
+        actions: boundActions,
         _store: store,
     };
 }

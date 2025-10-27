@@ -430,6 +430,19 @@ export interface GlobalFormaContextType {
         formId: string
     ) => GlobalFormHandlers<T> | undefined;
 
+    // ========== Actions 관리 ==========
+    /** 글로벌 actions 등록 | Register global actions */
+    registerActions: <T extends Record<string, any>>(
+        formId: string,
+        actions: any
+    ) => void;
+    /** 글로벌 actions 조회 | Get global actions */
+    getActions: <T extends Record<string, any>>(
+        formId: string
+    ) => any | undefined;
+    /** 글로벌 actions 제거 | Remove global actions */
+    unregisterActions: (formId: string) => void;
+
     // ========== 모달 스택 관리 ==========
     /** 모달을 스택에 추가 | Add modal to stack */
     appendOpenModal: (modalId: string) => void;

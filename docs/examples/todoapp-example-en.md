@@ -2,13 +2,21 @@
 
 Performance-optimized TodoApp example using Forma's **array length subscription** feature.
 
+This document provides **two implementation approaches**:
+
+1. **Basic Structure**: Traditional approach with direct state management
+2. **Actions Structure**: Advanced pattern with encapsulated business logic
+
 ## 🔥 Key Concepts
 
 -   **Subscribe only to array length**: Use `todos.length` to re-render only when items are added/removed
 -   **Individual field subscription**: Re-render only the specific component when each todo item changes
 -   **Performance optimization**: Prevent unnecessary full re-renders
+-   **Actions pattern**: Improved logic encapsulation and reusability
 
-## Complete Code
+---
+
+## Method 1: Basic Structure (Direct State Management)
 
 ```tsx
 import React from "react";
@@ -262,4 +270,351 @@ const filter = state.useValue("filter");
     - `setValue`: When fixed value setting is needed (radio, custom logic, etc.)
 5. **Subscribe only to necessary data** principle adherence
 
-This example demonstrates Forma's core philosophy: "Subscribe only to what you need for performance optimization" and "Choose the right event handling method for each situation".
+---
+
+## Method 2: Actions Structure (Logic Encapsulation)
+
+Using Actions allows you to manage business logic alongside state, making code cleaner and more reusable.
+
+### Complete Code (Actions Version)
+
+```tsx
+import React from "react";
+import { useFormaState } from "@ehfuse/forma";
+
+interface Todo {
+    id: number;
+    text: string;
+    completed: boolean;
+}
+
+interface TodoState {
+    todos: Todo[];
+    filter: "all" | "active" | "completed";
+    newTodoText: string;
+}
+
+function TodoAppWithActions() {
+    const state = useFormaState<TodoState>(
+        {
+            todos: [
+                { id: 1, text: "Learn React", completed: false },
+                { id: 2, text: "Learn Forma", completed: true },
+            ],
+            filter: "all",
+            newTodoText: "",
+        },
+        {
+            actions: {
+                // 📊 Computed Getters
+                getFilteredTodos: (context) => {
+                    const { todos, filter } = context.values;
+                    if (filter === "active")
+                        return todos.filter((t) => !t.completed);
+                    if (filter === "completed")
+                        return todos.filter((t) => t.completed);
+                    return todos;
+                },
+
+                getCompletedCount: (context) => {
+                    return context.values.todos.filter((t) => t.completed)
+                        .length;
+                },
+
+                getRemainingCount: (context) => {
+                    return context.values.todos.filter((t) => !t.completed)
+                        .length;
+                },
+
+                // 🎯 Handlers
+                addTodo: (context) => {
+                    const text = context.values.newTodoText.trim();
+                    if (!text) return;
+
+                    const newTodo: Todo = {
+                        id: Date.now(),
+                        text,
+                        completed: false,
+                    };
+
+                    context.setValue("todos", [
+                        ...context.values.todos,
+                        newTodo,
+                    ]);
+                    context.setValue("newTodoText", "");
+                },
+
+                toggleTodo: (context, id: number) => {
+                    const index = context.values.todos.findIndex(
+                        (t) => t.id === id
+                    );
+                    if (index === -1) return;
+
+                    const todo = context.getValue(`todos.${index}`);
+                    context.setValue(
+                        `todos.${index}.completed`,
+                        !todo.completed
+                    );
+                },
+
+                removeTodo: (context, id: number) => {
+                    context.setValue(
+                        "todos",
+                        context.values.todos.filter((t) => t.id !== id)
+                    );
+                },
+
+                clearCompleted: (context) => {
+                    context.setValue(
+                        "todos",
+                        context.values.todos.filter((t) => !t.completed)
+                    );
+                },
+
+                toggleAll: (context) => {
+                    const allCompleted = context.values.todos.every(
+                        (t) => t.completed
+                    );
+                    context.setValue(
+                        "todos",
+                        context.values.todos.map((t) => ({
+                            ...t,
+                            completed: !allCompleted,
+                        }))
+                    );
+                },
+
+                setFilter: (
+                    context,
+                    filter: "all" | "active" | "completed"
+                ) => {
+                    context.setValue("filter", filter);
+                },
+            },
+        }
+    );
+
+    // **🔥 Key: Subscribe only to array length**
+    const todoCount = state.useValue("todos.length");
+    const newTodoText = state.useValue("newTodoText");
+    const filter = state.useValue("filter");
+
+    // Using Actions
+    const filteredTodos = state.actions.getFilteredTodos();
+    const completedCount = state.actions.getCompletedCount();
+    const remainingCount = state.actions.getRemainingCount();
+
+    return (
+        <div>
+            <h2>Todo Management ({todoCount} items)</h2>
+
+            {/* Input area */}
+            <div>
+                <input
+                    name="newTodoText"
+                    value={newTodoText}
+                    onChange={state.handleChange}
+                    onKeyPress={(e) =>
+                        e.key === "Enter" && state.actions.addTodo()
+                    }
+                    placeholder="Enter new todo"
+                />
+                <button onClick={state.actions.addTodo}>Add</button>
+            </div>
+
+            {/* Statistics */}
+            <div>
+                <span>Remaining: {remainingCount} items</span>
+                <span> | Completed: {completedCount} items</span>
+            </div>
+
+            {/* Filter */}
+            <div>
+                <label>
+                    <input
+                        type="radio"
+                        name="filter"
+                        value="all"
+                        checked={filter === "all"}
+                        onChange={() => state.actions.setFilter("all")}
+                    />
+                    All ({todoCount})
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="filter"
+                        value="active"
+                        checked={filter === "active"}
+                        onChange={() => state.actions.setFilter("active")}
+                    />
+                    Active ({remainingCount})
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="filter"
+                        value="completed"
+                        checked={filter === "completed"}
+                        onChange={() => state.actions.setFilter("completed")}
+                    />
+                    Completed ({completedCount})
+                </label>
+            </div>
+
+            {/* Todo list */}
+            <ul>
+                {filteredTodos.map((todo) => (
+                    <TodoItemWithActions
+                        key={todo.id}
+                        todo={todo}
+                        onToggle={state.actions.toggleTodo}
+                        onRemove={state.actions.removeTodo}
+                    />
+                ))}
+            </ul>
+
+            {/* Batch operations */}
+            <div>
+                <button onClick={state.actions.toggleAll}>Toggle All</button>
+                <button onClick={state.actions.clearCompleted}>
+                    Clear Completed
+                </button>
+            </div>
+        </div>
+    );
+}
+
+// Individual item component for Actions version
+function TodoItemWithActions({
+    todo,
+    onToggle,
+    onRemove,
+}: {
+    todo: Todo;
+    onToggle: (id: number) => void;
+    onRemove: (id: number) => void;
+}) {
+    return (
+        <li>
+            <input
+                type="checkbox"
+                checked={todo.completed}
+                onChange={() => onToggle(todo.id)}
+            />
+            <span
+                style={{
+                    textDecoration: todo.completed ? "line-through" : "none",
+                }}
+            >
+                {todo.text}
+            </span>
+            <button onClick={() => onRemove(todo.id)}>Delete</button>
+        </li>
+    );
+}
+
+export default TodoAppWithActions;
+```
+
+### Advantages of Actions Version
+
+1. **📦 Logic Encapsulation**
+
+```tsx
+// ❌ Basic structure: Logic scattered in component
+const addTodo = () => {
+    if (!newTodoText.trim()) return;
+    const todos = state.getValues().todos;
+    state.setValue("todos", [
+        ...todos,
+        { id: Date.now(), text: newTodoText, completed: false },
+    ]);
+    state.setValue("newTodoText", "");
+};
+
+// ✅ Actions structure: Logic organized in one place
+state.actions.addTodo();
+```
+
+2. **🔄 Reusability**
+
+```tsx
+// Same action callable from multiple places
+<button onClick={state.actions.addTodo}>Add</button>
+<input onKeyPress={(e) => e.key === "Enter" && state.actions.addTodo()} />
+```
+
+3. **📊 Computed Values**
+
+```tsx
+// Manage filtering, counting logic as getters
+const filteredTodos = state.actions.getFilteredTodos();
+const completedCount = state.actions.getCompletedCount();
+const remainingCount = state.actions.getRemainingCount();
+```
+
+4. **🧪 Testability**
+
+```tsx
+// Actions can be tested independently
+test("addTodo should add new todo", () => {
+    const context = createMockContext();
+    actions.addTodo(context);
+    expect(context.values.todos.length).toBe(1);
+});
+```
+
+---
+
+## 🎯 Comparison of Two Approaches
+
+| Feature                   | Basic Structure          | Actions Structure                |
+| ------------------------- | ------------------------ | -------------------------------- |
+| **Learning Curve**        | Easy                     | Moderate                         |
+| **Code Structure**        | Scattered in components  | Managed with state               |
+| **Reusability**           | Low                      | High                             |
+| **Testing**               | Requires component tests | Actions testable alone           |
+| **Complexity Management** | Can become complex       | Stays clean                      |
+| **Best For**              | Simple apps              | Medium-large apps, complex logic |
+
+---
+
+## 📋 Complete Learning Points
+
+### Common (Both approaches)
+
+1. **`todos.length` subscription** detects only array size changes
+2. **`todos.${index}.field` pattern** for individual item subscription
+3. **Component separation** minimizes re-render scope
+4. **Event handling method selection**:
+    - `handleChange`: Regular inputs with name attribute
+    - `setValue`: When fixed value setting is needed
+
+### Additional Points for Actions Structure
+
+5. **Business logic encapsulation**: Managed in actions object
+6. **Computed getters**: Provide calculated values as methods
+7. **Reusable handlers**: Same action callable from multiple places
+8. **Test-friendly**: Actions testable independently
+
+---
+
+## 🚀 When to Use Which Approach?
+
+### Use Basic Structure
+
+-   ✅ Quick prototyping
+-   ✅ Simple CRUD apps
+-   ✅ Logic is not complex
+-   ✅ Team is new to Forma
+
+### Use Actions Structure
+
+-   ✅ Complex business logic
+-   ✅ Same logic used in multiple places
+-   ✅ Many computed values
+-   ✅ Unit testing is important
+-   ✅ Code structure and maintainability matter
+
+This example demonstrates Forma's core philosophy: "Subscribe only to what you need for performance optimization" and "Choose the right structure for your situation".

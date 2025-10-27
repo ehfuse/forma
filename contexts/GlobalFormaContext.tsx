@@ -91,6 +91,22 @@ export const GlobalFormaContext = createContext<GlobalFormaContextType>({
             "GlobalFormaContext must be used within GlobalFormaProvider"
         );
     },
+    // Actions 관리
+    registerActions: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
+    getActions: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
+    unregisterActions: () => {
+        throw new Error(
+            "GlobalFormaContext must be used within GlobalFormaProvider"
+        );
+    },
     // 모달 스택 관리
     appendOpenModal: () => {
         throw new Error(
@@ -148,6 +164,8 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
     const autoCleanupSettingsRef = useRef<Map<string, boolean>>(new Map());
     // formId별 핸들러를 저장하는 Map | Map storing handlers by formId
     const handlersRef = useRef<Map<string, GlobalFormHandlers<any>>>(new Map());
+    // formId별 actions를 저장하는 Map | Map storing actions by formId
+    const actionsRef = useRef<Map<string, any>>(new Map());
 
     // ========== 모달 스택 관리 상태 ==========
     const [openModalIds, setOpenModalIds] = useState<string[]>([]);
@@ -234,6 +252,11 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
             refCounts.delete(formId); // 참조 카운트도 함께 제거 | Remove reference count as well
             autoCleanupRefCounts.delete(formId); // autoCleanup 참조 카운트도 제거 | Remove autoCleanup reference count as well
             autoCleanupSettings.delete(formId); // autoCleanup 설정도 제거 | Remove autoCleanup settings as well
+
+            // 관련 핸들러와 actions도 함께 제거 | Remove related handlers and actions as well
+            handlersRef.current.delete(formId);
+            actionsRef.current.delete(formId);
+
             return true;
         }
 
@@ -259,6 +282,10 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         refCounts.clear();
         autoCleanupRefCounts.clear();
         autoCleanupSettings.clear();
+
+        // 모든 핸들러와 actions도 함께 정리 | Clear all handlers and actions as well
+        handlersRef.current.clear();
+        actionsRef.current.clear();
     };
 
     /**
@@ -325,7 +352,8 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
                     refCounts.delete(formId);
                     autoCleanupRefCounts.delete(formId);
                     autoCleanupSettingsRef.current.delete(formId);
-                    handlersRef.current.delete(formId); // 핸들러도 함께 정리
+                    handlersRef.current.delete(formId); // 핸들러도 함께 정리 | Clean up handlers as well
+                    actionsRef.current.delete(formId); // actions도 함께 정리 | Clean up actions as well
                 }
             }
         }
@@ -372,6 +400,42 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         formId: string
     ): GlobalFormHandlers<T> | undefined => {
         return handlersRef.current.get(formId);
+    };
+
+    // ========== Actions 관련 함수 ==========
+
+    /**
+     * 글로벌 actions 등록 | Register global actions
+     *
+     * @param formId 폼/상태 식별자 | Form/state identifier
+     * @param actions 등록할 actions | Actions to register
+     */
+    const registerActions = <T extends Record<string, any>>(
+        formId: string,
+        actions: any
+    ): void => {
+        actionsRef.current.set(formId, actions);
+    };
+
+    /**
+     * 글로벌 actions 조회 | Get global actions
+     *
+     * @param formId 폼/상태 식별자 | Form/state identifier
+     * @returns actions 또는 undefined | Actions or undefined
+     */
+    const getActions = <T extends Record<string, any>>(
+        formId: string
+    ): any | undefined => {
+        return actionsRef.current.get(formId);
+    };
+
+    /**
+     * 글로벌 actions 제거 | Remove global actions
+     *
+     * @param formId 폼/상태 식별자 | Form/state identifier
+     */
+    const unregisterActions = (formId: string): void => {
+        actionsRef.current.delete(formId);
     };
 
     // ========== 모달 및 네비게이션 관련 함수 ==========
@@ -458,6 +522,10 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         // 핸들러 관리
         registerHandlers,
         getHandlers,
+        // Actions 관리
+        registerActions,
+        getActions,
+        unregisterActions,
         // 모달 스택 관리
         appendOpenModal,
         removeOpenModal,

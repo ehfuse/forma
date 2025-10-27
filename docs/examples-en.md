@@ -12,9 +12,11 @@ This document provides various usage examples of the Forma library. It explains 
     -   [Global State Subscription Utilization](#global-state-subscription-utilization)
     -   [Field Refresh Utilization](#field-refresh-utilization)
     -   [Batch Updates (setBatch) Utilization](#batch-updates-setbatch-utilization)
+    -   [Actions Utilization](#useformastate-actions-utilization)
 -   [useForm Examples](#useform-examples)
     -   [Basic Form Management](#basic-form-management)
     -   [Nested Object Handling](#nested-object-handling)
+    -   [Actions Utilization](#useform-actions-utilization)
 -   [useGlobalForm Examples](#useglobalform-examples)
     -   [Complete Global Form](#complete-global-form)
     -   [Multi-Step Form](#multi-step-form)
@@ -350,6 +352,206 @@ const updateSelectedItems = (selectedIds: number[], newStatus: string) => {
 -   🔄 **Data Consistency**: All changes are applied simultaneously
 -   ⏱️ **Convenience**: Single object instead of multiple setValue calls
 
+### useFormaState Actions Utilization
+
+Using `actions` allows you to encapsulate business logic alongside state. You can manage computed getters, handlers, and complex workflows in a single object.
+
+```typescript
+import { useFormaState } from "forma";
+
+interface Todo {
+    id: number;
+    text: string;
+    completed: boolean;
+}
+
+interface TodoState {
+    todos: Todo[];
+    filter: "all" | "active" | "completed";
+    newTodoText: string;
+}
+
+function TodoAppWithActions() {
+    const state = useFormaState<TodoState>({
+        initialValues: {
+            todos: [
+                { id: 1, text: "Learn React", completed: false },
+                { id: 2, text: "Learn Forma", completed: true },
+            ],
+            filter: "all",
+            newTodoText: "",
+        },
+        actions: {
+            // 📊 Computed Getters: Return calculated values
+            getFilteredTodos: (context) => {
+                const { todos, filter } = context.values;
+                if (filter === "active")
+                    return todos.filter((t) => !t.completed);
+                if (filter === "completed")
+                    return todos.filter((t) => t.completed);
+                return todos;
+            },
+
+            getCompletedCount: (context) => {
+                return context.values.todos.filter((t) => t.completed).length;
+            },
+
+            getRemainingCount: (context) => {
+                return context.values.todos.filter((t) => !t.completed).length;
+            },
+
+            // 🎯 Handlers: State modification operations
+            addTodo: (context) => {
+                const text = context.values.newTodoText.trim();
+                if (!text) return;
+
+                const newTodo: Todo = {
+                    id: Date.now(),
+                    text,
+                    completed: false,
+                };
+
+                context.setValue("todos", [...context.values.todos, newTodo]);
+                context.setValue("newTodoText", "");
+            },
+
+            toggleTodo: (context, id: number) => {
+                const index = context.values.todos.findIndex(
+                    (t) => t.id === id
+                );
+                if (index === -1) return;
+
+                const todo = context.getValue(`todos.${index}`);
+                context.setValue(`todos.${index}.completed`, !todo.completed);
+            },
+
+            removeTodo: (context, id: number) => {
+                context.setValue(
+                    "todos",
+                    context.values.todos.filter((t) => t.id !== id)
+                );
+            },
+
+            clearCompleted: (context) => {
+                context.setValue(
+                    "todos",
+                    context.values.todos.filter((t) => !t.completed)
+                );
+            },
+
+            toggleAll: (context) => {
+                const allCompleted = context.values.todos.every(
+                    (t) => t.completed
+                );
+                context.setValue(
+                    "todos",
+                    context.values.todos.map((t) => ({
+                        ...t,
+                        completed: !allCompleted,
+                    }))
+                );
+            },
+
+            setFilter: (context, filter: "all" | "active" | "completed") => {
+                context.setValue("filter", filter);
+            },
+        },
+    });
+
+    // Subscriptions
+    const newTodoText = state.useValue("newTodoText");
+    const filter = state.useValue("filter");
+
+    // Using Actions
+    const filteredTodos = state.actions.getFilteredTodos();
+    const completedCount = state.actions.getCompletedCount();
+    const remainingCount = state.actions.getRemainingCount();
+
+    return (
+        <div>
+            <h2>Todo Management</h2>
+
+            {/* Input area */}
+            <div>
+                <input
+                    value={newTodoText}
+                    onChange={(e) =>
+                        state.setValue("newTodoText", e.target.value)
+                    }
+                    onKeyPress={(e) =>
+                        e.key === "Enter" && state.actions.addTodo()
+                    }
+                    placeholder="Enter new todo"
+                />
+                <button onClick={state.actions.addTodo}>Add</button>
+            </div>
+
+            {/* Statistics */}
+            <div>
+                <span>Remaining: {remainingCount} items</span>
+                <span> | Completed: {completedCount} items</span>
+            </div>
+
+            {/* Filter */}
+            <div>
+                <button onClick={() => state.actions.setFilter("all")}>
+                    All ({state.useValue("todos.length")})
+                </button>
+                <button onClick={() => state.actions.setFilter("active")}>
+                    Active ({remainingCount})
+                </button>
+                <button onClick={() => state.actions.setFilter("completed")}>
+                    Completed ({completedCount})
+                </button>
+            </div>
+
+            {/* Todo list */}
+            <ul>
+                {filteredTodos.map((todo) => (
+                    <li key={todo.id}>
+                        <input
+                            type="checkbox"
+                            checked={todo.completed}
+                            onChange={() => state.actions.toggleTodo(todo.id)}
+                        />
+                        <span
+                            style={{
+                                textDecoration: todo.completed
+                                    ? "line-through"
+                                    : "none",
+                            }}
+                        >
+                            {todo.text}
+                        </span>
+                        <button
+                            onClick={() => state.actions.removeTodo(todo.id)}
+                        >
+                            Delete
+                        </button>
+                    </li>
+                ))}
+            </ul>
+
+            {/* Batch operations */}
+            <div>
+                <button onClick={state.actions.toggleAll}>Toggle All</button>
+                <button onClick={state.actions.clearCompleted}>
+                    Clear Completed
+                </button>
+            </div>
+        </div>
+    );
+}
+```
+
+**Benefits of Actions:**
+
+-   ✅ **Logic Encapsulation**: Manage business logic together with state definition
+-   ✅ **Reusability**: Same action callable from multiple places
+-   ✅ **Type Safety**: Type inference through ActionContext
+-   ✅ **Testability**: Actions testable independently
+-   ✅ **Readability**: Express complex state changes with clear names
+
 ---
 
 ## useForm Examples
@@ -396,6 +598,314 @@ const form = useForm({
 const name = form.useFormValue("user.profile.name");
 const theme = form.useFormValue("user.profile.settings.theme");
 ```
+
+### useForm Actions Utilization
+
+You can also use actions with `useForm` to encapsulate form logic. Let's learn through a shopping cart example.
+
+```typescript
+import { useForm } from "forma";
+
+interface CartItem {
+    id: number;
+    name: string;
+    price: number;
+    quantity: number;
+}
+
+interface CartForm {
+    items: CartItem[];
+    discount: number;
+    customerName: string;
+    customerEmail: string;
+}
+
+function ShoppingCartWithActions() {
+    const form = useForm<CartForm>({
+        initialValues: {
+            items: [],
+            discount: 0,
+            customerName: "",
+            customerEmail: "",
+        },
+        actions: {
+            // 📊 Computed Getters
+            getTotal: (context) => {
+                return context.values.items.reduce(
+                    (sum, item) => sum + item.price * item.quantity,
+                    0
+                );
+            },
+
+            getDiscountedTotal: (context) => {
+                const total = context.actions.getTotal();
+                return total * (1 - context.values.discount / 100);
+            },
+
+            isEmpty: (context) => {
+                return context.values.items.length === 0;
+            },
+
+            // 🎯 Handlers
+            addItem: (context, item: CartItem) => {
+                const existingIndex = context.values.items.findIndex(
+                    (i) => i.id === item.id
+                );
+
+                if (existingIndex >= 0) {
+                    // Existing item: increase quantity
+                    const existingItem = context.getValue(
+                        `items.${existingIndex}`
+                    );
+                    context.setValue(
+                        `items.${existingIndex}.quantity`,
+                        existingItem.quantity + 1
+                    );
+                } else {
+                    // Add new item
+                    context.setValue("items", [...context.values.items, item]);
+                }
+            },
+
+            removeItem: (context, itemId: number) => {
+                context.setValue(
+                    "items",
+                    context.values.items.filter((item) => item.id !== itemId)
+                );
+            },
+
+            updateQuantity: (context, itemId: number, quantity: number) => {
+                const index = context.values.items.findIndex(
+                    (i) => i.id === itemId
+                );
+                if (index >= 0) {
+                    context.setValue(`items.${index}.quantity`, quantity);
+                }
+            },
+
+            applyDiscount: (context, discountPercent: number) => {
+                context.setValue(
+                    "discount",
+                    Math.min(100, Math.max(0, discountPercent))
+                );
+            },
+
+            clearAll: (context) => {
+                context.setValue("items", []);
+                context.setValue("discount", 0);
+            },
+
+            // 🔄 Complex Workflow
+            submitOrder: async (context) => {
+                // Validation
+                if (context.actions.isEmpty()) {
+                    alert("Cart is empty");
+                    return false;
+                }
+
+                if (!context.values.customerName.trim()) {
+                    alert("Please enter your name");
+                    return false;
+                }
+
+                if (!context.values.customerEmail.includes("@")) {
+                    alert("Please enter a valid email");
+                    return false;
+                }
+
+                // Submit order
+                const orderData = {
+                    customer: {
+                        name: context.values.customerName,
+                        email: context.values.customerEmail,
+                    },
+                    items: context.values.items,
+                    discount: context.values.discount,
+                    total: context.actions.getTotal(),
+                    finalAmount: context.actions.getDiscountedTotal(),
+                };
+
+                console.log("Order submitted:", orderData);
+                // await api.submitOrder(orderData);
+
+                // Reset after success
+                context.actions.clearAll();
+                context.setValue("customerName", "");
+                context.setValue("customerEmail", "");
+
+                return true;
+            },
+        },
+        onSubmit: async (values, actions) => {
+            return actions.submitOrder();
+        },
+    });
+
+    // Subscriptions
+    const items = form.useFormValue("items");
+    const customerName = form.useFormValue("customerName");
+    const customerEmail = form.useFormValue("customerEmail");
+    const discount = form.useFormValue("discount");
+
+    // Using Actions
+    const total = form.actions.getTotal();
+    const finalAmount = form.actions.getDiscountedTotal();
+
+    return (
+        <div>
+            <h2>Shopping Cart</h2>
+
+            {/* Add product buttons */}
+            <div>
+                <button
+                    onClick={() =>
+                        form.actions.addItem({
+                            id: 1,
+                            name: "Laptop",
+                            price: 1000,
+                            quantity: 1,
+                        })
+                    }
+                >
+                    Add Laptop
+                </button>
+                <button
+                    onClick={() =>
+                        form.actions.addItem({
+                            id: 2,
+                            name: "Mouse",
+                            price: 30,
+                            quantity: 1,
+                        })
+                    }
+                >
+                    Add Mouse
+                </button>
+                <button
+                    onClick={() =>
+                        form.actions.addItem({
+                            id: 3,
+                            name: "Keyboard",
+                            price: 80,
+                            quantity: 1,
+                        })
+                    }
+                >
+                    Add Keyboard
+                </button>
+            </div>
+
+            {/* Cart items */}
+            <div>
+                <h3>Cart Items</h3>
+                {items.map((item) => (
+                    <div key={item.id} style={{ marginBottom: "10px" }}>
+                        <span>{item.name}</span>
+                        <span> - ${item.price}</span>
+                        <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) =>
+                                form.actions.updateQuantity(
+                                    item.id,
+                                    parseInt(e.target.value) || 1
+                                )
+                            }
+                            style={{ width: "50px", margin: "0 10px" }}
+                        />
+                        <button
+                            onClick={() => form.actions.removeItem(item.id)}
+                        >
+                            Remove
+                        </button>
+                    </div>
+                ))}
+                {items.length === 0 && <p>Cart is empty</p>}
+            </div>
+
+            {/* Discount */}
+            <div>
+                <label>
+                    Discount (%):
+                    <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={discount}
+                        onChange={(e) =>
+                            form.actions.applyDiscount(
+                                parseInt(e.target.value) || 0
+                            )
+                        }
+                        style={{ width: "60px", marginLeft: "10px" }}
+                    />
+                </label>
+            </div>
+
+            {/* Price info */}
+            <div
+                style={{
+                    marginTop: "20px",
+                    padding: "10px",
+                    background: "#f0f0f0",
+                }}
+            >
+                <div>
+                    <strong>Total:</strong> ${total}
+                </div>
+                {discount > 0 && (
+                    <div>
+                        <strong>Discount ({discount}%):</strong> -$
+                        {total - finalAmount}
+                    </div>
+                )}
+                <div style={{ fontSize: "20px", marginTop: "10px" }}>
+                    <strong>Final Amount:</strong> ${finalAmount}
+                </div>
+            </div>
+
+            {/* Customer info */}
+            <div style={{ marginTop: "20px" }}>
+                <h3>Customer Information</h3>
+                <input
+                    name="customerName"
+                    value={customerName}
+                    onChange={form.handleFormChange}
+                    placeholder="Name"
+                    style={{ display: "block", marginBottom: "10px" }}
+                />
+                <input
+                    name="customerEmail"
+                    value={customerEmail}
+                    onChange={form.handleFormChange}
+                    placeholder="Email"
+                    style={{ display: "block", marginBottom: "10px" }}
+                />
+            </div>
+
+            {/* Order button */}
+            <div style={{ marginTop: "20px" }}>
+                <button
+                    onClick={form.submit}
+                    disabled={form.isSubmitting || form.actions.isEmpty()}
+                    style={{ marginRight: "10px" }}
+                >
+                    {form.isSubmitting ? "Submitting..." : "Place Order"}
+                </button>
+                <button onClick={form.actions.clearAll}>Clear Cart</button>
+            </div>
+        </div>
+    );
+}
+```
+
+**useForm Actions Use Cases:**
+
+-   ✅ **Complex Calculations**: Total, discounted price, tax calculation logic
+-   ✅ **Item Management**: Add, remove, quantity changes
+-   ✅ **Validation Logic**: Complex validation before form submission
+-   ✅ **Workflows**: Multi-step submission processes
 
 ---
 

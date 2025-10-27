@@ -12,9 +12,11 @@
     -   [전체 상태 구독 활용](#전체-상태-구독-활용)
     -   [필드 새로고침 활용](#필드-새로고침-활용)
     -   [배치 업데이트 (setBatch) 활용](#배치-업데이트-setbatch-활용)
+    -   [Actions 활용](#useformastate-actions-활용)
 -   [useForm 예제](#useform-예제)
     -   [기본 폼 관리](#기본-폼-관리)
     -   [중첩 객체 처리](#중첩-객체-처리)
+    -   [Actions 활용](#useform-actions-활용)
 -   [useGlobalForm 예제](#useglobalform-예제)
     -   [완전한 글로벌 폼](#완전한-글로벌-폼)
     -   [다단계 폼](#다단계-폼)
@@ -554,6 +556,206 @@ function DashboardWidget() {
 -   필드별로 세분화된 최적화가 필요한 경우에는 개별 필드 구독을 사용하세요
 -   `allValues`가 `undefined`일 수 있으므로 **옵셔널 체이닝(?.)** 사용을 권장합니다
 
+### useFormaState Actions 활용
+
+`actions`를 사용하면 비즈니스 로직을 상태와 함께 캡슐화할 수 있습니다. Computed getters, 핸들러, 복잡한 워크플로우를 하나의 객체로 관리할 수 있습니다.
+
+```typescript
+import { useFormaState } from "forma";
+
+interface Todo {
+    id: number;
+    text: string;
+    completed: boolean;
+}
+
+interface TodoState {
+    todos: Todo[];
+    filter: "all" | "active" | "completed";
+    newTodoText: string;
+}
+
+function TodoAppWithActions() {
+    const state = useFormaState<TodoState>({
+        initialValues: {
+            todos: [
+                { id: 1, text: "Learn React", completed: false },
+                { id: 2, text: "Learn Forma", completed: true },
+            ],
+            filter: "all",
+            newTodoText: "",
+        },
+        actions: {
+            // 📊 Computed Getters: 계산된 값 반환
+            getFilteredTodos: (context) => {
+                const { todos, filter } = context.values;
+                if (filter === "active")
+                    return todos.filter((t) => !t.completed);
+                if (filter === "completed")
+                    return todos.filter((t) => t.completed);
+                return todos;
+            },
+
+            getCompletedCount: (context) => {
+                return context.values.todos.filter((t) => t.completed).length;
+            },
+
+            getRemainingCount: (context) => {
+                return context.values.todos.filter((t) => !t.completed).length;
+            },
+
+            // 🎯 Handlers: 상태 변경 작업
+            addTodo: (context) => {
+                const text = context.values.newTodoText.trim();
+                if (!text) return;
+
+                const newTodo: Todo = {
+                    id: Date.now(),
+                    text,
+                    completed: false,
+                };
+
+                context.setValue("todos", [...context.values.todos, newTodo]);
+                context.setValue("newTodoText", "");
+            },
+
+            toggleTodo: (context, id: number) => {
+                const index = context.values.todos.findIndex(
+                    (t) => t.id === id
+                );
+                if (index === -1) return;
+
+                const todo = context.getValue(`todos.${index}`);
+                context.setValue(`todos.${index}.completed`, !todo.completed);
+            },
+
+            removeTodo: (context, id: number) => {
+                context.setValue(
+                    "todos",
+                    context.values.todos.filter((t) => t.id !== id)
+                );
+            },
+
+            clearCompleted: (context) => {
+                context.setValue(
+                    "todos",
+                    context.values.todos.filter((t) => !t.completed)
+                );
+            },
+
+            toggleAll: (context) => {
+                const allCompleted = context.values.todos.every(
+                    (t) => t.completed
+                );
+                context.setValue(
+                    "todos",
+                    context.values.todos.map((t) => ({
+                        ...t,
+                        completed: !allCompleted,
+                    }))
+                );
+            },
+
+            setFilter: (context, filter: "all" | "active" | "completed") => {
+                context.setValue("filter", filter);
+            },
+        },
+    });
+
+    // 구독
+    const newTodoText = state.useValue("newTodoText");
+    const filter = state.useValue("filter");
+
+    // Actions 사용
+    const filteredTodos = state.actions.getFilteredTodos();
+    const completedCount = state.actions.getCompletedCount();
+    const remainingCount = state.actions.getRemainingCount();
+
+    return (
+        <div>
+            <h2>할 일 관리</h2>
+
+            {/* 입력 영역 */}
+            <div>
+                <input
+                    value={newTodoText}
+                    onChange={(e) =>
+                        state.setValue("newTodoText", e.target.value)
+                    }
+                    onKeyPress={(e) =>
+                        e.key === "Enter" && state.actions.addTodo()
+                    }
+                    placeholder="새 할 일 입력"
+                />
+                <button onClick={state.actions.addTodo}>추가</button>
+            </div>
+
+            {/* 통계 */}
+            <div>
+                <span>남은 할 일: {remainingCount}개</span>
+                <span> | 완료: {completedCount}개</span>
+            </div>
+
+            {/* 필터 */}
+            <div>
+                <button onClick={() => state.actions.setFilter("all")}>
+                    전체 ({state.useValue("todos.length")})
+                </button>
+                <button onClick={() => state.actions.setFilter("active")}>
+                    진행 중 ({remainingCount})
+                </button>
+                <button onClick={() => state.actions.setFilter("completed")}>
+                    완료 ({completedCount})
+                </button>
+            </div>
+
+            {/* 할 일 목록 */}
+            <ul>
+                {filteredTodos.map((todo) => (
+                    <li key={todo.id}>
+                        <input
+                            type="checkbox"
+                            checked={todo.completed}
+                            onChange={() => state.actions.toggleTodo(todo.id)}
+                        />
+                        <span
+                            style={{
+                                textDecoration: todo.completed
+                                    ? "line-through"
+                                    : "none",
+                            }}
+                        >
+                            {todo.text}
+                        </span>
+                        <button
+                            onClick={() => state.actions.removeTodo(todo.id)}
+                        >
+                            삭제
+                        </button>
+                    </li>
+                ))}
+            </ul>
+
+            {/* 일괄 작업 */}
+            <div>
+                <button onClick={state.actions.toggleAll}>전체 토글</button>
+                <button onClick={state.actions.clearCompleted}>
+                    완료 항목 삭제
+                </button>
+            </div>
+        </div>
+    );
+}
+```
+
+**Actions의 장점:**
+
+-   ✅ **로직 캡슐화**: 비즈니스 로직을 상태 정의와 함께 관리
+-   ✅ **재사용성**: 같은 액션을 여러 곳에서 호출 가능
+-   ✅ **타입 안전성**: ActionContext를 통한 타입 추론
+-   ✅ **테스트 용이성**: 액션만 독립적으로 테스트 가능
+-   ✅ **가독성**: 복잡한 상태 변경 로직을 명확한 이름으로 표현
+
 ---
 
 ## useForm 예제
@@ -600,6 +802,314 @@ const form = useForm({
 const name = form.useFormValue("user.profile.name");
 const theme = form.useFormValue("user.profile.settings.theme");
 ```
+
+### useForm Actions 활용
+
+`useForm`에서도 actions를 사용하여 폼 로직을 캡슐화할 수 있습니다. 쇼핑카트 예제를 통해 알아봅시다.
+
+```typescript
+import { useForm } from "forma";
+
+interface CartItem {
+    id: number;
+    name: string;
+    price: number;
+    quantity: number;
+}
+
+interface CartForm {
+    items: CartItem[];
+    discount: number;
+    customerName: string;
+    customerEmail: string;
+}
+
+function ShoppingCartWithActions() {
+    const form = useForm<CartForm>({
+        initialValues: {
+            items: [],
+            discount: 0,
+            customerName: "",
+            customerEmail: "",
+        },
+        actions: {
+            // 📊 Computed Getters
+            getTotal: (context) => {
+                return context.values.items.reduce(
+                    (sum, item) => sum + item.price * item.quantity,
+                    0
+                );
+            },
+
+            getDiscountedTotal: (context) => {
+                const total = context.actions.getTotal();
+                return total * (1 - context.values.discount / 100);
+            },
+
+            isEmpty: (context) => {
+                return context.values.items.length === 0;
+            },
+
+            // 🎯 Handlers
+            addItem: (context, item: CartItem) => {
+                const existingIndex = context.values.items.findIndex(
+                    (i) => i.id === item.id
+                );
+
+                if (existingIndex >= 0) {
+                    // 이미 있는 상품: 수량 증가
+                    const existingItem = context.getValue(
+                        `items.${existingIndex}`
+                    );
+                    context.setValue(
+                        `items.${existingIndex}.quantity`,
+                        existingItem.quantity + 1
+                    );
+                } else {
+                    // 새 상품 추가
+                    context.setValue("items", [...context.values.items, item]);
+                }
+            },
+
+            removeItem: (context, itemId: number) => {
+                context.setValue(
+                    "items",
+                    context.values.items.filter((item) => item.id !== itemId)
+                );
+            },
+
+            updateQuantity: (context, itemId: number, quantity: number) => {
+                const index = context.values.items.findIndex(
+                    (i) => i.id === itemId
+                );
+                if (index >= 0) {
+                    context.setValue(`items.${index}.quantity`, quantity);
+                }
+            },
+
+            applyDiscount: (context, discountPercent: number) => {
+                context.setValue(
+                    "discount",
+                    Math.min(100, Math.max(0, discountPercent))
+                );
+            },
+
+            clearAll: (context) => {
+                context.setValue("items", []);
+                context.setValue("discount", 0);
+            },
+
+            // 🔄 Complex Workflow
+            submitOrder: async (context) => {
+                // 검증
+                if (context.actions.isEmpty()) {
+                    alert("장바구니가 비어있습니다");
+                    return false;
+                }
+
+                if (!context.values.customerName.trim()) {
+                    alert("이름을 입력해주세요");
+                    return false;
+                }
+
+                if (!context.values.customerEmail.includes("@")) {
+                    alert("올바른 이메일을 입력해주세요");
+                    return false;
+                }
+
+                // 주문 제출
+                const orderData = {
+                    customer: {
+                        name: context.values.customerName,
+                        email: context.values.customerEmail,
+                    },
+                    items: context.values.items,
+                    discount: context.values.discount,
+                    total: context.actions.getTotal(),
+                    finalAmount: context.actions.getDiscountedTotal(),
+                };
+
+                console.log("주문 제출:", orderData);
+                // await api.submitOrder(orderData);
+
+                // 성공 후 초기화
+                context.actions.clearAll();
+                context.setValue("customerName", "");
+                context.setValue("customerEmail", "");
+
+                return true;
+            },
+        },
+        onSubmit: async (values, actions) => {
+            return actions.submitOrder();
+        },
+    });
+
+    // 구독
+    const items = form.useFormValue("items");
+    const customerName = form.useFormValue("customerName");
+    const customerEmail = form.useFormValue("customerEmail");
+    const discount = form.useFormValue("discount");
+
+    // Actions 사용
+    const total = form.actions.getTotal();
+    const finalAmount = form.actions.getDiscountedTotal();
+
+    return (
+        <div>
+            <h2>쇼핑카트</h2>
+
+            {/* 상품 추가 버튼들 */}
+            <div>
+                <button
+                    onClick={() =>
+                        form.actions.addItem({
+                            id: 1,
+                            name: "노트북",
+                            price: 1000000,
+                            quantity: 1,
+                        })
+                    }
+                >
+                    노트북 추가
+                </button>
+                <button
+                    onClick={() =>
+                        form.actions.addItem({
+                            id: 2,
+                            name: "마우스",
+                            price: 30000,
+                            quantity: 1,
+                        })
+                    }
+                >
+                    마우스 추가
+                </button>
+                <button
+                    onClick={() =>
+                        form.actions.addItem({
+                            id: 3,
+                            name: "키보드",
+                            price: 80000,
+                            quantity: 1,
+                        })
+                    }
+                >
+                    키보드 추가
+                </button>
+            </div>
+
+            {/* 장바구니 목록 */}
+            <div>
+                <h3>장바구니 항목</h3>
+                {items.map((item) => (
+                    <div key={item.id} style={{ marginBottom: "10px" }}>
+                        <span>{item.name}</span>
+                        <span> - {item.price.toLocaleString()}원</span>
+                        <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) =>
+                                form.actions.updateQuantity(
+                                    item.id,
+                                    parseInt(e.target.value) || 1
+                                )
+                            }
+                            style={{ width: "50px", margin: "0 10px" }}
+                        />
+                        <button
+                            onClick={() => form.actions.removeItem(item.id)}
+                        >
+                            삭제
+                        </button>
+                    </div>
+                ))}
+                {items.length === 0 && <p>장바구니가 비어있습니다</p>}
+            </div>
+
+            {/* 할인 */}
+            <div>
+                <label>
+                    할인율 (%):
+                    <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={discount}
+                        onChange={(e) =>
+                            form.actions.applyDiscount(
+                                parseInt(e.target.value) || 0
+                            )
+                        }
+                        style={{ width: "60px", marginLeft: "10px" }}
+                    />
+                </label>
+            </div>
+
+            {/* 가격 정보 */}
+            <div
+                style={{
+                    marginTop: "20px",
+                    padding: "10px",
+                    background: "#f0f0f0",
+                }}
+            >
+                <div>
+                    <strong>총액:</strong> {total.toLocaleString()}원
+                </div>
+                {discount > 0 && (
+                    <div>
+                        <strong>할인 ({discount}%):</strong> -
+                        {(total - finalAmount).toLocaleString()}원
+                    </div>
+                )}
+                <div style={{ fontSize: "20px", marginTop: "10px" }}>
+                    <strong>최종 금액:</strong> {finalAmount.toLocaleString()}원
+                </div>
+            </div>
+
+            {/* 고객 정보 */}
+            <div style={{ marginTop: "20px" }}>
+                <h3>고객 정보</h3>
+                <input
+                    name="customerName"
+                    value={customerName}
+                    onChange={form.handleFormChange}
+                    placeholder="이름"
+                    style={{ display: "block", marginBottom: "10px" }}
+                />
+                <input
+                    name="customerEmail"
+                    value={customerEmail}
+                    onChange={form.handleFormChange}
+                    placeholder="이메일"
+                    style={{ display: "block", marginBottom: "10px" }}
+                />
+            </div>
+
+            {/* 주문 버튼 */}
+            <div style={{ marginTop: "20px" }}>
+                <button
+                    onClick={form.submit}
+                    disabled={form.isSubmitting || form.actions.isEmpty()}
+                    style={{ marginRight: "10px" }}
+                >
+                    {form.isSubmitting ? "제출 중..." : "주문하기"}
+                </button>
+                <button onClick={form.actions.clearAll}>장바구니 비우기</button>
+            </div>
+        </div>
+    );
+}
+```
+
+**useForm Actions 활용 시나리오:**
+
+-   ✅ **복잡한 계산**: 총액, 할인가, 세금 등 계산 로직
+-   ✅ **아이템 관리**: 추가, 삭제, 수량 변경 등
+-   ✅ **검증 로직**: 폼 제출 전 복합 검증
+-   ✅ **워크플로우**: 여러 단계를 거치는 제출 프로세스
 
 ---
 

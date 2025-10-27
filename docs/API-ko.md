@@ -77,6 +77,8 @@ interface UseFormaStateOptions<T> {
     onError?: (error: Error) => void;
     /** 모든 변경에 대한 유효성 검사 활성화 */
     validateOnChange?: boolean;
+    /** 커스텀 액션 (computed getter 및 handler) */
+    actions?: Actions<T>;
 }
 ```
 
@@ -98,6 +100,8 @@ interface UseFormaStateReturn<T> {
     reset: () => void;
     /** 특정 prefix를 가진 모든 필드 구독자들을 새로고침 */
     refreshFields: (prefix: string) => void;
+    /** 커스텀 액션 (computed getter 및 handler) */
+    actions: any;
     /** 표준 입력 변경 이벤트 처리 */
     handleChange: (
         event: React.ChangeEvent<
@@ -132,6 +136,70 @@ const userName = state.useValue("user.name");
 const theme = state.useValue("settings.theme");
 ```
 
+#### Actions 사용법
+
+`actions`를 사용하여 커스텀 로직을 정의할 수 있습니다. Computed getter와 handler를 하나의 객체로 관리합니다.
+
+```typescript
+const state = useFormaState(
+    {
+        todos: [
+            { id: 1, text: "Learn React", completed: false },
+            { id: 2, text: "Learn Forma", completed: true },
+        ],
+    },
+    {
+        actions: {
+            // Computed getter - 계산된 값
+            getCompletedCount: (context) => {
+                return context.values.todos.filter((t) => t.completed).length;
+            },
+
+            // Handler - 비즈니스 로직
+            addTodo: (context, text: string) => {
+                const newId =
+                    Math.max(0, ...context.values.todos.map((t) => t.id)) + 1;
+                context.setValue("todos", [
+                    ...context.values.todos,
+                    { id: newId, text, completed: false },
+                ]);
+            },
+
+            // Complex workflow - 여러 액션 조합
+            submitTodos: async (context) => {
+                const completed = context.actions.getCompletedCount(context);
+                if (completed === 0) {
+                    alert("완료된 항목이 없습니다!");
+                    return false;
+                }
+                // API 호출 등...
+                return true;
+            },
+        },
+    }
+);
+
+// actions 사용
+const completedCount = state.actions.getCompletedCount(); // Computed getter
+state.actions.addTodo("New Task"); // Handler
+await state.actions.submitTodos(); // Complex workflow
+```
+
+**ActionContext 타입:**
+
+```typescript
+interface ActionContext<T> {
+    values: T; // 현재 모든 값
+    getValue: (field: string | keyof T) => any; // 특정 필드 값 가져오기
+    setValue: (field: string | keyof T, value: any) => void; // 필드 값 설정
+    setValues: (values: Partial<T>) => void; // 여러 필드 동시 설정
+    reset: () => void; // 초기값으로 재설정
+    actions: Actions; // 다른 action 호출용
+}
+```
+
+**📚 [Actions 상세 가이드 →](./examples-ko.md#actions-패턴)**
+
 📚 **[상세한 사용 예제 →](./examples-ko.md#useformastate-예제)**
 
 #### Functions
@@ -150,6 +218,7 @@ const theme = state.useValue("settings.theme");
 | `removeField`   | `(path: string) => void`                          | 상태에서 필드 제거.                                                          |
 | `getValue`      | `(path: string) => any`                           | 단일 필드 값 가져옴 (반응형 아님).                                           |
 | `subscribe`     | `(callback: (values: T) => void) => () => void`   | 모든 상태 변경에 구독. 구독 해제 함수 반환.                                  |
+| `actions`       | `any`                                             | 커스텀 액션 (computed getter 및 handler).                                    |
 | `_store`        | `FieldStore<T>`                                   | 고급 사용을 위한 내부 스토어 직접 접근.                                      |
 
 #### 🔢 **배열 길이 구독 (Array Length Subscription)**
@@ -249,6 +318,8 @@ interface UseFormProps<T> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** 폼 제출 완료 후 콜백 */
     onComplete?: (values: T) => void;
+    /** 커스텀 액션 (computed getter 및 handler) */
+    actions?: Actions<T>;
     /** 내부 API: 외부 스토어 (useGlobalForm에서 사용) */
     _externalStore?: FieldStore<T>;
 }
@@ -283,6 +354,9 @@ interface UseFormReturn<T> {
     submit: () => Promise<boolean>;
     resetForm: () => void;
     validateForm: () => Promise<boolean>;
+
+    // 커스텀 액션
+    actions: any;
 
     // 호환성 (비권장 - 전체 리렌더링 발생)
     values: T;
@@ -328,6 +402,68 @@ const handleSubmit = async () => {
 -   `false`: 제출 실패 (더 이상 예외 던질 필요 없음)
 -   예외 발생 시: 자동으로 제출 실패로 처리
 
+#### Actions 사용법 (useForm)
+
+폼에서도 `actions`를 사용하여 비즈니스 로직을 캡슐화할 수 있습니다.
+
+```typescript
+const form = useForm({
+    initialValues: {
+        items: [{ id: 1, name: "Product A", price: 100 }],
+        discount: 0,
+    },
+    actions: {
+        // Computed getter
+        getTotal: (context) => {
+            return context.values.items.reduce(
+                (sum, item) => sum + item.price,
+                0
+            );
+        },
+        getDiscountedTotal: (context) => {
+            const total = context.actions.getTotal(context);
+            return total * (1 - context.values.discount / 100);
+        },
+
+        // Handler
+        addItem: (context, name: string, price: number) => {
+            const newId =
+                Math.max(...context.values.items.map((i) => i.id)) + 1;
+            context.setValue("items", [
+                ...context.values.items,
+                { id: newId, name, price },
+            ]);
+        },
+
+        // Complex workflow
+        submitOrder: async (context) => {
+            const total = context.actions.getDiscountedTotal(context);
+            if (total === 0) {
+                alert("주문 금액이 0원입니다!");
+                return false;
+            }
+            await fetch("/api/orders", {
+                method: "POST",
+                body: JSON.stringify({
+                    items: context.values.items,
+                    total,
+                }),
+            });
+            return true;
+        },
+    },
+    onSubmit: async (values) => {
+        // actions를 통해 복잡한 워크플로우 실행
+        return true;
+    },
+});
+
+// actions 사용
+const total = form.actions.getTotal(); // 계산된 값
+form.actions.addItem("New Product", 200); // 항목 추가
+await form.actions.submitOrder(); // 워크플로우 실행
+```
+
 📚 **[상세한 폼 사용 예제 →](./examples-ko.md#useform-예제)**
 
 #### Functions
@@ -348,6 +484,7 @@ const handleSubmit = async () => {
 | `submit`                 | `() => Promise<boolean>`                         | 폼 제출, 검증 후 결과 반환.                   |
 | `resetForm`              | `() => void`                                     | 폼을 초기값으로 재설정.                       |
 | `validateForm`           | `() => Promise<boolean>`                         | 폼 검증, 검증 결과 반환.                      |
+| `actions`                | `any`                                            | 커스텀 액션 (computed getter 및 handler).     |
 | `values`                 | `T`                                              | 모든 폼 값 (전체 리렌더링 발생하므로 비권장). |
 
 #### setInitialFormValues 메서드

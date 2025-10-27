@@ -77,6 +77,8 @@ interface UseFormaStateOptions<T> {
     onError?: (error: Error) => void;
     /** Enable validation on all changes */
     validateOnChange?: boolean;
+    /** Custom actions (computed getters and handlers) */
+    actions?: Actions<T>;
 }
 ```
 
@@ -98,6 +100,8 @@ interface UseFormaStateReturn<T> {
     reset: () => void;
     /** Refresh all field subscribers with specific prefix */
     refreshFields: (prefix: string) => void;
+    /** Custom actions bound to this state */
+    actions: any;
     /** Handle standard input change events */
     handleChange: (
         event: React.ChangeEvent<
@@ -132,6 +136,52 @@ const userName = state.useValue("user.name");
 const theme = state.useValue("settings.theme");
 ```
 
+#### Actions Usage
+
+Use `actions` to define custom logic with computed getters and handlers in one object.
+
+```typescript
+const state = useFormaState(
+    {
+        todos: [
+            { id: 1, text: "Learn React", completed: false },
+            { id: 2, text: "Learn Forma", completed: true },
+        ],
+    },
+    {
+        actions: {
+            // Computed getter
+            getCompletedCount: (context) => {
+                return context.values.todos.filter((t) => t.completed).length;
+            },
+
+            // Handler
+            addTodo: (context, text: string) => {
+                const newId =
+                    Math.max(0, ...context.values.todos.map((t) => t.id)) + 1;
+                context.setValue("todos", [
+                    ...context.values.todos,
+                    { id: newId, text, completed: false },
+                ]);
+            },
+
+            // Complex workflow
+            submitTodos: async (context) => {
+                const completed = context.actions.getCompletedCount(context);
+                if (completed === 0) return false;
+                // API call...
+                return true;
+            },
+        },
+    }
+);
+
+// Use actions
+const count = state.actions.getCompletedCount(); // Computed getter
+state.actions.addTodo("New Task"); // Handler
+await state.actions.submitTodos(); // Workflow
+```
+
 📚 **[Detailed usage examples →](./examples-en.md#useformastate-examples)**
 
 #### Functions
@@ -150,6 +200,7 @@ const theme = state.useValue("settings.theme");
 | `removeField`   | `(path: string) => void`                          | Remove a field from the state.                                                                |
 | `getValue`      | `(path: string) => any`                           | Get single field value (not reactive).                                                        |
 | `subscribe`     | `(callback: (values: T) => void) => () => void`   | Subscribe to all state changes. Returns unsubscribe function.                                 |
+| `actions`       | `any`                                             | Custom actions (computed getters and handlers).                                               |
 | `_store`        | `FieldStore<T>`                                   | Direct access to internal store for advanced usage.                                           |
 
 #### 🔢 **Array Length Subscription**
@@ -249,6 +300,8 @@ interface UseFormProps<T> {
     onValidate?: (values: T) => Promise<boolean> | boolean;
     /** Callback after form submission completion */
     onComplete?: (values: T) => void;
+    /** Custom actions (computed getters and handlers) */
+    actions?: Actions<T>;
     /** Internal API: External store (used in useGlobalForm) */
     _externalStore?: FieldStore<T>;
 }
@@ -348,6 +401,7 @@ const handleSubmit = async () => {
 | `submit`                 | `() => Promise<boolean>`                         | Submit the form, returns validation result.                           |
 | `resetForm`              | `() => void`                                     | Reset form to initial values.                                         |
 | `validateForm`           | `() => Promise<boolean>`                         | Validate the form, returns validation result.                         |
+| `actions`                | `any`                                            | Custom actions (computed getters and handlers).                       |
 | `values`                 | `T`                                              | All form values (not recommended - causes full re-render).            |
 
 #### setInitialFormValues Method

@@ -39,12 +39,13 @@ import {
 
 **Bundle Size Comparison:**
 
-| Format | Standard | Minified | Reduction |
-|--------|----------|----------|-----------|
-| CommonJS | 6.3 KB | 5.6 KB | 11% |
-| ESM | 3.1 KB | 2.7 KB | 13% |
+| Format   | Standard | Minified | Reduction |
+| -------- | -------- | -------- | --------- |
+| CommonJS | 6.3 KB   | 5.6 KB   | 11%       |
+| ESM      | 3.1 KB   | 2.7 KB   | 13%       |
 
 **In package.json:**
+
 ```json
 {
     "dependencies": {
@@ -54,6 +55,7 @@ import {
 ```
 
 **Dynamic Import (Recommended for Code Splitting):**
+
 ```tsx
 // Lazy load minified bundle
 const { useForm } = await import("@ehfuse/forma/min");

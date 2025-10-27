@@ -112,12 +112,18 @@ export function useModal({
     // 모달 닫기
     const close = useCallback(() => {
         if (isOpen) {
-            // 1. 뒤로 가기로 모달 닫음
-            window.history.back();
-
-            // 여기서 setIsOpen(false)를 호출하지 않아도 됨
-            // popstate 이벤트가 발생하면 FormContext의 handlePopState가 처리하여
-            // closeLastModal -> modal:close 이벤트 발생 -> handleCloseEvent 에서 setIsOpen(false) 호출
+            // 모달이 등록되어 있으면 history.back()으로 처리
+            if (isRegisteredRef.current) {
+                window.history.back();
+                // popstate 이벤트가 발생하면 FormContext의 handlePopState가 처리하여
+                // closeLastModal -> modal:close 이벤트 발생 -> handleCloseEvent 에서 setIsOpen(false) 호출
+            } else {
+                // 등록되지 않은 경우 (open()이 호출되지 않고 직접 닫히는 경우) 직접 닫기
+                setIsOpen(false);
+                if (onCloseRef.current) {
+                    onCloseRef.current();
+                }
+            }
         }
     }, [isOpen]);
 

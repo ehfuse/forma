@@ -39,12 +39,13 @@ import {
 
 **번들 크기 비교:**
 
-| 형식 | 표준 | Minified | 축소율 |
-|------|------|----------|--------|
-| CommonJS | 6.3 KB | 5.6 KB | 11% |
-| ESM | 3.1 KB | 2.7 KB | 13% |
+| 형식     | 표준   | Minified | 축소율 |
+| -------- | ------ | -------- | ------ |
+| CommonJS | 6.3 KB | 5.6 KB   | 11%    |
+| ESM      | 3.1 KB | 2.7 KB   | 13%    |
 
 **package.json 설정:**
+
 ```json
 {
     "dependencies": {
@@ -54,6 +55,7 @@ import {
 ```
 
 **동적 Import (코드 분할 권장):**
+
 ```tsx
 // Minified 번들을 지연 로드
 const { useForm } = await import("@ehfuse/forma/min");

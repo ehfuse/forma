@@ -1062,6 +1062,8 @@ clearStates();
 
 A hook for managing modal state and handling back navigation. On mobile, when a modal is open and the back button is pressed, the modal closes instead of navigating back.
 
+**v2.0.5 New Feature**: Using the same `modalId` allows multiple components to share the same modal state, and `modal.isOpen` is reactive.
+
 #### Signature
 
 ```typescript
@@ -1072,6 +1074,8 @@ function useModal(props?: UseModalProps): UseModalReturn;
 
 ```typescript
 interface UseModalProps {
+    /** Modal unique ID. Using the same ID shares the same modal instance (v2.0.5+) */
+    modalId?: string;
     /** Initial open state (default: false) */
     initialOpen?: boolean;
     /** Callback function executed when modal closes */
@@ -1083,7 +1087,7 @@ interface UseModalProps {
 
 ```typescript
 interface UseModalReturn {
-    /** Modal open state */
+    /** Modal open state (reactive!) */
     isOpen: boolean;
     /** Function to open modal */
     open: () => void;
@@ -1098,10 +1102,12 @@ interface UseModalReturn {
 
 #### Features
 
+-   **Reactive State**: `modal.isOpen` is reactive and automatically triggers re-renders on state changes
+-   **Modal Sharing**: Same `modalId` allows multiple components to share modal state
 -   **Mobile-Friendly**: Back button closes modal, page stays
 -   **Modal Stack Management**: Multiple nested modals close in correct order
 -   **Auto Cleanup**: Automatically removes from modal stack on unmount
--   **Unique ID Generation**: Each modal gets a unique ID automatically
+-   **Auto ID Generation**: Generates unique ID automatically if `modalId` is not provided
 
 #### Basic Usage
 
@@ -1122,6 +1128,50 @@ function MyComponent() {
                     <Button onClick={modal.close}>Close</Button>
                 </DialogActions>
             </Dialog>
+        </>
+    );
+}
+```
+
+#### Shared Modal Example (v2.0.5+)
+
+Using the same `modalId` allows multiple components to share the same modal state:
+
+```typescript
+// Component A: Modal opener button
+function ModalOpener() {
+    const modal = useModal({ modalId: "shared-modal" });
+
+    return (
+        <button onClick={modal.open} disabled={modal.isOpen}>
+            Open Modal
+        </button>
+    );
+}
+
+// Component B: Modal UI
+function ModalUI() {
+    const modal = useModal({ modalId: "shared-modal" });
+
+    return (
+        <Dialog open={modal.isOpen} onClose={modal.close}>
+            <DialogTitle>Shared Modal</DialogTitle>
+            <DialogContent>
+                Multiple components share the same state!
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={modal.close}>Close</Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+// Usage
+function App() {
+    return (
+        <>
+            <ModalOpener />
+            <ModalUI />
         </>
     );
 }

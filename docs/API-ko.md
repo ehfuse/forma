@@ -1143,6 +1143,8 @@ clearStates();
 
 모달 상태 관리 및 뒤로가기 처리를 위한 훅입니다. 모바일 환경에서 모달이 열려있을 때 뒤로가기 버튼을 누르면 페이지가 뒤로 가는 것이 아니라 모달이 닫히도록 처리합니다.
 
+**v2.0.5 신규 기능**: 같은 `modalId`를 사용하면 여러 컴포넌트에서 같은 모달 상태를 공유할 수 있으며, `modal.isOpen`이 reactive하게 동작합니다.
+
 #### Signature
 
 ```typescript
@@ -1153,6 +1155,8 @@ function useModal(props?: UseModalProps): UseModalReturn;
 
 ```typescript
 interface UseModalProps {
+    /** 모달의 고유 ID. 같은 ID를 사용하면 같은 모달 인스턴스를 공유합니다 (v2.0.5+) */
+    modalId?: string;
     /** 초기 열림 상태 (기본값: false) */
     initialOpen?: boolean;
     /** 모달이 닫힐 때 실행될 콜백 함수 */
@@ -1164,7 +1168,7 @@ interface UseModalProps {
 
 ```typescript
 interface UseModalReturn {
-    /** 모달 열림 상태 */
+    /** 모달 열림 상태 (reactive!) */
     isOpen: boolean;
     /** 모달 열기 함수 */
     open: () => void;
@@ -1179,10 +1183,12 @@ interface UseModalReturn {
 
 #### 특징
 
+-   **Reactive 상태**: `modal.isOpen`이 reactive하게 동작하여 상태 변경 시 자동으로 리렌더링
+-   **모달 공유**: 같은 `modalId`를 사용하면 여러 컴포넌트에서 같은 모달 상태 공유
 -   **모바일 친화적**: 뒤로가기 시 모달만 닫히고 페이지는 유지
 -   **모달 스택 관리**: 여러 모달이 중첩되어도 올바른 순서로 닫힘
 -   **자동 정리**: 컴포넌트 언마운트 시 자동으로 모달 스택에서 제거
--   **고유 ID 생성**: 각 모달에 자동으로 고유 ID 부여
+-   **자동 ID 생성**: `modalId`를 제공하지 않으면 자동으로 고유 ID 생성
 
 #### 기본 사용법
 
@@ -1203,6 +1209,50 @@ function MyComponent() {
                     <Button onClick={modal.close}>닫기</Button>
                 </DialogActions>
             </Dialog>
+        </>
+    );
+}
+```
+
+#### 공유 모달 예제 (v2.0.5+)
+
+같은 `modalId`를 사용하면 여러 컴포넌트에서 같은 모달 상태를 공유할 수 있습니다:
+
+```typescript
+// 컴포넌트 A: 모달 열기 버튼
+function ModalOpener() {
+    const modal = useModal({ modalId: "shared-modal" });
+
+    return (
+        <button onClick={modal.open} disabled={modal.isOpen}>
+            모달 열기
+        </button>
+    );
+}
+
+// 컴포넌트 B: 모달 UI
+function ModalUI() {
+    const modal = useModal({ modalId: "shared-modal" });
+
+    return (
+        <Dialog open={modal.isOpen} onClose={modal.close}>
+            <DialogTitle>공유 모달</DialogTitle>
+            <DialogContent>
+                여러 컴포넌트에서 같은 상태를 공유합니다!
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={modal.close}>닫기</Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+// 사용
+function App() {
+    return (
+        <>
+            <ModalOpener />
+            <ModalUI />
         </>
     );
 }

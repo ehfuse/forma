@@ -1062,7 +1062,7 @@ clearStates();
 
 A hook for managing modal state and handling back navigation. On mobile, when a modal is open and the back button is pressed, the modal closes instead of navigating back.
 
-**v2.0.5 New Feature**: Using the same `modalId` allows multiple components to share the same modal state, and `modal.isOpen` is reactive.
+**v2.0.6 New Feature**: Using the same `modalId` allows multiple components to share the same modal state, and `modal.isOpen` is reactive.
 
 #### Signature
 
@@ -1074,7 +1074,7 @@ function useModal(props?: UseModalProps): UseModalReturn;
 
 ```typescript
 interface UseModalProps {
-    /** Modal unique ID. Using the same ID shares the same modal instance (v2.0.5+) */
+    /** Modal unique ID. Using the same ID shares the same modal instance (v2.0.6+) */
     modalId?: string;
     /** Initial open state (default: false) */
     initialOpen?: boolean;
@@ -1133,7 +1133,7 @@ function MyComponent() {
 }
 ```
 
-#### Shared Modal Example (v2.0.5+)
+#### Shared Modal Example (v2.0.6+)
 
 Using the same `modalId` allows multiple components to share the same modal state:
 

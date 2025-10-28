@@ -1143,7 +1143,7 @@ clearStates();
 
 모달 상태 관리 및 뒤로가기 처리를 위한 훅입니다. 모바일 환경에서 모달이 열려있을 때 뒤로가기 버튼을 누르면 페이지가 뒤로 가는 것이 아니라 모달이 닫히도록 처리합니다.
 
-**v2.0.5 신규 기능**: 같은 `modalId`를 사용하면 여러 컴포넌트에서 같은 모달 상태를 공유할 수 있으며, `modal.isOpen`이 reactive하게 동작합니다.
+**v2.0.6 신규 기능**: 같은 `modalId`를 사용하면 여러 컴포넌트에서 같은 모달 상태를 공유할 수 있으며, `modal.isOpen`이 reactive하게 동작합니다.
 
 #### Signature
 
@@ -1155,7 +1155,7 @@ function useModal(props?: UseModalProps): UseModalReturn;
 
 ```typescript
 interface UseModalProps {
-    /** 모달의 고유 ID. 같은 ID를 사용하면 같은 모달 인스턴스를 공유합니다 (v2.0.5+) */
+    /** 모달의 고유 ID. 같은 ID를 사용하면 같은 모달 인스턴스를 공유합니다 (v2.0.6+) */
     modalId?: string;
     /** 초기 열림 상태 (기본값: false) */
     initialOpen?: boolean;
@@ -1214,7 +1214,7 @@ function MyComponent() {
 }
 ```
 
-#### 공유 모달 예제 (v2.0.5+)
+#### 공유 모달 예제 (v2.0.6+)
 
 같은 `modalId`를 사용하면 여러 컴포넌트에서 같은 모달 상태를 공유할 수 있습니다:
 

@@ -114,17 +114,20 @@ function useFieldValue<T>(store: FieldStore<any>, fieldName: string): T {
     const [, forceUpdate] = useReducer((x) => x + 1, 0);
 
     useEffect(() => {
-        // 초기값 강제 동기화
-        const currentValue = store.getValue(fieldName);
-        setValue(currentValue);
-
-        // 구독 설정 / Setup subscription
+        // 구독을 먼저 등록한 뒤 즉시 동기화합니다.
+        // 이렇게 하면 구독 등록과 값 읽기 사이에 발생하는 상태 변경을 놓치지 않습니다.
+        // Register subscription first, then sync immediately. This prevents missing updates
+        // that might occur between reading the current value and subscribing.
         const unsubscribe = store.subscribe(fieldName, () => {
             const newValue = store.getValue(fieldName);
             setValue(newValue);
             // useReducer를 사용한 강제 리렌더링
             forceUpdate();
         });
+
+        // 초기값 강제 동기화 (구독 등록 후 최신 값을 읽어 적용)
+        const currentValue = store.getValue(fieldName);
+        setValue(currentValue);
 
         return unsubscribe;
     }, [fieldName, store]); // 깔끔한 의존성 배열

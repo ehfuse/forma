@@ -335,10 +335,14 @@ export function useForm<T extends Record<string, any>>(
                 return fieldState.getValues();
             },
             getValue: (fieldName: keyof T | string) =>
-                fieldState.getValue(fieldName as string),
+                fieldState._store.getValue(fieldName as string),
             setValue: (fieldName: keyof T | string, value: any) =>
-                fieldState.setValue(fieldName as string, value),
-            setValues: (values: Partial<T>) => fieldState.setValues(values),
+                fieldState._store.setValue(fieldName as string, value),
+            setValues: (values: Partial<T>) => {
+                const currentValues = fieldState._store.getValues();
+                const newValues = { ...currentValues, ...values };
+                fieldState._store.setValues(newValues as T);
+            },
             reset: resetForm,
             submit,
             validate: validateForm,

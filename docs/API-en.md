@@ -665,6 +665,25 @@ const persistentForm = useGlobalForm({
 -   Automatically cleans up the form when the last user unmounts
 -   `autoCleanup: false`: Manual cleanup with `useUnregisterGlobalForm` required
 
+**Delayed Cleanup Mechanism:**
+
+`autoCleanup: true` uses a **100ms delayed cleanup** to safely handle React's re-rendering scenarios:
+
+-   When a component unmounts, the actual cleanup is executed after 100ms
+-   If the component remounts within 100ms, the cleanup is cancelled
+-   This ensures data is safely preserved during fast mount/unmount cycles in React Strict Mode or conditional rendering
+
+```typescript
+// Works safely even in React Strict Mode
+function MyComponent() {
+    const form = useGlobalForm({
+        formId: "my-form",
+        autoCleanup: true, // Default - Data is preserved even with temporary unmounts from re-rendering
+    });
+    // ...
+}
+```
+
 📚 **[Detailed Auto Memory Cleanup Examples →](./examples-en.md#auto-memory-cleanup-examples)**
 
 #### Recommendations
@@ -837,8 +856,10 @@ A hook for manually cleaning up global state.
 
 3. **Memory Management**:
 
-    - `autoCleanup: true` (default): Automatic memory cleanup
+    - `autoCleanup: true` (default): Automatic memory cleanup (with 100ms delayed cleanup)
     - `autoCleanup: false`: Manual cleanup with `useUnregisterGlobalFormaState` required
+
+    **Delayed Cleanup**: `autoCleanup` uses a 100ms delayed cleanup to distinguish between re-rendering and actual unmount. This ensures safe operation in React Strict Mode or conditional rendering scenarios.
 
 4. **Manual Unregister Precautions**:
 

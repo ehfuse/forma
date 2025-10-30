@@ -748,6 +748,25 @@ const persistentForm = useGlobalForm({
 -   마지막 사용자가 언마운트되면 자동으로 폼 정리
 -   `autoCleanup: false`: 수동으로 `useUnregisterGlobalForm` 필요
 
+**지연 정리 메커니즘:**
+
+`autoCleanup: true`는 React의 재렌더링 시나리오를 안전하게 처리하기 위해 **100ms 지연 정리**를 사용합니다:
+
+-   컴포넌트가 언마운트되면 100ms 후 실제 정리 실행
+-   만약 100ms 이내에 컴포넌트가 다시 마운트되면 정리가 취소됨
+-   이를 통해 React의 Strict Mode나 조건부 렌더링에서 발생하는 빠른 마운트/언마운트 사이클에서도 데이터가 안전하게 유지됨
+
+```typescript
+// React Strict Mode에서도 안전하게 작동
+function MyComponent() {
+    const form = useGlobalForm({
+        formId: "my-form",
+        autoCleanup: true, // 기본값 - 재렌더링으로 인한 일시적 언마운트에서도 데이터 보존
+    });
+    // ...
+}
+```
+
 📚 **[자동 메모리 정리 상세 예제 →](./examples-ko.md#자동-메모리-정리-예제)**
 
 #### 권장사항
@@ -918,8 +937,10 @@ function ProductList() {
 
 3. **메모리 관리**:
 
-    - `autoCleanup: true` (기본값): 자동으로 메모리 정리
+    - `autoCleanup: true` (기본값): 자동으로 메모리 정리 (100ms 지연 정리)
     - `autoCleanup: false`: 수동으로 `useUnregisterGlobalFormaState` 사용 필요
+
+    **지연 정리**: `autoCleanup`은 재렌더링과 실제 언마운트를 구분하기 위해 100ms 지연 후 정리를 실행합니다. 이를 통해 React Strict Mode나 조건부 렌더링에서도 안전하게 작동합니다.
 
 4. **수동 unregister 주의사항**:
 

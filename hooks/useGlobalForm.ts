@@ -28,9 +28,10 @@
  * SOFTWARE.
  */
 
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import { useForm } from "./useForm";
 import { UseGlobalFormProps, UseGlobalFormReturn } from "../types/globalForm";
+import { UseFormReturn } from "../types/form";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 import { mergeActions } from "../utils";
 
@@ -149,7 +150,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
         if (initialValues && Object.keys(store.getValues()).length === 0) {
             form.setInitialFormValues(initialValues as T);
         }
-    }, [formId, initialValues, store, form]);
+    }, [formId, initialValues, store, form.setInitialFormValues]); // form 전체 대신 setInitialFormValues만 의존성으로
 
     // 참조 카운팅을 통한 자동 정리 관리
     // Auto cleanup management through reference counting

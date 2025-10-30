@@ -213,17 +213,21 @@ export function useFormaState<T extends Record<string, any>>(
     // 필드 스토어 인스턴스 생성 또는 외부 스토어 사용 (렌더링 간 유지)
     const storeRef = useRef<FieldStore<T> | null>(null);
     if (_externalStore) {
-        storeRef.current = _externalStore;
+        // 외부 스토어는 한번만 설정 (이미 설정되어 있으면 변경하지 않음)
+        // Set external store only once (don't change if already set)
+        if (!storeRef.current) {
+            storeRef.current = _externalStore;
 
-        // 외부 스토어 사용 시 초기값이 비어있으면 설정
-        const currentValues = _externalStore.getValues();
-        if (
-            Object.keys(currentValues).length === 0 &&
-            Object.keys(initialValues).length > 0
-        ) {
-            Object.keys(initialValues).forEach((key) => {
-                _externalStore.setValue(key, initialValues[key as keyof T]);
-            });
+            // 외부 스토어 사용 시 초기값이 비어있으면 설정
+            const currentValues = _externalStore.getValues();
+            if (
+                Object.keys(currentValues).length === 0 &&
+                Object.keys(initialValues).length > 0
+            ) {
+                Object.keys(initialValues).forEach((key) => {
+                    _externalStore.setValue(key, initialValues[key as keyof T]);
+                });
+            }
         }
     } else if (!storeRef.current) {
         storeRef.current = new FieldStore<T>(stableInitialValues.current);

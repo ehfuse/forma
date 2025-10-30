@@ -166,6 +166,12 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
     const handlersRef = useRef<Map<string, GlobalFormHandlers<any>>>(new Map());
     // formId별 actions를 저장하는 Map | Map storing actions by formId
     const actionsRef = useRef<Map<string, any>>(new Map());
+    // formId별 cleanup 타이머를 저장하는 Map | Map storing cleanup timers by formId
+    const cleanupTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+        new Map()
+    );
+    // cleanup 지연 시간 (밀리초) - 리렌더링 대기 시간 | Cleanup delay time (milliseconds) - wait for re-rendering
+    const CLEANUP_DELAY_MS = 100;
 
     // ========== 모달 스택 관리 상태 ==========
     const [openModalIds, setOpenModalIds] = useState<string[]>([]);
@@ -185,11 +191,20 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
 
         if (!stores.has(formId)) {
             // 새로운 스토어를 빈 객체로 생성 | Create new store with empty object
+            console.log(`🏭 [GlobalFormaContext] 새 store 생성: ${formId}`);
             const newStore = new FieldStore<T>({} as T);
             stores.set(formId, newStore);
+            console.log(
+                `🏭 [GlobalFormaContext] store 등록 완료. 총 stores:`,
+                stores.size
+            );
             return newStore;
         }
 
+        console.log(
+            `♻️ [GlobalFormaContext] 기존 store 재사용: ${formId}, 현재 값:`,
+            stores.get(formId)?.getValues()
+        );
         return stores.get(formId) as FieldStore<T>;
     };
 
@@ -297,6 +312,15 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
     const incrementRef = (formId: string, autoCleanup: boolean): void => {
         const refCounts = refCountsRef.current;
         const autoCleanupRefCounts = autoCleanupRefCountsRef.current;
+        const cleanupTimers = cleanupTimersRef.current;
+
+        // 예약된 cleanup 타이머가 있으면 취소 (재참조됨)
+        // Cancel scheduled cleanup timer if exists (re-referenced)
+        const existingTimer = cleanupTimers.get(formId);
+        if (existingTimer) {
+            clearTimeout(existingTimer);
+            cleanupTimers.delete(formId);
+        }
 
         // 전체 참조 카운트 증가 (모든 컴포넌트)
         const currentCount = refCounts.get(formId) || 0;
@@ -322,6 +346,7 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         const refCounts = refCountsRef.current;
         const autoCleanupRefCounts = autoCleanupRefCountsRef.current;
         const stores = storesRef.current;
+        const cleanupTimers = cleanupTimersRef.current;
 
         // 전체 참조 카운트가 없는 경우 (이미 수동으로 제거됨) 무시 | Ignore if no reference count (already manually removed)
         if (!refCounts.has(formId)) {
@@ -343,18 +368,42 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
             );
             autoCleanupRefCounts.set(formId, newAutoCleanupCount);
 
-            // autoCleanup 참조가 0이 되면 스토어 정리 (autoCleanup: false 컴포넌트가 있어도)
+            // autoCleanup 참조가 0이 되면 지연된 스토어 정리 예약
+            // Schedule delayed store cleanup when autoCleanup refs reach 0
             if (newAutoCleanupCount === 0) {
-                const store = stores.get(formId);
-                if (store) {
-                    store.destroy();
-                    stores.delete(formId);
-                    refCounts.delete(formId);
-                    autoCleanupRefCounts.delete(formId);
-                    autoCleanupSettingsRef.current.delete(formId);
-                    handlersRef.current.delete(formId); // 핸들러도 함께 정리 | Clean up handlers as well
-                    actionsRef.current.delete(formId); // actions도 함께 정리 | Clean up actions as well
+                // 기존 타이머가 있으면 취소 (중복 방지)
+                // Cancel existing timer if any (prevent duplicates)
+                const existingTimer = cleanupTimers.get(formId);
+                if (existingTimer) {
+                    clearTimeout(existingTimer);
                 }
+
+                // 지연된 cleanup 예약 - 리렌더링 대기
+                // Schedule delayed cleanup - wait for re-rendering
+                const timer = setTimeout(() => {
+                    // 타이머 실행 시점에 여전히 참조가 0인지 확인
+                    // Check if refs are still 0 at timer execution time
+                    const finalAutoCleanupCount =
+                        autoCleanupRefCounts.get(formId) || 0;
+
+                    if (finalAutoCleanupCount === 0) {
+                        const store = stores.get(formId);
+                        if (store) {
+                            store.destroy();
+                            stores.delete(formId);
+                            refCounts.delete(formId);
+                            autoCleanupRefCounts.delete(formId);
+                            autoCleanupSettingsRef.current.delete(formId);
+                            handlersRef.current.delete(formId);
+                            actionsRef.current.delete(formId);
+                            cleanupTimers.delete(formId);
+                        }
+                    } else {
+                        cleanupTimers.delete(formId);
+                    }
+                }, CLEANUP_DELAY_MS);
+
+                cleanupTimers.set(formId, timer);
             }
         }
 

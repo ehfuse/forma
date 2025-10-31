@@ -462,7 +462,7 @@ const form = useForm({
 
 ## Related Documents
 
--   **[API Reference](./API-en.md)** - Complete API documentation
--   **[Getting Started Guide](./getting-started-en.md)** - Basic usage
--   **[Performance Guide](./performance-guide-en.md)** - Optimization best practices
--   **[Examples Collection](./examples-en.md)** - Practical examples
+-   **[API Reference](./API.md)** - Complete API documentation
+-   **[Getting Started Guide](./getting-started.md)** - Basic usage
+-   **[Performance Guide](./performance-guide.md)** - Optimization best practices
+-   **[Examples Collection](./examples/basic-example.md)** - Practical examples

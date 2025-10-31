@@ -2107,9 +2107,9 @@ This examples guide provides practical usage patterns for all major features of 
 
 ## Related Documents
 
--   **[API Reference](./API-en.md)** - Detailed API documentation
--   **[Getting Started Guide](./getting-started-en.md)** - Basic usage
--   **[Performance Optimization Guide](./performance-guide-en.md)** - Performance optimization methods
--   **[Performance Warnings](./performance-warnings-en.md)** - Anti-patterns and precautions
--   **[Migration Guide](./migration-en.md)** - Migration from other libraries
--   **[useGlobalForm Guide](./useGlobalForm-guide-en.md)** - Global form state management
+-   **[API Reference](./API.md)** - Detailed API documentation
+-   **[Getting Started Guide](./getting-started.md)** - Basic usage
+-   **[Performance Optimization Guide](./performance-guide.md)** - Performance optimization methods
+-   **[Performance Warnings](./performance-warnings.md)** - Anti-patterns and precautions
+-   **[Migration Guide](./migration.md)** - Migration from other libraries
+-   **[useGlobalForm Guide](./useGlobalForm-guide.md)** - Global form state management

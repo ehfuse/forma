@@ -2,7 +2,7 @@
 
 Anti-patterns and precautions to avoid when using Forma.
 
-> 💡 **Basic optimization methods**: First check out recommended patterns and methods in [Performance Optimization Guide](./performance-guide-en.md).
+> 💡 **Basic optimization methods**: First check out recommended patterns and methods in [Performance Optimization Guide](./performance-guide.md).
 
 ## 🔥 Core Performance Optimization Principles
 
@@ -639,8 +639,8 @@ Following these optimization principles will provide smooth user experience even
 
 ## Related Documents
 
--   **[Performance Optimization Guide](./performance-guide-en.md)** - Recommended patterns and optimization methods
--   **[API Reference](./API-en.md)** - Detailed API documentation
--   **[Getting Started Guide](./getting-started-en.md)** - Basic usage
--   **[Examples Collection](./examples-en.md)** - Practical usage examples
--   **[Migration Guide](./migration-en.md)** - Migration from other libraries
+-   **[Performance Optimization Guide](./performance-guide.md)** - Recommended patterns and optimization methods
+-   **[API Reference](./API.md)** - Detailed API documentation
+-   **[Getting Started Guide](./getting-started.md)** - Basic usage
+-   **[Examples Collection](./examples/basic-example.md)** - Practical usage examples
+-   **[Migration Guide](./migration.md)** - Migration from other libraries

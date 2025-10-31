@@ -33,9 +33,26 @@ import { useFormaState } from "./useFormaState";
 import {
     UseGlobalFormaStateProps,
     UseGlobalFormaStateReturn,
+    UseGlobalFormaStateSimpleProps,
 } from "../types/globalForm";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 import { mergeActions } from "../utils";
+
+/**
+ * 글로벌 FormaState 관리 훅 (오버로드 1: 전체 옵션)
+ * Global FormaState management hook (Overload 1: Full options)
+ */
+export function useGlobalFormaState<T extends Record<string, any>>(
+    props: UseGlobalFormaStateProps<T>
+): UseGlobalFormaStateReturn<T>;
+
+/**
+ * 글로벌 FormaState 관리 훅 (오버로드 2: stateId만)
+ * Global FormaState management hook (Overload 2: stateId only)
+ */
+export function useGlobalFormaState<T extends Record<string, any>>(
+    stateId: string
+): UseGlobalFormaStateReturn<T>;
 
 /**
  * 글로벌 FormaState 관리 훅 / Global FormaState management hook
@@ -47,7 +64,7 @@ import { mergeActions } from "../utils";
  * Focuses only on data sharing and provides optimized rendering by subscribing only to necessary fields in each component
  *
  * @template T FormaState 데이터의 타입 / FormaState data type
- * @param props 글로벌 FormaState 설정 옵션 / Global FormaState configuration options
+ * @param propsOrStateId 글로벌 FormaState 설정 옵션 또는 stateId 문자열 / Global FormaState configuration options or stateId string
  * @returns 글로벌 FormaState 관리 API 객체 / Global FormaState management API object
  *
  * @example
@@ -110,12 +127,22 @@ import { mergeActions } from "../utils";
  * }
  * ```
  */
-export function useGlobalFormaState<T extends Record<string, any>>({
-    stateId,
-    initialValues,
-    autoCleanup = true,
-    actions,
-}: UseGlobalFormaStateProps<T>): UseGlobalFormaStateReturn<T> {
+export function useGlobalFormaState<T extends Record<string, any>>(
+    propsOrStateId: UseGlobalFormaStateProps<T> | string
+): UseGlobalFormaStateReturn<T> {
+    // 문자열로 전달된 경우 props 객체로 변환
+    const props: UseGlobalFormaStateProps<T> =
+        typeof propsOrStateId === "string"
+            ? { stateId: propsOrStateId }
+            : propsOrStateId;
+
+    const {
+        stateId,
+        initialValues,
+        autoCleanup = true,
+        actions,
+        watch,
+    } = props;
     const context = useContext(GlobalFormaContext);
 
     // 참조 등록 상태를 추적하는 ref 추가 + 컴포넌트 고유 ID
@@ -187,6 +214,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
     const formaState = useFormaState<T>((initialValues as T) || ({} as T), {
         _externalStore: store,
         actions: effectiveActions,
+        watch, // watch 옵션 전달
     });
 
     // 초기값이 있고 스토어가 비어있다면 초기값 설정 (올바른 방법으로)

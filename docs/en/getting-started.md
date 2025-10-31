@@ -223,9 +223,9 @@ const firstTodoCompleted = state.useValue("todos.0.completed");
 
 **�� Detailed Examples and Performance Optimization:**
 
--   [TodoApp Example - Array State Management](./examples/todoapp-example-en.md)
--   [Performance Optimization Guide](./performance-guide-en.md)
--   [Performance Optimization Warnings](./performance-warnings-en.md)
+-   [TodoApp Example - Array State Management](./examples/todoapp-example.md)
+-   [Performance Optimization Guide](./performance-guide.md)
+-   [Performance Optimization Warnings](./performance-warnings.md)
 
 ## Step 5: Nested Object State Management
 
@@ -434,7 +434,7 @@ function updateMultiple() {
 
 **📋 Detailed Global Form Examples:**
 
--   [Multi-Step Form Implementation Guide](./useGlobalForm-guide-en.md)
+-   [Multi-Step Form Implementation Guide](./useGlobalForm-guide.md)
 
 ## Step 7: Advanced Features
 
@@ -519,11 +519,11 @@ You're all set to use Forma! 🎉
 
 ## Related Documentation
 
--   **[API Reference](./API-en.md)** - Detailed API documentation
--   **[Examples](./examples-en.md)** - Practical usage examples
--   **[Performance Optimization Guide](./performance-guide-en.md)** - Performance optimization methods
--   **[Performance Optimization Warnings](./performance-warnings-en.md)** - Anti-patterns and cautions
--   **[Migration Guide](./migration-en.md)** - Migrating from other libraries
--   **[useGlobalForm Guide](./useGlobalForm-guide-en.md)** - Global form state management
--   **[Global Hooks Comparison Guide](./global-hooks-comparison-en.md)** - Differences between global hooks
--   **[Library Comparison Guide](./library-comparison-en.md)** - Comparison with other state management libraries
+-   **[API Reference](./API.md)** - Detailed API documentation
+-   **[Examples](./examples/basic-example.md)** - Practical usage examples
+-   **[Performance Optimization Guide](./performance-guide.md)** - Performance optimization methods
+-   **[Performance Optimization Warnings](./performance-warnings.md)** - Anti-patterns and cautions
+-   **[Migration Guide](./migration.md)** - Migrating from other libraries
+-   **[useGlobalForm Guide](./useGlobalForm-guide.md)** - Global form state management
+-   **[Global Hooks Comparison Guide](./global-hooks-comparison.md)** - Differences between global hooks
+-   **[Library Comparison Guide](./library-comparison.md)** - Comparison with other state management libraries

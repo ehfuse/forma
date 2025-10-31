@@ -74,6 +74,8 @@ export interface UseFormProps<T extends Record<string, any>> {
     onComplete?: (values: T) => void;
     /** 사용자 정의 액션 함수들 (객체 또는 배열로 전달 가능) | User-defined action functions (can be object or array) */
     actions?: Actions<T> | Actions<T>[];
+    /** Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원) | Watch callbacks - Detect specific path changes (wildcard supported) */
+    watch?: WatchOptions<T>;
     /** 내부 API - 전역 상태용 외부 스토어 | Internal API - external store for global state */
     _externalStore?: FieldStore<T>;
 }
@@ -94,6 +96,8 @@ export interface UseFormPropsOptional<
     onComplete?: (values: T) => void;
     /** 사용자 정의 액션 함수들 (객체 또는 배열로 전달 가능) | User-defined action functions (can be object or array) */
     actions?: Actions<T> | Actions<T>[];
+    /** Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원) | Watch callbacks - Detect specific path changes (wildcard supported) */
+    watch?: WatchOptions<T>;
     /** 내부 API - 전역 상태용 외부 스토어 | Internal API - external store for global state */
     _externalStore?: FieldStore<T>;
 }
@@ -159,6 +163,29 @@ export interface FormValidationResult {
     /** 전체 에러 메시지 | Overall error message */
     message?: string;
 }
+
+/**
+ * Watch Callback - 특정 경로의 값이 변경될 때 호출되는 콜백
+ * Watch callback - Called when a value at a specific path changes
+ */
+export type WatchCallback<T extends Record<string, any>> = (
+    context: ActionContext<T>,
+    value: any,
+    prevValue: any
+) => void | Promise<void>;
+
+/**
+ * Watch Options - 경로별 watch 콜백 설정
+ * Watch options - Watch callbacks by path
+ *
+ * Supports wildcard patterns:
+ * - "todos.*.completed" matches todos.0.completed, todos.1.completed, etc.
+ * - "*" matches all paths
+ */
+export type WatchOptions<T extends Record<string, any>> = Record<
+    string,
+    WatchCallback<T>
+>;
 
 /**
  * Action Context - actions 함수에 전달되는 컨텍스트 객체

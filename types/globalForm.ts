@@ -28,7 +28,7 @@
 
 import { ReactNode } from "react";
 import { FieldStore } from "../core/FieldStore";
-import { UseFormReturn, Actions } from "./form";
+import { UseFormReturn, Actions, ActionContext } from "./form";
 import { UseFormaStateReturn } from "../hooks/useFormaState";
 
 /**
@@ -57,10 +57,28 @@ export interface UseGlobalFormProps<T extends Record<string, any>> {
     onComplete?: (values: T) => void;
     /** 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열로 전달 가능 | Custom actions (computed getters and handlers) - can be object or array */
     actions?: Actions<T> | Actions<T>[];
+    /** 필드 변경 감시 | Watch field changes */
+    watch?: WatchConfig<T>;
 }
 
 /**
- * useGlobalFormaState 훅의 Props 타입 | useGlobalFormaState hook Props type
+ * Watch Handler 타입 | Watch handler type
+ */
+export type WatchHandler<T extends Record<string, any>> = (
+    context: ActionContext<T>,
+    value: any,
+    prevValue: any | undefined
+) => void | Promise<void>;
+
+/**
+ * Watch Config 타입 | Watch config type
+ */
+export type WatchConfig<T extends Record<string, any>> = {
+    [path: string]: WatchHandler<T>;
+};
+
+/**
+ * useGlobalFormaState 훅의 Props 타입 (전체 옵션) | useGlobalFormaState hook Props type (full options)
  * 글로벌 FormaState는 개별 필드 구독 기반 전역 상태 관리에 집중 | Global FormaState focuses on global state management with individual field subscriptions
  */
 export interface UseGlobalFormaStateProps<T extends Record<string, any>> {
@@ -72,6 +90,16 @@ export interface UseGlobalFormaStateProps<T extends Record<string, any>> {
     autoCleanup?: boolean;
     /** 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열로 전달 가능 | Custom actions (computed getters and handlers) - can be object or array */
     actions?: Actions<T> | Actions<T>[];
+    /** 필드 변경 감시 | Watch field changes */
+    watch?: WatchConfig<T>;
+}
+
+/**
+ * useGlobalFormaState 훅의 Props 타입 (간단 버전 - stateId만) | useGlobalFormaState hook Props type (simple version - stateId only)
+ */
+export interface UseGlobalFormaStateSimpleProps {
+    /** 전역에서 상태를 식별하는 고유 ID | Unique ID to identify state globally */
+    stateId: string;
 }
 
 /**

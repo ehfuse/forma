@@ -2309,9 +2309,9 @@ const TodoItem = ({ index }) => {
 
 ## 관련 문서
 
--   **[API Reference](./API-ko.md)** - 상세한 API 문서
--   **[시작하기 가이드](./getting-started-ko.md)** - 기본 사용법
--   **[성능 최적화 가이드](./performance-guide-ko.md)** - 성능 최적화 방법
--   **[성능 최적화 주의사항](./performance-warnings-ko.md)** - 안티패턴과 주의사항
--   **[마이그레이션 가이드](./migration-ko.md)** - 다른 라이브러리에서 이전
--   **[useGlobalForm 가이드](./useGlobalForm-guide-ko.md)** - 글로벌 폼 상태 관리
+-   **[API Reference](./API.md)** - 상세한 API 문서
+-   **[시작하기 가이드](./getting-started.md)** - 기본 사용법
+-   **[성능 최적화 가이드](./performance-guide.md)** - 성능 최적화 방법
+-   **[성능 최적화 주의사항](./performance-warnings.md)** - 안티패턴과 주의사항
+-   **[마이그레이션 가이드](./migration.md)** - 다른 라이브러리에서 이전
+-   **[useGlobalForm 가이드](./useGlobalForm-guide.md)** - 글로벌 폼 상태 관리

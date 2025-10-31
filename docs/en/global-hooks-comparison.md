@@ -1,102 +1,107 @@
-# Global Hooks Comparison# useGlobalForm vs useGlobalFormaState Comparison and Usage Guide
+# Forma Hooks Comparison Guide
 
-Comparison of Forma's global hooks with other state management solutions.## 📋 Overview
+## 📋 Overview
 
-## useGlobalForm vs Context APIThe Forma library provides two global state management hooks:
+The Forma library provides 4 main state management hooks:
 
-### Context API Approach- `useGlobalForm`: Global state management for forms
+**Local Hooks (Component-internal state)**:
+
+-   `useFormaState`: General state management
+-   `useForm`: Form-specific state management
+
+**Global Hooks (Shared state across components)**:
 
 -   `useGlobalFormaState`: General global state management
+-   `useGlobalForm`: Form-specific global state management
 
-````tsx
+## 🎯 useForm vs useFormaState Differences
 
-// Traditional Context API setupUnderstanding the characteristics and appropriate usage scenarios for each is crucial.
+### useForm 🔷
 
-const FormContext = createContext();
+**Purpose**: Local management of HTML form elements
+**Additional Features**:
 
-## 🔍 Key Differences
+-   ✅ Form validation (`onValidate`)
+-   ✅ Form submission (`onSubmit`, `submit()`)
+-   ✅ Submission state (`isSubmitting`)
+-   ✅ Submission complete callback (`onComplete`)
 
-function FormProvider({ children }) {
+**Usage Example**:
 
-    const [formData, setFormData] = useState({ name: "", email: "" });### useGlobalForm 🔷
+```typescript
+const form = useForm({
+    initialValues: { name: "", email: "" },
+    onValidate: async (values) => values.email.includes("@"),
+    onSubmit: async (values) => {
+        await api.submitForm(values);
+    },
+});
 
+form.submit(); // Validate then submit
+```
 
+### useFormaState 🔶
 
-    return (**Purpose**: Global management of HTML form elements
+**Purpose**: Local management of general app state
+**Characteristics**:
 
-        <FormContext.Provider value={{ formData, setFormData }}>**Props**: `formId` (appropriate for forms)
+-   ✅ Provides pure state management only
+-   ✅ Individual field subscriptions
+-   ❌ No form validation
+-   ❌ No form submission features
 
-            {children}
+**Usage Example**:
 
-        </FormContext.Provider>**Included Features**:
+```typescript
+const state = useFormaState({
+    items: [],
+    filter: "all",
+});
 
-    );
+const items = state.useValue("items");
+state.setValue("filter", "completed");
+```
 
-}-   ✅ Form validation
+## 🌍 useGlobalForm vs useGlobalFormaState Differences
 
+Follows the same pattern as local hooks, but **shares state across multiple components**.
+
+### useGlobalForm 🔷
+
+**Purpose**: Global management of HTML form elements
+**Props**: `formId` (appropriate for forms)
+
+**Included Features**:
+
+-   ✅ Form validation
 -   ✅ Form submission
-
-function useFormContext() {-   ✅ Submission state (isSubmitting)
-
-    return useContext(FormContext);-   ✅ Error handling
-
-}-   ✅ onSubmit callback
-
+-   ✅ Submission state (isSubmitting)
+-   ✅ Error handling
+-   ✅ onSubmit callback
 -   ✅ onComplete callback
 
-// Usage in components
+**Usage Example**:
 
-function Step1() {**Usage Example**:
+```typescript
+const form = useGlobalForm({
+    formId: "checkout-form",
+    initialValues: { name: "", email: "" },
+    onValidate: async (values) => values.email.includes("@"),
+    onSubmit: async (values) => {
+        /* submission logic */
+    },
+});
 
-    const { formData, setFormData } = useFormContext();
-
-    ```typescript
-
-    return (const form = useGlobalForm({
-
-        <input    formId: "checkout-form",
-
-            value={formData.name}    initialValues: { name: "", email: "" },
-
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}    validation: { name: "required" },
-
-        />    onSubmit: async (values) => {
-
-    );        /* submission logic */
-
-}    },
-
-```});
-
-
-
-### Forma's useGlobalFormform.validate(); // validation
-
+form.validate(); // validation
 form.submit(); // submission
+```
 
-```tsx```
+### useGlobalFormaState 🔶
 
-// Zero setup required
+**Purpose**: Global management of general app state
+**Props**: `stateId` (more appropriate for general state)
 
-function Step1() {### useGlobalFormaState 🔶
-
-    const form = useGlobalForm({
-
-        formId: "wizard-form",**Purpose**: Global management of general app state
-
-        initialValues: { name: "", email: "" }**Props**: `stateId` (more appropriate for general state)
-
-    });
-
-    **Included Features**:
-
-    return (
-
-        <input-   ✅ Individual field subscriptions
-
-            name="name"-   ✅ Optimized rendering
-
-            value={form.useFormValue("name")}-   ✅ Pure state management
+**Included Features**:
 
             onChange={form.handleFormChange}-   ❌ No form validation
 
@@ -134,7 +139,7 @@ function Step2() {
 
 }### 1. E-commerce App 🛒
 
-````
+`````
 
 #### useGlobalFormaState Usage
 
@@ -194,7 +199,7 @@ function UserComponent() {```typescript
 
 ### Forma's useGlobalFormaState});
 
-````
+`````
 
 ````tsx
 
@@ -368,11 +373,11 @@ const profileForm = useGlobalForm({
 
     validation: {
 
-- **[API Reference](./API-en.md)** - Complete API documentation        nickname: "required|min:3|max:20",
+- **[API Reference](./API.md)** - Complete API documentation        nickname: "required|min:3|max:20",
 
-- **[Library Comparison](./library-comparison-en.md)** - Compare with other form libraries        avatar: "required",
+- **[Library Comparison](./library-comparison.md)** - Compare with other form libraries        avatar: "required",
 
-- **[useGlobalForm Guide](./useGlobalForm-guide-en.md)** - Detailed global form guide    },
+- **[useGlobalForm Guide](./useGlobalForm-guide.md)** - Detailed global form guide    },
     onSubmit: async (values) => {
         await updateProfile(values);
     },
@@ -468,6 +473,6 @@ const form = useGlobalForm({
 
 ## 📚 Related Documentation
 
--   [useGlobalForm Guide](./useGlobalForm-guide-en.md)
--   [useFormaState Usage](./getting-started-en.md)
+-   [useGlobalForm Guide](./useGlobalForm-guide.md)
+-   [useFormaState Usage](./getting-started.md)
 -   [Performance Optimization Tips](./performance-optimization-report.md)

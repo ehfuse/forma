@@ -1,13 +1,107 @@
-# useGlobalForm vs useGlobalFormaState 비교 및 활용 가이드
+# Forma Hooks 비교 가이드
 
 ## 📋 개요
 
-Forma 라이브러리는 두 가지 글로벌 상태 관리 훅을 제공합니다:
+Forma 라이브러리는 4가지 주요 상태 관리 훅을 제공합니다:
 
--   `useGlobalForm`: 폼 전용 전역 상태 관리
+**로컬 훅 (컴포넌트 내부 상태)**:
+
+-   `useFormaState`: 일반적인 상태 관리
+-   `useForm`: 폼 전용 상태 관리
+
+**글로벌 훅 (컴포넌트 간 공유 상태)**:
+
 -   `useGlobalFormaState`: 일반적인 전역 상태 관리
+-   `useGlobalForm`: 폼 전용 전역 상태 관리
 
-각각의 특징과 적절한 사용 시나리오를 이해하는 것이 중요합니다.
+## 🎯 useForm vs useFormaState 차이점
+
+### useForm 🔷
+
+**목적**: HTML 폼 요소들의 로컬 관리
+**추가 기능**:
+
+-   ✅ 폼 검증 (`onValidate`)
+-   ✅ 폼 제출 (`onSubmit`, `submit()`)
+-   ✅ 제출 상태 (`isSubmitting`)
+-   ✅ 제출 완료 콜백 (`onComplete`)
+
+**사용 예시**:
+
+```typescript
+const form = useForm({
+    initialValues: { name: "", email: "" },
+    onValidate: async (values) => values.email.includes("@"),
+    onSubmit: async (values) => {
+        await api.submitForm(values);
+    },
+});
+
+form.submit(); // 검증 후 제출
+```
+
+### useFormaState 🔶
+
+**목적**: 일반적인 앱 상태의 로컬 관리
+**특징**:
+
+-   ✅ 순수한 상태 관리만 제공
+-   ✅ 개별 필드 구독
+-   ❌ 폼 검증 없음
+-   ❌ 폼 제출 기능 없음
+
+**사용 예시**:
+
+```typescript
+const state = useFormaState({
+    items: [],
+    filter: "all",
+});
+
+const items = state.useValue("items");
+state.setValue("filter", "completed");
+```
+
+## 🌍 useGlobalForm vs useGlobalFormaState 차이점
+
+로컬 훅과 동일한 패턴을 따르되, **여러 컴포넌트 간 상태를 공유**합니다.
+
+### useGlobalForm 🔷
+
+**목적**: HTML 폼 요소들의 전역 관리
+**Props**: `formId` (폼이므로 적절함)
+
+**포함 기능**:
+
+-   ✅ 폼 검증 (validation)
+-   ✅ 폼 제출 (submit)
+-   ✅ 제출 상태 (isSubmitting)
+-   ✅ 에러 처리
+-   ✅ onSubmit 콜백
+-   ✅ 완료 콜백 (onComplete)
+
+**사용 예시**:
+
+```typescript
+const form = useGlobalForm({
+    formId: "checkout-form",
+    initialValues: { name: "", email: "" },
+    onValidate: async (values) => values.email.includes("@"),
+    onSubmit: async (values) => {
+        /* 제출 로직 */
+    },
+});
+
+form.validate(); // 검증
+form.submit(); // 제출
+```
+
+### useGlobalFormaState 🔶
+
+**목적**: 일반적인 앱 상태의 전역 관리
+**Props**: `stateId` (일반 상태이므로 더 적절함)
+
+**포함 기능**:
 
 ## 🔍 주요 차이점
 
@@ -284,11 +378,11 @@ const form = useGlobalForm({
 
 ## 📚 관련 문서
 
--   [시작하기 가이드](./getting-started-ko.md)
--   [API 레퍼런스](./API-ko.md)
--   [예제 모음](./examples-ko.md)
--   [useGlobalForm 가이드](./useGlobalForm-guide-ko.md)
--   [성능 최적화 가이드](./performance-guide-ko.md)
--   [성능 최적화 주의사항](./performance-warnings-ko.md)
--   [마이그레이션 가이드](./migration-ko.md)
--   [라이브러리 비교 가이드](./library-comparison-ko.md)
+-   [시작하기 가이드](./getting-started.md)
+-   [API 레퍼런스](./API.md)
+-   [예제 모음](./examples/basic-example.md)
+-   [useGlobalForm 가이드](./useGlobalForm-guide.md)
+-   [성능 최적화 가이드](./performance-guide.md)
+-   [성능 최적화 주의사항](./performance-warnings.md)
+-   [마이그레이션 가이드](./migration.md)
+-   [라이브러리 비교 가이드](./library-comparison.md)

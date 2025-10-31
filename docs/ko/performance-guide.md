@@ -1,15 +1,15 @@
-# Forma Performance Optimization Guide
+# Forma 성능 최적화 가이드
 
-Core patterns and optimization methods for using Forma efficiently.
+Forma를 효율적으로 사용하기 위한 핵심 패턴과 최적화 방법입니다.
 
-> ⚠️ **Also check precautions**: Check out anti-patterns and pitfalls in [Performance Warnings](./performance-warnings-en.md).
+> ⚠️ **주의사항도 확인하세요**: [성능 최적화 주의사항](./performance-warnings.md)에서 안티패턴과 함정들을 확인하세요.
 
-## 🚀 Core Principles
+## 🚀 핵심 원칙
 
-### 1. Use Individual Field Subscriptions
+### 1. 개별 필드 구독 사용하기
 
 ```tsx
-// ❌ Whole object subscription - re-renders on all field changes
+// ❌ 전체 객체 구독 - 모든 필드 변경 시 리렌더링
 const user = form.useFormValue("user");
 return (
     <div>
@@ -18,7 +18,7 @@ return (
     </div>
 );
 
-// ✅ Individual field subscription - re-renders only that field
+// ✅ 개별 필드 구독 - 해당 필드만 리렌더링
 const userName = form.useFormValue("user.name");
 const userEmail = form.useFormValue("user.email");
 return (
@@ -29,10 +29,10 @@ return (
 );
 ```
 
-### 2. Conditional Subscriptions
+### 2. 조건부 구독
 
 ```tsx
-// ✅ Subscribe only when needed
+// ✅ 필요할 때만 구독
 function ConditionalField({ showField }: { showField: boolean }) {
     const value = showField ? form.useFormValue("optionalField") : "";
 
@@ -42,46 +42,46 @@ function ConditionalField({ showField }: { showField: boolean }) {
 }
 ```
 
-### 3. Optimize Performance with Array Length Subscriptions
+### 3. 배열 길이 구독으로 성능 최적화
 
 ```tsx
-// ✅ Optimize performance by subscribing only to array length
+// ✅ 배열 길이만 구독하여 성능 최적화
 function TodoCounter() {
     const todoCount = state.useValue("todos.length");
     const completedCount = state.useValue("completedTodos.length");
 
     return (
         <div>
-            {completedCount} of {todoCount} completed
+            전체 {todoCount}개 중 {completedCount}개 완료
         </div>
     );
-    // Re-renders only when items are added/removed
-    // No re-render when array contents change (e.g., todo.completed changes)
+    // 항목이 추가/삭제될 때만 리렌더링됨
+    // 배열 내용 변경(예: todo.completed 변경)시에는 리렌더링 안됨
 }
 
-// ✅ Smart notification system
+// ✅ 스마트 알림 시스템
 function ShoppingCart() {
     const itemCount = state.useValue("cart.length");
 
     const addItem = (item) => {
         const cart = state.getValues().cart;
         state.setValue("cart", [...cart, item]);
-        // ✅ Array length changed, so cart.length subscribers are notified
+        // ✅ 배열 길이가 변경되었으므로 cart.length 구독자에게 알림
     };
 
     const updateQuantity = (index, quantity) => {
         state.setValue(`cart.${index}.quantity`, quantity);
-        // ✅ Array length unchanged, so cart.length subscribers are not notified
+        // ✅ 배열 길이는 동일하므로 cart.length 구독자에게 알림 안됨
     };
 
-    return <span>Cart ({itemCount})</span>;
+    return <span>장바구니 ({itemCount})</span>;
 }
 ```
 
-### 4. Memoize Complex Calculations
+### 4. 복잡한 계산 메모이제이션
 
 ```tsx
-// ✅ Use useMemo for complex calculations
+// ✅ 복잡한 계산은 useMemo 사용
 function ExpensiveValidation() {
     const email = form.useFormValue("email");
     const password = form.useFormValue("password");
@@ -94,54 +94,54 @@ function ExpensiveValidation() {
 }
 ```
 
-### 5. Batch Updates (setBatch) for Convenience and Synchronization
+### 5. 배치 업데이트 (setBatch)로 편의성 및 동기화 개선
 
-`setBatch` is a convenience function for updating multiple fields at once. Its main benefits are code readability and data consistency.
+`setBatch`는 여러 필드를 한 번에 업데이트할 수 있는 편의 함수입니다. 주요 장점은 코드 가독성과 데이터 일관성입니다.
 
 ```tsx
-// ❌ Individual updates (multiple listener executions)
+// ❌ 개별 업데이트 (여러 번의 리스너 실행)
 function updateUserProfileIndividually() {
-    state.setValue("user.name", "John Doe");
-    state.setValue("user.email", "john@example.com");
+    state.setValue("user.name", "김철수");
+    state.setValue("user.email", "kim@example.com");
     state.setValue("user.age", 30);
     state.setValue("settings.theme", "dark");
-    state.setValue("settings.language", "en");
+    state.setValue("settings.language", "ko");
     state.setValue("preferences.notifications", false);
-    // → Each setValue triggers listeners immediately
+    // → 각 setValue마다 즉시 리스너 실행
 }
 
-// ✅ Batch update (single listener execution)
+// ✅ 배치 업데이트 (한 번에 리스너 실행)
 function updateUserProfileWithBatch() {
     state.setBatch({
-        "user.name": "John Doe",
-        "user.email": "john@example.com",
+        "user.name": "김철수",
+        "user.email": "kim@example.com",
         "user.age": 30,
         "settings.theme": "dark",
-        "settings.language": "en",
+        "settings.language": "ko",
         "preferences.notifications": false,
     });
-    // → Collects all changes and executes listeners once at the end
+    // → 모든 변경사항을 모아서 마지막에 한 번만 리스너 실행
 }
 
-// 🔥 Real-world example: Bulk checkbox selection
+// 🔥 실전 예시: 체크박스 일괄 선택
 function selectAllCheckboxes() {
     const updates: Record<string, boolean> = {};
 
-    // Select 100 checkboxes at once
+    // 100개 체크박스를 일괄 선택
     Array.from({ length: 100 }, (_, i) => {
         updates[`items.${i}.checked`] = true;
     });
 
     state.setBatch(updates);
-    // → Individual setValue: immediate listener execution for each field
-    // → setBatch: collects all changes and executes listeners once at the end
+    // → 개별 setValue: 각 필드마다 즉시 리스너 실행
+    // → setBatch: 모든 변경사항을 모아서 마지막에 한 번만 리스너 실행
 }
 
-// 💡 Server data loading synchronization
+// 💡 서버 데이터 로딩 동기화
 async function loadDataFromServer() {
     const serverData = await fetchComplexDataFromServer();
 
-    // Update multiple server data at once
+    // 서버에서 받은 여러 데이터를 한 번에 업데이트
     state.setBatch({
         "user.profile": serverData.userProfile,
         "user.settings": serverData.userSettings,
@@ -150,38 +150,38 @@ async function loadDataFromServer() {
         "notifications.preferences": serverData.notifications,
         "dashboard.widgets": serverData.widgets,
     });
-    // → All related components update simultaneously (ensures data consistency)
+    // → 모든 관련 컴포넌트가 동시에 업데이트됨 (데이터 일관성 보장)
 }
 ```
 
-**setBatch Core Guidelines:**
+**setBatch 핵심 가이드라인:**
 
-1. **When to use:**
+1. **언제 사용하나:**
 
-    - ✅ When logically updating multiple fields together
-    - ✅ When loading server data into forms (data consistency)
-    - ✅ Bulk checkbox/radio select/deselect (convenience)
-    - ✅ Multiple option changes in settings pages (atomic updates)
-    - ✅ Multiple table row updates (synchronization)
+    - ✅ 여러 필드를 논리적으로 함께 업데이트할 때
+    - ✅ 서버 데이터를 폼에 로드할 때 (데이터 일관성)
+    - ✅ 체크박스/라디오 일괄 선택/해제 (편의성)
+    - ✅ 설정 페이지에서 여러 옵션 변경 (원자적 업데이트)
+    - ✅ 테이블 행 다중 업데이트 (동기화)
 
-2. **Key Benefits:**
+2. **주요 이점:**
 
-    - 📝 **Code Readability**: Express multiple field changes at once
-    - 🔄 **Data Consistency**: All changes are applied simultaneously
-    - ⏱️ **Timing Optimization**: Batches listener execution at the end
-    - 🧹 **Convenience**: Single object instead of multiple setValue calls
+    - 📝 **코드 가독성**: 여러 필드를 한 번에 표현
+    - 🔄 **데이터 일관성**: 모든 변경사항이 동시에 반영
+    - ⏱️ **타이밍 최적화**: 리스너 실행을 마지막에 일괄 처리
+    - 🧹 **편의성**: 개별 setValue 호출 대신 객체로 한 번에 처리
 
-3. **Usage patterns:**
+3. **사용 패턴:**
 
     ```tsx
-    // Pattern 1: Prepare object then batch update
+    // 패턴 1: 객체 준비 후 배치 업데이트
     const updates = {};
     items.forEach((item, index) => {
         updates[`items.${index}.status`] = "updated";
     });
     state.setBatch(updates);
 
-    // Pattern 2: Conditional batch update
+    // 패턴 2: 조건부 배치 업데이트
     const updates = {};
     selectedItems.forEach((itemId) => {
         const index = findIndexById(itemId);
@@ -192,29 +192,29 @@ async function loadDataFromServer() {
     }
     ```
 
-## 📝 Recommended Patterns
+## 📝 권장 패턴
 
 ### useForm vs useGlobalForm vs useFormaState
 
 ```tsx
-// ✅ Single component form → useForm
+// ✅ 단일 컴포넌트 폼 → useForm
 function ContactForm() {
     const form = useForm({
         initialValues: { name: "", email: "" },
     });
 }
 
-// ✅ Multi-component/page form → useGlobalForm
+// ✅ 다중 컴포넌트/페이지 폼 → useGlobalForm
 function MultiStepForm() {
     const form = useGlobalForm({
         formId: "user-registration",
     });
 }
 
-// ✅ General state management (not form) → useFormaState
+// ✅ 일반 상태 관리 (폼 아님) → useFormaState
 function UserDashboard() {
     const state = useFormaState({
-        user: { name: "John Doe", status: "online" },
+        user: { name: "김철수", status: "online" },
         theme: "dark",
     });
 
@@ -223,31 +223,31 @@ function UserDashboard() {
 
     return (
         <div>
-            Hello, {userName}! Theme: {theme}
+            안녕하세요, {userName}님! 테마: {theme}
         </div>
     );
 }
 
-// ✅ Complex array/object state → useFormaState (individual subscriptions)
+// ✅ 복잡한 배열/객체 상태 → useFormaState (개별 구독)
 function TodoManager() {
     const state = useFormaState({
         todos: [
-            { id: 1, text: "Learn React", completed: false },
-            { id: 2, text: "Try Forma", completed: true },
+            { id: 1, text: "React 공부하기", completed: false },
+            { id: 2, text: "Forma 사용해보기", completed: true },
         ],
         filter: "all",
     });
 
-    // ❌ Whole array subscription - re-renders on all todo changes
+    // ❌ 전체 배열 구독 - 모든 todo 변경 시 리렌더링
     // const todos = state.useValue("todos");
 
-    // ✅ Individual todo item subscription (performance optimization)
+    // ✅ 개별 todo 항목 구독 (성능 최적화)
     const firstTodo = state.useValue("todos.0.text");
     const secondCompleted = state.useValue("todos.1.completed");
 
     return (
         <div>
-            <div>First: {firstTodo}</div>
+            <div>첫 번째: {firstTodo}</div>
             <label>
                 <input
                     type="checkbox"
@@ -256,17 +256,17 @@ function TodoManager() {
                         state.setValue("todos.1.completed", e.target.checked)
                     }
                 />
-                Second todo completed
+                두 번째 할 일 완료
             </label>
         </div>
     );
 }
 ```
 
-### useFormaState Optimization Patterns
+### useFormaState 최적화 패턴
 
 ```tsx
-// ✅ Maintain immutability when updating arrays
+// ✅ 배열 업데이트 시 불변성 유지
 function TodoList() {
     const state = useFormaState({ todos: [] });
 
@@ -289,14 +289,14 @@ function TodoList() {
     };
 }
 
-// ✅ Individual field subscriptions for nested objects
+// ✅ 중첩 객체의 개별 필드 구독
 function UserProfile() {
     const state = useFormaState({
         user: { name: "", email: "" },
         preferences: { theme: "light", notifications: true },
     });
 
-    // Subscribe to each field individually - optimal performance
+    // 각 필드별로 구독 - 최적의 성능
     const userName = state.useValue("user.name");
     const theme = state.useValue("preferences.theme");
 
@@ -319,20 +319,20 @@ function UserProfile() {
     );
 }
 
-// ✅ Subscribe to individual array elements (performance optimization)
+// ✅ 배열의 개별 요소 구독 (성능 최적화)
 function OptimizedTodoList() {
     const state = useFormaState({ todos: [] });
 
-    // ❌ Whole array subscription (inefficient)
+    // ❌ 전체 배열 구독 (비효율적)
     // const todos = state.useValue("todos");
 
-    // ✅ Subscribe only to specific fields of individual elements
+    // ✅ 개별 요소의 특정 필드만 구독
     const firstTodoText = state.useValue("todos.0.text");
     const secondTodoCompleted = state.useValue("todos.1.completed");
 
     return (
         <div>
-            <p>First: {firstTodoText}</p>
+            <p>첫 번째: {firstTodoText}</p>
             <input
                 type="checkbox"
                 checked={secondTodoCompleted}
@@ -345,10 +345,10 @@ function OptimizedTodoList() {
 }
 ```
 
-### Component Separation
+### 컴포넌트 분리
 
 ```tsx
-// ✅ Separate components by field
+// ✅ 필드별 컴포넌트 분리
 function UserNameField() {
     const name = form.useFormValue("name");
     return <TextField value={name} onChange={form.handleFormChange} />;
@@ -360,54 +360,54 @@ function UserEmailField() {
 }
 ```
 
-## ❌ Patterns to Avoid
+## ❌ 피해야 할 패턴
 
--   Direct access to `form.values` (whole subscription)
--   Unconditional subscriptions in conditional fields
--   Creating separate useForm for each component
--   Creating new objects/arrays on every render
+-   `form.values` 직접 접근 (전체 구독)
+-   조건부 필드에서 무조건 구독
+-   컴포넌트마다 별도 useForm 생성
+-   매 렌더링마다 새 객체/배열 생성
 
-## 🔧 Debugging
+## 🔧 디버깅
 
 ```tsx
-// Check performance in development environment
+// 개발 환경에서 성능 확인
 if (process.env.NODE_ENV === "development") {
     console.log("Form Values:", form.getFormValues());
 }
 ```
 
-## 🆕 Utilizing New API Methods
+## 🆕 새로운 API 메서드 활용
 
-### Dynamic Field Management
+### 동적 필드 관리
 
 ```tsx
-// ✅ Check field existence before safe access
+// ✅ 필드 존재 여부 확인 후 안전하게 접근
 function DynamicField({ fieldName }: { fieldName: string }) {
     const state = useFormaState<Record<string, any>>({});
 
-    // Check field existence
+    // 필드 존재 여부 확인
     const hasField = state.hasField(fieldName);
 
-    // Safe value access (non-reactive)
+    // 안전한 값 접근 (반응형 아님)
     const value = hasField ? state.getValue(fieldName) : "";
 
     return hasField ? (
         <input
-            value={state.useValue(fieldName)} // Reactive subscription
+            value={state.useValue(fieldName)} // 반응형 구독
             onChange={(e) => state.setValue(fieldName, e.target.value)}
         />
     ) : (
         <button onClick={() => state.setValue(fieldName, "")}>
-            Add {fieldName} field
+            {fieldName} 필드 추가
         </button>
     );
 }
 ```
 
-### Global State Subscription Optimization
+### 전역 상태 구독 최적화
 
 ```tsx
-// ✅ Subscribe globally only under specific conditions
+// ✅ 특정 조건에서만 전역 구독
 function GlobalStateWatcher() {
     const state = useFormaState({ data: {} });
     const [isWatching, setIsWatching] = useState(false);
@@ -416,8 +416,8 @@ function GlobalStateWatcher() {
         if (!isWatching) return;
 
         const unsubscribe = state.subscribe((values) => {
-            console.log("Global state change:", values);
-            // Logging, analytics, auto-save, etc.
+            console.log("전체 상태 변경:", values);
+            // 로그, 분석, 자동 저장 등
         });
 
         return unsubscribe;
@@ -425,35 +425,35 @@ function GlobalStateWatcher() {
 
     return (
         <button onClick={() => setIsWatching(!isWatching)}>
-            {isWatching ? "Stop Watching" : "Start Watching"}
+            {isWatching ? "구독 중지" : "구독 시작"}
         </button>
     );
 }
 ```
 
-### Cleanup Before Field Removal
+### 필드 제거 시 정리 작업
 
 ```tsx
-// ✅ Cleanup before removing fields
+// ✅ 필드 제거 전 정리 작업
 function removeFieldSafely(state: any, fieldPath: string) {
     if (state.hasField(fieldPath)) {
-        // Clean up related data
+        // 관련 데이터 정리
         const value = state.getValue(fieldPath);
         if (value && typeof value === "object") {
-            // Clean up related resources for objects or arrays
+            // 객체나 배열인 경우 관련 리소스 정리
             console.log(`Cleaning up field: ${fieldPath}`, value);
         }
 
-        // Remove field
+        // 필드 제거
         state.removeField(fieldPath);
     }
 }
 ```
 
-### Performance Monitoring
+### 성능 모니터링
 
 ```tsx
-// ✅ Monitor state change frequency
+// ✅ 상태 변경 빈도 모니터링
 function PerformanceMonitor() {
     const state = useFormaState({ counters: {} });
     const [changeCount, setChangeCount] = useState(0);
@@ -468,19 +468,19 @@ function PerformanceMonitor() {
 
     return (
         <div>
-            <p>State changes: {changeCount}</p>
+            <p>상태 변경 횟수: {changeCount}</p>
             <button onClick={() => state.reset()}>
-                Reset (change count will also reset)
+                리셋 (변경 횟수도 초기화됨)
             </button>
         </div>
     );
 }
 ```
 
-## Related Documents
+## 관련 문서
 
--   **[Performance Warnings](./performance-warnings-en.md)** - Anti-patterns and things to watch out for
--   **[API Reference](./API-en.md)** - Detailed API documentation
--   **[Getting Started Guide](./getting-started-en.md)** - Basic usage
--   **[Examples Collection](./examples-en.md)** - Practical usage examples
--   **[Migration Guide](./migration-en.md)** - Migration from other libraries
+-   **[성능 최적화 주의사항](./performance-warnings.md)** - 안티패턴과 주의할 점들
+-   **[API 레퍼런스](./API.md)** - 상세한 API 문서
+-   **[시작하기 가이드](./getting-started.md)** - 기본 사용법
+-   **[예제 모음](./examples/basic-example.md)** - 실용적인 사용 예제
+-   **[마이그레이션 가이드](./migration.md)** - 다른 라이브러리에서 이전

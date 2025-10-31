@@ -48,6 +48,16 @@ export interface UseFormaStateOptions<T extends Record<string, any>> {
 
     /** Custom actions (computed getters and handlers) - can be object or array | 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열 */
     actions?: Actions<T> | Actions<T>[];
+
+    /** Watch callbacks - detect specific path changes (wildcard supported) | Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원) */
+    watch?: Record<
+        string,
+        (
+            context: ActionContext<T>,
+            value: any,
+            prevValue: any
+        ) => void | Promise<void>
+    >;
 }
 
 /**
@@ -245,12 +255,10 @@ export function useFormaState<T extends Record<string, any>>(
 
     // Subscribe to a specific field value with dot notation
     // dot notation으로 특정 필드 값 구독
-    const useValue = useCallback(
-        <K extends string>(path: K) => {
-            return useFieldValue(store, path);
-        },
-        [store] // store 의존성 추가 - 외부 스토어 사용 시 중요
-    );
+    // NOTE: This is NOT a useCallback - hooks cannot be wrapped in useCallback
+    const useValue = <K extends string>(path: K) => {
+        return useFieldValue(store, path);
+    };
 
     // Set a specific field value with dot notation
     // dot notation으로 특정 필드 값 설정
@@ -369,6 +377,41 @@ export function useFormaState<T extends Record<string, any>>(
 
         return bound;
     }, [actionsDefinition, store]);
+
+    // Register watch callbacks
+    // watch 콜백 등록
+    useEffect(() => {
+        if (!options.watch) return;
+
+        const unsubscribers: Array<() => void> = [];
+
+        for (const [path, callback] of Object.entries(options.watch)) {
+            const unsubscribe = store.watch(path, (value, prevValue) => {
+                const context: ActionContext<T> = {
+                    values: store.getValues(),
+                    getValue: (field: string | keyof T) =>
+                        store.getValue(field as string),
+                    setValue: (field: string | keyof T, value: any) =>
+                        store.setValue(field as string, value),
+                    setValues: (values: Partial<T>) => {
+                        const currentValues = store.getValues();
+                        const newValues = { ...currentValues, ...values };
+                        store.setValues(newValues as T);
+                    },
+                    reset: () => store.reset(),
+                    actions: boundActions,
+                };
+
+                callback(context, value, prevValue);
+            });
+
+            unsubscribers.push(unsubscribe);
+        }
+
+        return () => {
+            unsubscribers.forEach((unsub) => unsub());
+        };
+    }, [options.watch, store, boundActions]);
 
     return {
         useValue,

@@ -37,12 +37,18 @@ import { devError } from "../utils/environment";
  *
  * @template T 폼 데이터의 타입 / Form data type
  */
+/**
+ * Watch 콜백 타입 / Watch callback type
+ */
+type WatchCallback = (value: any, prevValue: any) => void;
+
 export class FieldStore<T extends Record<string, any>> {
     private fields: Map<keyof T, { value: any; listeners: Set<() => void> }> =
         new Map();
     private dotNotationListeners: Map<string, Set<() => void>> = new Map(); // Dot notation 구독자 / Dot notation subscribers
     private initialValues: T;
     private globalListeners = new Set<() => void>();
+    private watchers: Map<string, Set<WatchCallback>> = new Map(); // Watch 콜백 관리 / Watch callback management
 
     constructor(initialValues: T) {
         this.initialValues = { ...initialValues };
@@ -200,6 +206,7 @@ export class FieldStore<T extends Record<string, any>> {
             );
 
             if (JSON.stringify(field.value) !== JSON.stringify(newRootValue)) {
+                const prevValue = field.value;
                 field.value = newRootValue;
 
                 // 루트 필드 구독자들 알림 / Notify root field subscribers
@@ -210,7 +217,15 @@ export class FieldStore<T extends Record<string, any>> {
                 // Dot notation 구독자들 알림 / Notify dot notation subscribers
                 this.dotNotationListeners.forEach(
                     (listeners, subscribedPath) => {
+                        // 1. 정확히 일치하는 경로
                         if (subscribedPath === fieldNameStr) {
+                            listeners.forEach((listener) => listener());
+                        }
+                        // 2. 구독 경로가 변경 경로의 부모인 경우
+                        // 예: subscribedPath가 "todos.2"이고 fieldNameStr이 "todos.2.completed"
+                        else if (
+                            fieldNameStr.startsWith(subscribedPath + ".")
+                        ) {
                             listeners.forEach((listener) => listener());
                         }
                         // 배열 필드나 .length 구독자들에게 알림
@@ -236,6 +251,9 @@ export class FieldStore<T extends Record<string, any>> {
 
                 // 전역 구독자들 알림 / Notify global subscribers
                 this.globalListeners.forEach((listener) => listener());
+
+                // Watcher 실행 (와일드카드 매칭 포함) / Execute watcher (including wildcard matching)
+                this.notifyWatchers(fieldNameStr, value, prevValue);
             }
             return;
         }
@@ -324,6 +342,9 @@ export class FieldStore<T extends Record<string, any>> {
             if (this.globalListeners.size > 0) {
                 this.globalListeners.forEach((listener) => listener());
             }
+
+            // Watcher 실행 (와일드카드 매칭 포함) / Execute watcher (including wildcard matching)
+            this.notifyWatchers(fieldStr, value, oldValue);
         }
     }
 
@@ -352,10 +373,21 @@ export class FieldStore<T extends Record<string, any>> {
 
         // 성능 최적화: 영향받는 리스너들을 먼저 수집
         const affectedListeners = new Set<() => void>();
+        const watcherNotifications: Array<{
+            path: string;
+            value: any;
+            prevValue: any;
+        }> = [];
 
         // 각 업데이트를 개별적으로 처리하되, 리스너 실행은 마지막에 일괄 처리
         Object.entries(newValues).forEach(([fieldName, value]) => {
+            // 이전 값 저장 (watch 알림용)
+            const prevValue = this.getValue(fieldName);
+
             this.setValueWithoutNotify(fieldName, value, affectedListeners);
+
+            // watch 알림 예약
+            watcherNotifications.push({ path: fieldName, value, prevValue });
         });
 
         // 글로벌 리스너들도 추가
@@ -370,6 +402,11 @@ export class FieldStore<T extends Record<string, any>> {
             } catch (error) {
                 devError("setValues 리스너 실행 중 오류:", error);
             }
+        });
+
+        // watch 알림 실행
+        watcherNotifications.forEach(({ path, value, prevValue }) => {
+            this.notifyWatchers(path, value, prevValue);
         });
     }
 
@@ -763,11 +800,131 @@ export class FieldStore<T extends Record<string, any>> {
     }
 
     /**
+     * 필드 변경 감시 / Watch field changes
+     * @param path 감시할 필드 경로 (dot notation 지원) / Field path to watch (supports dot notation)
+     * @param callback 변경 시 실행할 콜백 / Callback to execute on change
+     * @param options 옵션 / Options
+     * @returns cleanup 함수 / Cleanup function
+     */
+    watch(
+        path: string,
+        callback: WatchCallback,
+        options?: { immediate?: boolean }
+    ): () => void {
+        if (!this.watchers.has(path)) {
+            this.watchers.set(path, new Set());
+        }
+
+        const watcherSet = this.watchers.get(path)!;
+        watcherSet.add(callback);
+
+        // immediate: true면 현재 값으로 즉시 실행 / Execute immediately with current value if immediate: true
+        if (options?.immediate) {
+            const currentValue = this.getValue(path);
+            callback(currentValue, undefined);
+        }
+
+        // cleanup 함수 반환 / Return cleanup function
+        return () => {
+            watcherSet.delete(callback);
+            if (watcherSet.size === 0) {
+                this.watchers.delete(path);
+            }
+        };
+    }
+
+    /**
+     * Watcher 알림 실행 / Notify watchers
+     * @param path 변경된 필드 경로 / Changed field path
+     * @param value 새 값 / New value
+     * @param prevValue 이전 값 / Previous value
+     */
+    private notifyWatchers(path: string, value: any, prevValue: any): void {
+        // 1. 정확한 경로 매칭 / Exact path match
+        const exactWatchers = this.watchers.get(path);
+        if (exactWatchers && exactWatchers.size > 0) {
+            exactWatchers.forEach((callback) => {
+                try {
+                    callback(value, prevValue);
+                } catch (error) {
+                    console.error(
+                        `Error in watcher for path "${path}":`,
+                        error
+                    );
+                }
+            });
+        }
+
+        // 2. 와일드카드 패턴 매칭 / Wildcard pattern matching
+        // todos.0.completed 변경 시 "todos.*.completed" 패턴도 트리거
+        this.watchers.forEach((watcherSet, watcherPath) => {
+            if (watcherPath.includes("*")) {
+                if (this.matchesWildcard(path, watcherPath)) {
+                    watcherSet.forEach((callback) => {
+                        try {
+                            callback(value, prevValue);
+                        } catch (error) {
+                            console.error(
+                                `Error in wildcard watcher for pattern "${watcherPath}" (triggered by "${path}"):`,
+                                error
+                            );
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * 와일드카드 패턴 매칭 / Wildcard pattern matching
+     * @param path 실제 경로 / Actual path (e.g., "todos.0.completed")
+     * @param pattern 와일드카드 패턴 / Wildcard pattern (e.g., "todos.*.completed")
+     * @returns 매칭 여부 / Whether path matches pattern
+     */
+    private matchesWildcard(path: string, pattern: string): boolean {
+        const pathParts = path.split(".");
+        const patternParts = pattern.split(".");
+
+        if (pathParts.length !== patternParts.length) {
+            return false;
+        }
+
+        for (let i = 0; i < patternParts.length; i++) {
+            if (patternParts[i] === "*") {
+                continue; // 와일드카드는 모든 값과 매칭 / Wildcard matches any value
+            }
+            if (patternParts[i] !== pathParts[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 특정 path에 watcher가 등록되어 있는지 확인 / Check if watcher is registered for specific path
+     * @param path 확인할 경로 / Path to check
+     * @returns watcher 등록 여부 / Whether watcher is registered
+     */
+    hasWatcher(path: string): boolean {
+        return this.watchers.has(path);
+    }
+
+    /**
+     * 등록된 모든 watcher path 목록 반환 (디버깅용) / Return all registered watcher paths (for debugging)
+     * @returns watcher path 배열 / Array of watcher paths
+     */
+    getWatchedPaths(): string[] {
+        return Array.from(this.watchers.keys());
+    }
+
+    /**
      * 리소스 정리 / Clean up resources
      */
     destroy() {
         this.fields.clear();
         this.globalListeners.clear();
         this.dotNotationListeners.clear();
+        this.watchers.clear();
     }
 }

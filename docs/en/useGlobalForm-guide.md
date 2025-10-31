@@ -968,11 +968,11 @@ const FormStep = React.memo(({ stepData, onNext }) => {```typescript
 
 const form = useGlobalForm<UserFormData>({ formId: "user-form" });
 
-- **[API Reference](./API-en.md)** - Complete useGlobalForm API
+- **[API Reference](./API.md)** - Complete useGlobalForm API
 
-- **[Performance Guide](./performance-guide-en.md)** - Optimization techniques// ❌ Avoid using any
+- **[Performance Guide](./performance-guide.md)** - Optimization techniques// ❌ Avoid using any
 
-- **[Examples Collection](./examples-en.md)** - More practical examplesconst form = useGlobalForm<any>({ formId: "user-form" });
+- **[Examples Collection](./examples/basic-example.md)** - More practical examplesconst form = useGlobalForm<any>({ formId: "user-form" });
 ```
 
 ### 3. Memory Management
@@ -1013,6 +1013,6 @@ function MultiStepForm() {
 
 ## Related Documentation
 
--   [API Reference](./API-en.md#useglobalform)
--   [Getting Started](./getting-started-en.md)
--   [Best Practices](./best-practices-en.md)
+-   [API Reference](./API.md#useglobalform)
+-   [Getting Started](./getting-started.md)
+-   [Best Practices](./best-practices.md)

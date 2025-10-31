@@ -1,6 +1,6 @@
 {
     "name": "@ehfuse/forma",
-    "version": "2.0.10",
+    "version": "2.1.0",
     "description": "Advanced React state management library with individual field subscriptions - supports both forms and general state management with useFormaState",
     "main": "dist/index.js",
     "module": "dist/esm/index.js",
@@ -10,11 +10,6 @@
             "types": "./dist/index.d.ts",
             "import": "./dist/esm/index.js",
             "require": "./dist/index.js"
-        },
-        "./min": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/esm/index.min.js",
-            "require": "./dist/index.min.js"
         }
     },
     "files": [
@@ -24,12 +19,11 @@
     ],
     "scripts": {
         "build": "npm run clean && npm run build:cjs && npm run build:esm && npm run build:types",
-        "build:cjs": "tsc -p tsconfig.build.json",
-        "build:esm": "tsc -p tsconfig.build.json --module esnext --outDir dist/esm",
+        "build:cjs": "tsc -p tsconfig.build.json && esbuild dist/index.js --minify --outfile=dist/index.js --allow-overwrite",
+        "build:esm": "tsc -p tsconfig.build.json --module esnext --outDir dist/esm && esbuild dist/esm/index.js --minify --outfile=dist/esm/index.js --allow-overwrite",
         "build:types": "tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --outDir dist",
-        "build:min": "esbuild dist/index.js --minify --outfile=dist/index.min.js && esbuild dist/esm/index.js --minify --outfile=dist/esm/index.min.js",
         "clean": "rm -rf dist",
-        "prepublishOnly": "npm run build && npm run build:min",
+        "prepublishOnly": "npm run build",
         "test": "echo \"Tests will be added\" && exit 0",
         "lint": "eslint . --ext .ts,.tsx",
         "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",

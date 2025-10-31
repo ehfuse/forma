@@ -79,6 +79,8 @@ interface UseFormaStateOptions<T> {
     validateOnChange?: boolean;
     /** 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열로 전달 가능 */
     actions?: Actions<T> | Actions<T>[];
+    /** Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원: "todos.*.completed") */
+    watch?: WatchOptions<T>;
 }
 ```
 
@@ -224,9 +226,9 @@ interface ActionContext<T> {
 }
 ```
 
-**📚 [Actions 상세 가이드 →](./examples-ko.md#actions-패턴)**
+**📚 [Actions 상세 가이드 →](./examples.md#actions-패턴)**
 
-📚 **[상세한 사용 예제 →](./examples-ko.md#useformastate-예제)**
+📚 **[상세한 사용 예제 →](./examples.md#useformastate-예제)**
 
 #### Functions
 
@@ -269,7 +271,7 @@ const todoCount = state.useValue("todos.length"); // 2
 -   ✅ **성능 최적화**: 배열 내용 변경 시 불필요한 리렌더링 방지
 -   ✅ **자동 감지**: 배열 변경 시 `.length` 구독자에게 자동 알림
 
-� **[배열 길이 구독 상세 가이드 →](./performance-warnings-ko.md#배열-길이-구독-array-length-subscription)**
+� **[배열 길이 구독 상세 가이드 →](./performance-warnings.md#배열-길이-구독-array-length-subscription)**
 
 #### 🔄 **필드 새로고침 (Field Refresh)**
 
@@ -297,8 +299,8 @@ state.refreshFields("user");
 -   개별 필드 구독자들은 여전히 각각 리렌더링됩니다
 -   대량 데이터 업데이트 시에는 **배열 전체 교체**가 가장 효율적입니다
 
-📚 **[필드 새로고침 활용 예제 →](./examples-ko.md#필드-새로고침-활용)**  
-🔗 **[대량 데이터 최적화 가이드 →](./performance-warnings-ko.md#-대량-데이터-배치-처리-최적화)**
+📚 **[필드 새로고침 활용 예제 →](./examples.md#필드-새로고침-활용)**  
+🔗 **[대량 데이터 최적화 가이드 →](./performance-warnings.md#-대량-데이터-배치-처리-최적화)**
 
 ### useForm
 
@@ -346,6 +348,8 @@ interface UseFormProps<T> {
     onComplete?: (values: T) => void;
     /** 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열로 전달 가능 */
     actions?: Actions<T> | Actions<T>[];
+    /** Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원: "todos.*.completed") */
+    watch?: WatchOptions<T>;
     /** 내부 API: 외부 스토어 (useGlobalForm에서 사용) */
     _externalStore?: FieldStore<T>;
 }
@@ -490,7 +494,7 @@ form.actions.addItem("New Product", 200); // 항목 추가
 await form.actions.submitOrder(); // 워크플로우 실행
 ```
 
-📚 **[상세한 폼 사용 예제 →](./examples-ko.md#useform-예제)**
+📚 **[상세한 폼 사용 예제 →](./examples.md#useform-예제)**
 
 #### Functions
 
@@ -545,7 +549,7 @@ form.resetForm(); // name: "John Doe", email: "john@example.com"
 
 글로벌 폼 상태를 관리하는 확장 훅입니다. useForm의 모든 기능을 포함합니다.
 
-📚 **[자세한 사용법 가이드](./useGlobalForm-guide-ko.md)**를 참고하세요.
+📚 **[자세한 사용법 가이드](./useGlobalForm-guide.md)**를 참고하세요.
 
 #### Signature
 
@@ -727,7 +731,7 @@ function Step2() {
 }
 ```
 
-📚 **[글로벌 폼 상세 예제 →](./examples-ko.md#useglobalform-예제)**`
+📚 **[글로벌 폼 상세 예제 →](./examples.md#useglobalform-예제)**`
 
 #### 🔄 **자동 메모리 정리 (autoCleanup)**
 
@@ -770,7 +774,7 @@ function MyComponent() {
 }
 ```
 
-📚 **[자동 메모리 정리 상세 예제 →](./examples-ko.md#자동-메모리-정리-예제)**
+📚 **[자동 메모리 정리 상세 예제 →](./examples.md#자동-메모리-정리-예제)**
 
 #### 권장사항
 
@@ -867,7 +871,7 @@ const sharedState = useGlobalFormaState({
 });
 ```
 
-📚 **[글로벌 상태 상세 예제 →](./examples-ko.md#useglobalformastate-예제)**
+📚 **[글로벌 상태 상세 예제 →](./examples.md#useglobalformastate-예제)**
 
 ```typescript
 // 기본 장바구니 컴포넌트
@@ -925,8 +929,8 @@ function ProductList() {
 -   `items?.length || 0` 대신 `.length` 구독 사용
 -   성능 최적화: 배열 내용 변경 시 불필요한 리렌더링 방지
 
-� **[배열 길이 구독 상세 가이드 →](./performance-warnings-ko.md#배열-길이-구독-array-length-subscription)**
-🔗 **[성능 최적화 모범 사례 →](./performance-guide-ko.md#성능-최적화)**
+� **[배열 길이 구독 상세 가이드 →](./performance-warnings.md#배열-길이-구독-array-length-subscription)**
+🔗 **[성능 최적화 모범 사례 →](./performance-guide.md#성능-최적화)**
 
 #### Watch 기능 (필드 변경 감시)
 
@@ -1137,7 +1141,7 @@ useRegisterGlobalForm("shared-form", form);
 const sharedForm = useGlobalForm({ formId: "shared-form" });
 ```
 
-📚 **[등록/해제 훅 상세 예제 →](./examples-ko.md#등록해제-훅-예제)**
+📚 **[등록/해제 훅 상세 예제 →](./examples.md#등록해제-훅-예제)**
 
 ---
 
@@ -1231,7 +1235,7 @@ const success = unregisterForm("user-form");
 clearForms();
 ```
 
-📚 **[등록/해제 훅 상세 예제 →](./examples-ko.md#등록해제-훅-예제)**
+📚 **[등록/해제 훅 상세 예제 →](./examples.md#등록해제-훅-예제)**
 
 ---
 
@@ -1271,7 +1275,7 @@ unregisterState("user-data");
 clearStates();
 ```
 
-📚 **[등록/해제 훅 상세 예제 →](./examples-ko.md#등록해제-훅-예제)**
+📚 **[등록/해제 훅 상세 예제 →](./examples.md#등록해제-훅-예제)**
 
 ---
 
@@ -1633,7 +1637,7 @@ function ImageGallery() {
 -   성능을 위해 필요한 경우에만 사용하세요 (CSS 미디어 쿼리로 처리 가능한 경우 CSS 사용 권장).
 -   서버 사이드 렌더링 시 초기값은 0px로 설정됩니다.
 
-📚 **[브레이크포인트 상세 예제 →](./examples-ko.md#usebreakpoint-예제)**
+📚 **[브레이크포인트 상세 예제 →](./examples.md#usebreakpoint-예제)**
 
 ———
 
@@ -1687,8 +1691,8 @@ state.setBatch({
 -   **더 나은 UX**: 대량 작업 시 더 부드러운 업데이트
 -   **메모리 효율성**: 가비지 컬렉션 압력 감소
 
-📚 **[setBatch 상세 예제 →](./examples-ko.md#배치-업데이트-setbatch-활용)**  
-🔗 **[대량 데이터 최적화 가이드 →](./performance-warnings-ko.md#-대량-데이터-배치-처리-최적화)**
+📚 **[setBatch 상세 예제 →](./examples.md#배치-업데이트-setbatch-활용)**  
+🔗 **[대량 데이터 최적화 가이드 →](./performance-warnings.md#-대량-데이터-배치-처리-최적화)**
 
 ---
 
@@ -1928,6 +1932,35 @@ type DatePickerChangeHandler = (
 ) => (value: any, context?: PickerChangeHandlerContext<any>) => void;
 ```
 
+### WatchCallback
+
+특정 경로의 값이 변경될 때 호출되는 콜백 타입입니다.
+
+```typescript
+type WatchCallback<T extends Record<string, any>> = (
+    context: ActionContext<T>,
+    value: any,
+    prevValue: any
+) => void | Promise<void>;
+```
+
+### WatchOptions
+
+경로별 watch 콜백 설정입니다. 와일드카드 패턴을 지원합니다.
+
+```typescript
+type WatchOptions<T extends Record<string, any>> = Record<
+    string,
+    WatchCallback<T>
+>;
+```
+
+**지원하는 패턴:**
+
+-   `"todos"` - 정확한 경로 매칭
+-   `"todos.*.completed"` - 와일드카드 패턴 (todos.0.completed, todos.1.completed 등)
+-   `"*"` - 모든 경로 매칭
+
 ### UseFormProps
 
 useForm 훅의 매개변수 타입입니다.
@@ -1938,6 +1971,8 @@ interface UseFormProps<T extends Record<string, any>> {
     onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     onValidate?: (values: T) => Promise<boolean> | boolean;
     onComplete?: (values: T) => void;
+    actions?: Actions<T> | Actions<T>[];
+    watch?: WatchOptions<T>;
     _externalStore?: FieldStore<T>;
 }
 ```
@@ -2034,8 +2069,8 @@ const { name } = form.values;
 -   배열 길이 구독 (`todos.length`) 활용
 -   대량 데이터는 배치 처리 + `refreshFields` 사용
 
-� **[성능 최적화 가이드 →](./performance-guide-ko.md)**
-⚠️ **[성능 최적화 주의사항 →](./performance-warnings-ko.md)**
+� **[성능 최적화 가이드 →](./performance-guide.md)**
+⚠️ **[성능 최적화 주의사항 →](./performance-warnings.md)**
 
 ---
 
@@ -2065,7 +2100,7 @@ const form = useForm({ initialValues: { name: "" } });
 const name = form.useFormValue("name");
 ```
 
-📚 **[마이그레이션 상세 가이드 →](./migration-ko.md)**
+📚 **[마이그레이션 상세 가이드 →](./migration.md)**
 
 ---
 
@@ -2073,14 +2108,14 @@ const name = form.useFormValue("name");
 
 ## 관련 문서
 
--   **[API 레퍼런스](./API-ko.md)** - 모든 API 상세 설명
--   **[예제 모음](./examples-ko.md)** - 실용적인 사용 예제
--   **[성능 최적화 가이드](./performance-guide-ko.md)** - 성능 최적화 방법
--   **[성능 최적화 주의사항](./performance-warnings-ko.md)** - 안티패턴과 주의사항
--   **[마이그레이션 가이드](./migration-ko.md)** - 다른 라이브러리에서 이전
--   **[useGlobalForm 가이드](./useGlobalForm-guide-ko.md)** - 글로벌 폼 상태 관리
--   **[글로벌 훅 비교 가이드](./global-hooks-comparison-ko.md)** - 글로벌 훅들의 차이점
--   **[라이브러리 비교 가이드](./library-comparison-ko.md)** - 다른 상태 관리 라이브러리와의 비교
+-   **[API 레퍼런스](./API.md)** - 모든 API 상세 설명
+-   **[예제 모음](./examples/basic-example.md)** - 실용적인 사용 예제
+-   **[성능 최적화 가이드](./performance-guide.md)** - 성능 최적화 방법
+-   **[성능 최적화 주의사항](./performance-warnings.md)** - 안티패턴과 주의사항
+-   **[마이그레이션 가이드](./migration.md)** - 다른 라이브러리에서 이전
+-   **[useGlobalForm 가이드](./useGlobalForm-guide.md)** - 글로벌 폼 상태 관리
+-   **[글로벌 훅 비교 가이드](./global-hooks-comparison.md)** - 글로벌 훅들의 차이점
+-   **[라이브러리 비교 가이드](./library-comparison.md)** - 다른 상태 관리 라이브러리와의 비교
 
 추가 질문이나 예제가 필요하시면 언제든 문의해 주세요.
 

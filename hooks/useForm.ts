@@ -91,6 +91,7 @@ export function useForm<T extends Record<string, any>>(
         onValidate,
         onComplete,
         actions: userActions,
+        watch,
         _externalStore,
     } = props;
 
@@ -104,6 +105,7 @@ export function useForm<T extends Record<string, any>>(
     // useFormaState를 기반으로 사용 / Use useFormaState as foundation
     const fieldState = useFormaState<T>(stableInitialValues.current, {
         _externalStore,
+        watch,
     });
 
     // 폼 특정 상태 관리 / Form-specific state management
@@ -243,15 +245,14 @@ export function useForm<T extends Record<string, any>>(
      * 개별 필드 구독 Hook / Individual field subscription hook
      * 해당 필드가 변경될 때만 컴포넌트가 리렌더링됩니다
      * Component re-renders only when the specific field changes
+     *
+     * NOTE: This is NOT a useCallback - it directly delegates to fieldState.useValue
      */
-    const useFormValue = useCallback(
-        (fieldName: keyof T | string) => {
-            const value = fieldState.useValue(fieldName as string);
-            // undefined를 빈 문자열로 변환하여 MUI TextField와 호환성 확보
-            return value === undefined ? "" : value;
-        },
-        [fieldState.useValue]
-    );
+    const useFormValue = (fieldName: keyof T | string) => {
+        const value = fieldState.useValue(fieldName as string);
+        // undefined를 빈 문자열로 변환하여 MUI TextField와 호환성 확보
+        return value === undefined ? "" : value;
+    };
 
     /**
      * 폼 검증 / Form validation

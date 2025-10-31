@@ -2,7 +2,7 @@
 
 Forma를 사용할 때 피해야 할 안티패턴과 주의사항을 정리했습니다.
 
-> 💡 **기본 최적화 방법**: [성능 최적화 가이드](./performance-guide-ko.md)에서 권장 패턴과 방법들을 먼저 확인하세요.
+> 💡 **기본 최적화 방법**: [성능 최적화 가이드](./performance-guide.md)에서 권장 패턴과 방법들을 먼저 확인하세요.
 
 ## 🔥 핵심 성능 최적화 원리
 
@@ -639,8 +639,8 @@ function MyComponent() {
 
 ## 관련 문서
 
--   **[성능 최적화 가이드](./performance-guide-ko.md)** - 권장 패턴과 최적화 방법들
--   **[API 레퍼런스](./API-ko.md)** - 상세한 API 문서
--   **[시작하기 가이드](./getting-started-ko.md)** - 기본 사용법
--   **[예제 모음](./examples-ko.md)** - 실용적인 사용 예제
--   **[마이그레이션 가이드](./migration-ko.md)** - 다른 라이브러리에서 이전
+-   **[성능 최적화 가이드](./performance-guide.md)** - 권장 패턴과 최적화 방법들
+-   **[API 레퍼런스](./API.md)** - 상세한 API 문서
+-   **[시작하기 가이드](./getting-started.md)** - 기본 사용법
+-   **[예제 모음](./examples/basic-example.md)** - 실용적인 사용 예제
+-   **[마이그레이션 가이드](./migration.md)** - 다른 라이브러리에서 이전

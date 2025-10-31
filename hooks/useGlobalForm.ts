@@ -36,6 +36,22 @@ import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 import { mergeActions } from "../utils";
 
 /**
+ * 글로벌 폼 상태 관리 훅 (오버로드 1: 전체 옵션)
+ * Global form state management hook (Overload 1: Full options)
+ */
+export function useGlobalForm<T extends Record<string, any>>(
+    props: UseGlobalFormProps<T>
+): UseGlobalFormReturn<T>;
+
+/**
+ * 글로벌 폼 상태 관리 훅 (오버로드 2: formId만)
+ * Global form state management hook (Overload 2: formId only)
+ */
+export function useGlobalForm<T extends Record<string, any>>(
+    formId: string
+): UseGlobalFormReturn<T>;
+
+/**
  * 글로벌 폼 상태 관리 훅 / Global form state management hook
  *
  * 여러 컴포넌트 간 폼 데이터를 공유하기 위한 훅입니다
@@ -45,18 +61,28 @@ import { mergeActions } from "../utils";
  * Focuses only on data sharing; initial values and submission/validation logic handled by individual components
  *
  * @template T 폼 데이터의 타입 / Form data type
- * @param props 글로벌 폼 설정 옵션 / Global form configuration options
+ * @param propsOrFormId 글로벌 폼 설정 옵션 또는 formId 문자열 / Global form configuration options or formId string
  * @returns 글로벌 폼 관리 API 객체 / Global form management API object
  */
-export function useGlobalForm<T extends Record<string, any>>({
-    formId,
-    initialValues,
-    autoCleanup = true,
-    onSubmit,
-    onValidate,
-    onComplete,
-    actions,
-}: UseGlobalFormProps<T>): UseGlobalFormReturn<T> {
+export function useGlobalForm<T extends Record<string, any>>(
+    propsOrFormId: UseGlobalFormProps<T> | string
+): UseGlobalFormReturn<T> {
+    // 문자열로 전달된 경우 props 객체로 변환
+    const props: UseGlobalFormProps<T> =
+        typeof propsOrFormId === "string"
+            ? { formId: propsOrFormId }
+            : propsOrFormId;
+
+    const {
+        formId,
+        initialValues,
+        autoCleanup = true,
+        onSubmit,
+        onValidate,
+        onComplete,
+        actions,
+        watch,
+    } = props;
     const context = useContext(GlobalFormaContext);
 
     // Context가 제대로 설정되지 않았을 때 명확한 에러 표시
@@ -169,6 +195,42 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
 
         return undefined;
     }, [formId, autoCleanup, incrementRef, decrementRef]);
+
+    // Watch 등록 / Register watchers
+    useEffect(() => {
+        if (!watch) return;
+
+        const unsubscribers: Array<() => void> = [];
+
+        Object.entries(watch).forEach(([path, handler]) => {
+            const actionContext = {
+                getValue: (p: keyof T | string) => store.getValue(p as string),
+                setValue: (p: keyof T | string, value: any) =>
+                    store.setValue(p as string, value),
+                getValues: () => store.getValues(),
+                setValues: (values: Partial<T>) => store.setValues(values),
+                reset: () => store.reset(),
+                submit: form.submit,
+                values: store.getValues(),
+                actions: globalActions || {},
+            };
+
+            const unsubscribe = store.watch(path, (value, prevValue) => {
+                // context 업데이트 (최신 값) / Update context with latest values
+                actionContext.values = store.getValues();
+                actionContext.actions = getActions<T>(formId) || {};
+
+                handler(actionContext, value, prevValue);
+            });
+
+            unsubscribers.push(unsubscribe);
+        });
+
+        // cleanup
+        return () => {
+            unsubscribers.forEach((unsub) => unsub());
+        };
+    }, [formId, watch, store, globalActions, getActions, form.submit]);
 
     return {
         ...form,

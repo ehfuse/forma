@@ -416,11 +416,11 @@ Other libraries might be better for:2. **Performance-Critical Forms**
 
 3. **MUI Projects**
 
-- **[Migration Guide](./migration-en.md)** - Step-by-step migration from other libraries
+- **[Migration Guide](./migration.md)** - Step-by-step migration from other libraries
 
-- **[Performance Guide](./performance-guide-en.md)** - Optimization techniques    - Material-UI based design systems
+- **[Performance Guide](./performance-guide.md)** - Optimization techniques    - Material-UI based design systems
 
-- **[API Reference](./API-en.md)** - Complete API documentation    - MUI component-centric development
+- **[API Reference](./API.md)** - Complete API documentation    - MUI component-centric development
 
 4. **TypeScript Projects**
     - Strong type safety required
@@ -544,6 +544,6 @@ const expensiveValue = useMemo(() => {
 
 📚 **Related Documentation**
 
--   [Forma Getting Started Guide](./getting-started-en.md)
--   [Global Hooks Comparison Guide](./global-hooks-comparison-en.md)
--   [Performance Optimization Guide](./best-practices-en.md)
+-   [Forma Getting Started Guide](./getting-started.md)
+-   [Global Hooks Comparison Guide](./global-hooks-comparison.md)
+-   [Performance Optimization Guide](./best-practices.md)

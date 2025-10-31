@@ -79,6 +79,8 @@ interface UseFormaStateOptions<T> {
     validateOnChange?: boolean;
     /** Custom actions (computed getters and handlers) - can be object or array */
     actions?: Actions<T> | Actions<T>[];
+    /** Watch callbacks - detect specific path changes (wildcard supported: "todos.*.completed") */
+    watch?: WatchOptions<T>;
 }
 ```
 
@@ -208,7 +210,7 @@ state.actions.validateEmail();
 state.actions.formatPrice();
 ```
 
-📚 **[Detailed usage examples →](./examples-en.md#useformastate-examples)**
+📚 **[Detailed usage examples →](./examples.md#useformastate-examples)**
 
 #### Functions
 
@@ -251,7 +253,7 @@ const todoCount = state.useValue("todos.length"); // 2
 -   ✅ **Performance Optimization**: Prevents unnecessary re-renders when array contents change
 -   ✅ **Auto Detection**: Automatically notifies `.length` subscribers when arrays change
 
-📚 **[Detailed Array Length Subscription Guide →](./performance-warnings-en.md#array-length-subscription-array-length-subscription)**
+📚 **[Detailed Array Length Subscription Guide →](./performance-warnings.md#array-length-subscription-array-length-subscription)**
 
 #### 🔄 **Field Refresh**
 
@@ -279,8 +281,8 @@ state.refreshFields("user");
 -   Individual field subscribers will still re-render individually
 -   For bulk data updates, **array replacement** is the most efficient approach
 
-📚 **[Field Refresh Usage Examples →](./examples-en.md#field-refresh-utilization)**  
-🔗 **[Bulk Data Optimization Guide →](./performance-warnings-en.md#-bulk-data-batch-processing-optimization)**
+📚 **[Field Refresh Usage Examples →](./examples.md#field-refresh-utilization)**  
+🔗 **[Bulk Data Optimization Guide →](./performance-warnings.md#-bulk-data-batch-processing-optimization)**
 
 ### useForm
 
@@ -328,6 +330,8 @@ interface UseFormProps<T> {
     onComplete?: (values: T) => void;
     /** Custom actions (computed getters and handlers) - can be object or array */
     actions?: Actions<T> | Actions<T>[];
+    /** Watch callbacks - detect specific path changes (wildcard supported: "todos.*.completed") */
+    watch?: WatchOptions<T>;
     /** Internal API: External store (used in useGlobalForm) */
     _externalStore?: FieldStore<T>;
 }
@@ -407,7 +411,7 @@ const handleSubmit = async () => {
 -   `false`: Submission failure (no need to throw exceptions)
 -   Exception thrown: Automatically treated as submission failure
 
-📚 **[Detailed Form Usage Examples →](./examples-en.md#useform-examples)**
+📚 **[Detailed Form Usage Examples →](./examples.md#useform-examples)**
 
 #### Functions
 
@@ -462,7 +466,7 @@ form.resetForm(); // name: "John Doe", email: "john@example.com"
 
 An extended hook for managing global form state. Includes all features of useForm.
 
-📚 **[Detailed Usage Guide](./useGlobalForm-guide-en.md)**
+📚 **[Detailed Usage Guide](./useGlobalForm-guide.md)**
 
 #### Signature
 
@@ -626,7 +630,7 @@ function Step2() {
 }
 ```
 
-📚 **[Detailed Global Form Examples →](./examples-en.md#useglobalform-examples)**
+📚 **[Detailed Global Form Examples →](./examples.md#useglobalform-examples)**
 
 #### Functions
 
@@ -689,7 +693,7 @@ function MyComponent() {
 }
 ```
 
-📚 **[Detailed Auto Memory Cleanup Examples →](./examples-en.md#auto-memory-cleanup-examples)**
+📚 **[Detailed Auto Memory Cleanup Examples →](./examples.md#auto-memory-cleanup-examples)**
 
 #### Recommendations
 
@@ -765,7 +769,7 @@ const sharedState = useGlobalFormaState({
 });
 ```
 
-📚 **[Detailed Global State Examples →](./examples-en.md#useglobalformastate-examples)**
+📚 **[Detailed Global State Examples →](./examples.md#useglobalformastate-examples)**
 
 #### Functions
 
@@ -846,8 +850,8 @@ function ProductList() {
 -   Instead of `items?.length || 0`, use `.length` subscription
 -   Performance optimization: Prevents unnecessary re-renders when array contents change
 
-📚 **[Detailed Array Length Subscription Guide →](./performance-warnings-en.md#array-length-subscription-array-length-subscription)**
-🔗 **[Performance Optimization Best Practices →](./performance-guide-en.md#performance-optimization)**
+📚 **[Detailed Array Length Subscription Guide →](./performance-warnings.md#array-length-subscription-array-length-subscription)**
+🔗 **[Performance Optimization Best Practices →](./performance-guide.md#performance-optimization)**
 
 #### Watch Feature (Field Change Monitoring)
 
@@ -1058,7 +1062,7 @@ useRegisterGlobalForm("shared-form", form);
 const sharedForm = useGlobalForm({ formId: "shared-form" });
 ```
 
-📚 **[Detailed Register/Unregister Hook Examples →](./examples-en.md#register-unregister-hook-examples)**
+📚 **[Detailed Register/Unregister Hook Examples →](./examples.md#register-unregister-hook-examples)**
 
 ---
 
@@ -1152,7 +1156,7 @@ const success = unregisterForm("user-form");
 clearForms();
 ```
 
-📚 **[Detailed Register/Unregister Hook Examples →](./examples-en.md#register-unregister-hook-examples)**
+📚 **[Detailed Register/Unregister Hook Examples →](./examples.md#register-unregister-hook-examples)**
 
 ---
 
@@ -1192,7 +1196,7 @@ unregisterState("user-data");
 clearStates();
 ```
 
-📚 **[Detailed Register/Unregister Hook Examples →](./examples-en.md#register-unregister-hook-examples)**
+📚 **[Detailed Register/Unregister Hook Examples →](./examples.md#register-unregister-hook-examples)**
 
 ---
 
@@ -1554,7 +1558,7 @@ function ImageGallery() {
 -   Use only when necessary for performance (prefer CSS media queries when possible).
 -   Initial value is 0px during server-side rendering.
 
-📚 **[Detailed Breakpoint Examples →](./examples-en.md#usebreakpoint-examples)**
+📚 **[Detailed Breakpoint Examples →](./examples.md#usebreakpoint-examples)**
 
 ———
 
@@ -1608,8 +1612,8 @@ state.setBatch({
 -   **Better UX**: Smoother updates for bulk operations
 -   **Memory Efficient**: Less garbage collection pressure
 
-📚 **[Detailed setBatch examples →](./examples-en.md#setbatch-examples)**  
-🔗 **[Bulk Data Optimization Guide →](./performance-warnings-en.md#-mass-data-batch-processing-optimization)**
+📚 **[Detailed setBatch examples →](./examples.md#setbatch-examples)**  
+🔗 **[Bulk Data Optimization Guide →](./performance-warnings.md#-mass-data-batch-processing-optimization)**
 
 ---
 
@@ -1853,6 +1857,35 @@ type DatePickerChangeHandler = (
 ) => (value: any, context?: PickerChangeHandlerContext<any>) => void;
 ```
 
+### WatchCallback
+
+Callback type called when a value at a specific path changes.
+
+```typescript
+type WatchCallback<T extends Record<string, any>> = (
+    context: ActionContext<T>,
+    value: any,
+    prevValue: any
+) => void | Promise<void>;
+```
+
+### WatchOptions
+
+Watch callbacks by path. Supports wildcard patterns.
+
+```typescript
+type WatchOptions<T extends Record<string, any>> = Record<
+    string,
+    WatchCallback<T>
+>;
+```
+
+**Supported patterns:**
+
+-   `"todos"` - Exact path matching
+-   `"todos.*.completed"` - Wildcard pattern (matches todos.0.completed, todos.1.completed, etc.)
+-   `"*"` - Matches all paths
+
 ### UseFormProps
 
 Parameter type for the useForm hook.
@@ -1863,6 +1896,8 @@ interface UseFormProps<T extends Record<string, any>> {
     onSubmit?: (values: T) => Promise<boolean | void> | boolean | void;
     onValidate?: (values: T) => Promise<boolean> | boolean;
     onComplete?: (values: T) => void;
+    actions?: Actions<T> | Actions<T>[];
+    watch?: WatchOptions<T>;
     _externalStore?: FieldStore<T>;
 }
 ```
@@ -1959,8 +1994,8 @@ const { name } = form.values;
 -   Utilize array length subscription (`todos.length`)
 -   Use batch processing + `refreshFields` for bulk data
 
-📚 **[Performance Optimization Guide →](./performance-guide-en.md)**
-⚠️ **[Performance Optimization Warnings →](./performance-warnings-en.md)**
+📚 **[Performance Optimization Guide →](./performance-guide.md)**
+⚠️ **[Performance Optimization Warnings →](./performance-warnings.md)**
 
 ---
 
@@ -1990,7 +2025,7 @@ const form = useForm({ initialValues: { name: "" } });
 const name = form.useFormValue("name");
 ```
 
-📚 **[Detailed Migration Guide →](./migration-en.md)**
+📚 **[Detailed Migration Guide →](./migration.md)**
 
 ---
 
@@ -1998,13 +2033,13 @@ This API reference covers all public APIs of the Forma library.
 
 ## Related Documents
 
--   **[API Reference](./API-en.md)** - Detailed explanations of all APIs
--   **[Example Collection](./examples-en.md)** - Practical usage examples
--   **[Performance Optimization Guide](./performance-guide-en.md)** - Performance optimization methods
--   **[Performance Optimization Warnings](./performance-warnings-en.md)** - Anti-patterns and cautions
--   **[Migration Guide](./migration-en.md)** - Migrating from other libraries
--   **[useGlobalForm Guide](./useGlobalForm-guide-en.md)** - Global form state management
--   **[Global Hooks Comparison Guide](./global-hooks-comparison-en.md)** - Differences between global hooks
--   **[Library Comparison Guide](./library-comparison-en.md)** - Comparison with other state management libraries
+-   **[API Reference](./API.md)** - Detailed explanations of all APIs
+-   **[Example Collection](./examples/basic-example.md)** - Practical usage examples
+-   **[Performance Optimization Guide](./performance-guide.md)** - Performance optimization methods
+-   **[Performance Optimization Warnings](./performance-warnings.md)** - Anti-patterns and cautions
+-   **[Migration Guide](./migration.md)** - Migrating from other libraries
+-   **[useGlobalForm Guide](./useGlobalForm-guide.md)** - Global form state management
+-   **[Global Hooks Comparison Guide](./global-hooks-comparison.md)** - Differences between global hooks
+-   **[Library Comparison Guide](./library-comparison.md)** - Comparison with other state management libraries
 
 Please contact us anytime if you need additional questions or examples.

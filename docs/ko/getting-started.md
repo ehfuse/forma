@@ -223,9 +223,9 @@ const firstTodoCompleted = state.useValue("todos.0.completed");
 
 **📋 자세한 예제와 성능 최적화:**
 
--   [TodoApp 예제 - 배열 상태 관리](./examples/todoapp-example-ko.md)
--   [성능 최적화 가이드](./performance-guide-ko.md)
--   [성능 최적화 주의사항](./performance-warnings-ko.md)
+-   [TodoApp 예제 - 배열 상태 관리](./examples/todoapp-example.md)
+-   [성능 최적화 가이드](./performance-guide.md)
+-   [성능 최적화 주의사항](./performance-warnings.md)
 
 ## 5단계: 중첩 객체 상태 관리
 
@@ -434,7 +434,7 @@ function updateMultiple() {
 
 **📋 자세한 글로벌 폼 예제:**
 
--   [다단계 폼 구현 가이드](./useGlobalForm-guide-ko.md)
+-   [다단계 폼 구현 가이드](./useGlobalForm-guide.md)
 
 ## 7단계: 고급 기능
 
@@ -519,11 +519,11 @@ function FormWithSelect() {
 
 ## 관련 문서
 
--   **[API 레퍼런스](./API-ko.md)** - 모든 API 상세 설명
--   **[예제 모음](./examples-ko.md)** - 실용적인 사용 예제
--   **[성능 최적화 가이드](./performance-guide-ko.md)** - 성능 최적화 방법
--   **[성능 최적화 주의사항](./performance-warnings-ko.md)** - 안티패턴과 주의사항
--   **[마이그레이션 가이드](./migration-ko.md)** - 다른 라이브러리에서 이전
--   **[useGlobalForm 가이드](./useGlobalForm-guide-ko.md)** - 글로벌 폼 상태 관리
--   **[글로벌 훅 비교 가이드](./global-hooks-comparison-ko.md)** - 글로벌 훅들의 차이점
--   **[라이브러리 비교 가이드](./library-comparison-ko.md)** - 다른 상태 관리 라이브러리와의 비교
+-   **[API 레퍼런스](./API.md)** - 모든 API 상세 설명
+-   **[예제 모음](./examples/basic-example.md)** - 실용적인 사용 예제
+-   **[성능 최적화 가이드](./performance-guide.md)** - 성능 최적화 방법
+-   **[성능 최적화 주의사항](./performance-warnings.md)** - 안티패턴과 주의사항
+-   **[마이그레이션 가이드](./migration.md)** - 다른 라이브러리에서 이전
+-   **[useGlobalForm 가이드](./useGlobalForm-guide.md)** - 글로벌 폼 상태 관리
+-   **[글로벌 훅 비교 가이드](./global-hooks-comparison.md)** - 글로벌 훅들의 차이점
+-   **[라이브러리 비교 가이드](./library-comparison.md)** - 다른 상태 관리 라이브러리와의 비교

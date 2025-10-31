@@ -191,20 +191,20 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
 
         if (!stores.has(formId)) {
             // 새로운 스토어를 빈 객체로 생성 | Create new store with empty object
-            console.log(`🏭 [GlobalFormaContext] 새 store 생성: ${formId}`);
+            // console.log(`🏭 [GlobalFormaContext] 새 store 생성: ${formId}`);
             const newStore = new FieldStore<T>({} as T);
             stores.set(formId, newStore);
-            console.log(
-                `🏭 [GlobalFormaContext] store 등록 완료. 총 stores:`,
-                stores.size
-            );
+            // console.log(
+            //     `🏭 [GlobalFormaContext] store 등록 완료. 총 stores:`,
+            //     stores.size
+            // );
             return newStore;
         }
 
-        console.log(
-            `♻️ [GlobalFormaContext] 기존 store 재사용: ${formId}, 현재 값:`,
-            stores.get(formId)?.getValues()
-        );
+        // console.log(
+        //     `♻️ [GlobalFormaContext] 기존 store 재사용: ${formId}, 현재 값:`,
+        //     stores.get(formId)?.getValues()
+        // );
         return stores.get(formId) as FieldStore<T>;
     };
 
@@ -221,13 +221,13 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         const autoCleanupSettings = autoCleanupSettingsRef.current;
         const existingSetting = autoCleanupSettings.get(formId);
 
-        if (existingSetting !== undefined && existingSetting !== autoCleanup) {
-            console.warn(
-                `⚠️ Conflicting autoCleanup settings for stateId "${formId}": ` +
-                    `existing=${existingSetting}, new=${autoCleanup}. ` +
-                    `All components using the same stateId should have consistent autoCleanup settings.`
-            );
-        }
+        // if (existingSetting !== undefined && existingSetting !== autoCleanup) {
+        //     console.warn(
+        //         `⚠️ Conflicting autoCleanup settings for stateId "${formId}": ` +
+        //             `existing=${existingSetting}, new=${autoCleanup}. ` +
+        //             `All components using the same stateId should have consistent autoCleanup settings.`
+        //     );
+        // }
 
         autoCleanupSettings.set(formId, autoCleanup);
     };

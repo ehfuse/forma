@@ -926,6 +926,7 @@ interface ActionContext<T> {
 **Features:**
 
 -   ✅ **Dot notation support**: Watch nested object fields (`user.profile.name`)
+-   ✅ **Triggers only on actual value changes**: Watch handler executes only when value actually changes (performance optimized)
 -   ✅ **Performance optimized**: Only checks registered fields to avoid unnecessary overhead
 -   ✅ **Async support**: Use async functions for asynchronous operations
 -   ✅ **Auto cleanup**: Automatically removes watchers on component unmount

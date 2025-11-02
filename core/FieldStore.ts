@@ -840,6 +840,11 @@ export class FieldStore<T extends Record<string, any>> {
      * @param prevValue 이전 값 / Previous value
      */
     private notifyWatchers(path: string, value: any, prevValue: any): void {
+        // 값이 실제로 변경되지 않았으면 알림하지 않음 / Skip notification if value hasn't actually changed
+        if (JSON.stringify(value) === JSON.stringify(prevValue)) {
+            return;
+        }
+
         // 1. 정확한 경로 매칭 / Exact path match
         const exactWatchers = this.watchers.get(path);
         if (exactWatchers && exactWatchers.size > 0) {

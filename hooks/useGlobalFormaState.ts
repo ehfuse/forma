@@ -47,8 +47,17 @@ export function useGlobalFormaState<T extends Record<string, any>>(
 ): UseGlobalFormaStateReturn<T>;
 
 /**
- * 글로벌 FormaState 관리 훅 (오버로드 2: stateId만)
- * Global FormaState management hook (Overload 2: stateId only)
+ * 글로벌 FormaState 관리 훅 (오버로드 2: stateId + initialValues)
+ * Global FormaState management hook (Overload 2: stateId + initialValues)
+ */
+export function useGlobalFormaState<T extends Record<string, any>>(
+    stateId: string,
+    initialValues: T
+): UseGlobalFormaStateReturn<T>;
+
+/**
+ * 글로벌 FormaState 관리 훅 (오버로드 3: stateId만)
+ * Global FormaState management hook (Overload 3: stateId only)
  */
 export function useGlobalFormaState<T extends Record<string, any>>(
     stateId: string
@@ -128,12 +137,13 @@ export function useGlobalFormaState<T extends Record<string, any>>(
  * ```
  */
 export function useGlobalFormaState<T extends Record<string, any>>(
-    propsOrStateId: UseGlobalFormaStateProps<T> | string
+    propsOrStateId: UseGlobalFormaStateProps<T> | string,
+    initialValuesArg?: T
 ): UseGlobalFormaStateReturn<T> {
     // 문자열로 전달된 경우 props 객체로 변환
     const props: UseGlobalFormaStateProps<T> =
         typeof propsOrStateId === "string"
-            ? { stateId: propsOrStateId }
+            ? { stateId: propsOrStateId, initialValues: initialValuesArg }
             : propsOrStateId;
 
     const {

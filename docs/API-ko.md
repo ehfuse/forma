@@ -848,7 +848,7 @@ interface UseGlobalFormaStateProps<T> {
 #### 기본 사용법
 
 ```typescript
-// 전역 상태 생성
+// 방법 1: 전체 옵션 객체로 전달
 const state = useGlobalFormaState({
     stateId: "user-data",
     initialValues: {
@@ -857,14 +857,37 @@ const state = useGlobalFormaState({
     },
 });
 
+// 방법 2: stateId와 initialValues를 직접 전달 (v2.1.2+)
+const state = useGlobalFormaState("user-data", {
+    user: { name: "", email: "" },
+    preferences: { theme: "light" },
+});
+
+// 방법 3: stateId만 전달 (이미 생성된 상태 접근)
+const sharedState = useGlobalFormaState("user-data");
+
 // 개별 필드 구독
 const userName = state.useValue("user.name");
 const theme = state.useValue("preferences.theme");
+```
+
+**💡 간단한 사용 예시:**
+
+```typescript
+// 키보드 상태 관리
+const keyboardState = useGlobalFormaState("__keyboard_state__", {
+    capsLock: false,
+    shift: false,
+    ctrl: false,
+    alt: false,
+    meta: false,
+    pressedKeys: new Set<string>(),
+    lastPressedKey: null,
+});
 
 // 다른 컴포넌트에서 같은 상태 공유
-const sharedState = useGlobalFormaState({
-    stateId: "user-data", // 같은 ID로 상태 공유
-});
+const keyboard = useGlobalFormaState("__keyboard_state__");
+const isShiftPressed = keyboard.useValue("shift");
 ```
 
 📚 **[글로벌 상태 상세 예제 →](./examples-ko.md#useglobalformastate-예제)**

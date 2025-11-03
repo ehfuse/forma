@@ -746,7 +746,7 @@ Returns the same `UseFormaStateReturn<T>` interface as `useFormaState`.
 #### Basic Usage
 
 ```typescript
-// Create global state
+// Method 1: Pass full options object
 const state = useGlobalFormaState({
     stateId: "user-data",
     initialValues: {
@@ -755,14 +755,37 @@ const state = useGlobalFormaState({
     },
 });
 
+// Method 2: Pass stateId and initialValues directly (v2.1.2+)
+const state = useGlobalFormaState("user-data", {
+    user: { name: "", email: "" },
+    preferences: { theme: "light" },
+});
+
+// Method 3: Pass only stateId (access already created state)
+const sharedState = useGlobalFormaState("user-data");
+
 // Subscribe to individual fields
 const userName = state.useValue("user.name");
 const theme = state.useValue("preferences.theme");
+```
+
+**💡 Simple Usage Example:**
+
+```typescript
+// Keyboard state management
+const keyboardState = useGlobalFormaState("__keyboard_state__", {
+    capsLock: false,
+    shift: false,
+    ctrl: false,
+    alt: false,
+    meta: false,
+    pressedKeys: new Set<string>(),
+    lastPressedKey: null,
+});
 
 // Share same state in another component
-const sharedState = useGlobalFormaState({
-    stateId: "user-data", // Share state with same ID
-});
+const keyboard = useGlobalFormaState("__keyboard_state__");
+const isShiftPressed = keyboard.useValue("shift");
 ```
 
 📚 **[Detailed Global State Examples →](./examples-en.md#useglobalformastate-examples)**

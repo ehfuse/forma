@@ -28,10 +28,9 @@
  * SOFTWARE.
  */
 
-import { useContext, useEffect, useMemo, useRef } from "react";
+import { useContext, useEffect, useMemo } from "react";
 import { useForm } from "./useForm";
 import { UseGlobalFormProps, UseGlobalFormReturn } from "../types/globalForm";
-import { UseFormReturn } from "../types/form";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 import { mergeActions } from "../utils";
 
@@ -124,27 +123,22 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
     // 글로벌 스토어 가져오기 또는 생성 / Get or create global store
     const store = getOrCreateStore<T>(formId);
 
-    // 핸들러가 제공되면 글로벌에 등록 / Register handlers to global if provided
-    useEffect(() => {
-        if (onSubmit || onValidate || onComplete) {
-            registerHandlers<T>(formId, {
-                onSubmit,
-                onValidate,
-                onComplete,
-            });
-        }
-    }, [formId, onSubmit, onValidate, onComplete, registerHandlers]);
+    // 핸들러가 제공되면 글로벌에 동기적으로 등록 / Register handlers to global synchronously if provided
+    if (onSubmit || onValidate || onComplete) {
+        registerHandlers<T>(formId, {
+            onSubmit,
+            onValidate,
+            onComplete,
+        });
+    }
 
-    // actions가 제공되면 글로벌에 등록 / Register actions to global if provided
-    useEffect(() => {
-        if (actions) {
-            // 배열이면 병합해서 등록
-            const mergedActions = mergeActions(actions);
-            if (mergedActions) {
-                registerActions<T>(formId, mergedActions);
-            }
+    // actions가 제공되면 글로벌에 동기적으로 등록 / Register actions to global synchronously if provided
+    if (actions) {
+        const mergedActions = mergeActions(actions);
+        if (mergedActions) {
+            registerActions<T>(formId, mergedActions);
         }
-    }, [formId, actions, registerActions]);
+    }
 
     // 글로벌 핸들러 가져오기 / Get global handlers
     const globalHandlers = getHandlers<T>(formId);
@@ -232,8 +226,46 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
         };
     }, [formId, watch, store, globalActions, getActions, form.submit]);
 
+    // actions를 동적으로 가져오는 getter 생성 / Create getter to dynamically fetch actions
+    const actionsGetter = useMemo(() => {
+        return new Proxy({} as any, {
+            get: (_target, prop) => {
+                // 항상 최신 글로벌 actions를 가져옴 / Always get the latest global actions
+                const currentGlobalActions = getActions<T>(formId);
+                const currentEffectiveActions =
+                    actions || currentGlobalActions || {};
+                return currentEffectiveActions[prop];
+            },
+            has: (_target, prop) => {
+                const currentGlobalActions = getActions<T>(formId);
+                const currentEffectiveActions =
+                    actions || currentGlobalActions || {};
+                return prop in currentEffectiveActions;
+            },
+            ownKeys: (_target) => {
+                const currentGlobalActions = getActions<T>(formId);
+                const currentEffectiveActions =
+                    actions || currentGlobalActions || {};
+                return Reflect.ownKeys(currentEffectiveActions);
+            },
+            getOwnPropertyDescriptor: (_target, prop) => {
+                const currentGlobalActions = getActions<T>(formId);
+                const currentEffectiveActions =
+                    actions || currentGlobalActions || {};
+                if (prop in currentEffectiveActions) {
+                    return {
+                        enumerable: true,
+                        configurable: true,
+                    };
+                }
+                return undefined;
+            },
+        });
+    }, [formId, actions, getActions]);
+
     return {
         ...form,
+        actions: actionsGetter, // 동적 actions getter로 교체 / Replace with dynamic actions getter
         formId, // 글로벌 폼 ID 추가 제공 / Provide additional global form ID
         _store: store, // 글로벌 스토어 직접 접근용 / Direct access to global store
     } as UseGlobalFormReturn<T>;

@@ -257,7 +257,33 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
                 const currentGlobalActions = getActions<T>(stateId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
-                return currentEffectiveActions[prop];
+
+                const action = currentEffectiveActions[prop];
+                if (typeof action === "function") {
+                    // context를 바인딩하여 반환 / Return with context binding
+                    return (...args: any[]) => {
+                        const context = {
+                            values: store.getValues(),
+                            getValue: (field: string | keyof T) =>
+                                store.getValue(field as string),
+                            setValue: (field: string | keyof T, value: any) =>
+                                store.setValue(field as string, value),
+                            setValues: (values: Partial<T>) => {
+                                const currentValues = store.getValues();
+                                const newValues = {
+                                    ...currentValues,
+                                    ...values,
+                                };
+                                store.setValues(newValues as T);
+                            },
+                            reset: () => store.reset(),
+                            actions: {} as any, // Will be filled after
+                        };
+                        context.actions = actionsGetter;
+                        return action(context, ...args);
+                    };
+                }
+                return action;
             },
             has: (_target, prop) => {
                 const currentGlobalActions = getActions<T>(stateId);
@@ -284,7 +310,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
                 return undefined;
             },
         });
-    }, [stateId, actions, getActions]);
+    }, [stateId, actions, getActions, store]);
 
     return {
         ...formaState,

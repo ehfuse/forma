@@ -234,7 +234,34 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
                 const currentGlobalActions = getActions<T>(formId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
-                return currentEffectiveActions[prop];
+
+                const action = currentEffectiveActions[prop];
+                if (typeof action === "function") {
+                    // context를 바인딩하여 반환 / Return with context binding
+                    return (...args: any[]) => {
+                        const context = {
+                            values: store.getValues(),
+                            getValue: (field: string | keyof T) =>
+                                store.getValue(field as string),
+                            setValue: (field: string | keyof T, value: any) =>
+                                store.setValue(field as string, value),
+                            setValues: (values: Partial<T>) => {
+                                const currentValues = store.getValues();
+                                const newValues = {
+                                    ...currentValues,
+                                    ...values,
+                                };
+                                store.setValues(newValues as T);
+                            },
+                            reset: () => store.reset(),
+                            submit: form.submit,
+                            actions: {} as any, // Will be filled after
+                        };
+                        context.actions = actionsGetter;
+                        return action(context, ...args);
+                    };
+                }
+                return action;
             },
             has: (_target, prop) => {
                 const currentGlobalActions = getActions<T>(formId);
@@ -261,7 +288,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
                 return undefined;
             },
         });
-    }, [formId, actions, getActions]);
+    }, [formId, actions, getActions, store, form.submit]);
 
     return {
         ...form,

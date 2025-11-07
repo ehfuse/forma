@@ -28,7 +28,7 @@
  * SOFTWARE.
  */
 
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useMemo } from "react";
 import { useFormaState } from "./useFormaState";
 import {
     UseGlobalFormaStateProps,
@@ -249,8 +249,46 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // 완전히 빈 의존성 배열로 마운트 시 한 번만 실행
 
+    // actions를 동적으로 가져오는 getter 생성 / Create getter to dynamically fetch actions
+    const actionsGetter = useMemo(() => {
+        return new Proxy({} as any, {
+            get: (_target, prop) => {
+                // 항상 최신 글로벌 actions를 가져옴 / Always get the latest global actions
+                const currentGlobalActions = getActions<T>(stateId);
+                const currentEffectiveActions =
+                    actions || currentGlobalActions || {};
+                return currentEffectiveActions[prop];
+            },
+            has: (_target, prop) => {
+                const currentGlobalActions = getActions<T>(stateId);
+                const currentEffectiveActions =
+                    actions || currentGlobalActions || {};
+                return prop in currentEffectiveActions;
+            },
+            ownKeys: (_target) => {
+                const currentGlobalActions = getActions<T>(stateId);
+                const currentEffectiveActions =
+                    actions || currentGlobalActions || {};
+                return Reflect.ownKeys(currentEffectiveActions);
+            },
+            getOwnPropertyDescriptor: (_target, prop) => {
+                const currentGlobalActions = getActions<T>(stateId);
+                const currentEffectiveActions =
+                    actions || currentGlobalActions || {};
+                if (prop in currentEffectiveActions) {
+                    return {
+                        enumerable: true,
+                        configurable: true,
+                    };
+                }
+                return undefined;
+            },
+        });
+    }, [stateId, actions, getActions]);
+
     return {
         ...formaState,
+        actions: actionsGetter, // 동적 actions getter로 교체 / Replace with dynamic actions getter
         stateId, // 글로벌 FormaState ID 추가 제공 / Provide additional global FormaState ID
         _store: store, // 글로벌 스토어 직접 접근용 (이미 formaState에 있지만 명시적으로 재정의) / Direct access to global store
     } as UseGlobalFormaStateReturn<T>;

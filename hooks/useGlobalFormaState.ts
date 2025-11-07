@@ -33,7 +33,6 @@ import { useFormaState } from "./useFormaState";
 import {
     UseGlobalFormaStateProps,
     UseGlobalFormaStateReturn,
-    UseGlobalFormaStateSimpleProps,
 } from "../types/globalForm";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 import { mergeActions } from "../utils";
@@ -203,16 +202,13 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
     // 글로벌 스토어 가져오기 또는 생성 / Get or create global store
     const store = getOrCreateStore<T>(stateId);
 
-    // actions가 제공되면 글로벌에 등록 / Register actions to global if provided
-    useEffect(() => {
-        if (actions) {
-            // 배열이면 병합해서 등록
-            const mergedActions = mergeActions(actions);
-            if (mergedActions) {
-                registerActions<T>(stateId, mergedActions);
-            }
+    // actions가 제공되면 글로벌에 동기적으로 등록 / Register actions to global synchronously if provided
+    if (actions) {
+        const mergedActions = mergeActions(actions);
+        if (mergedActions) {
+            registerActions<T>(stateId, mergedActions);
         }
-    }, [stateId, actions, registerActions]);
+    }
 
     // 글로벌 actions 가져오기 / Get global actions
     const globalActions = getActions<T>(stateId);
@@ -242,12 +238,12 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
 
         // 첫 번째 등록시에만 참조 카운트 증가
         const componentId = componentIdRef.current!;
-        context.incrementRef(stateId, autoCleanup);
+        incrementRef(stateId, autoCleanup);
         isRegisteredRef.current = true;
 
         return () => {
             // 컴포넌트 언마운트 시에만 참조 카운트 감소
-            context.decrementRef(stateId, autoCleanup);
+            decrementRef(stateId, autoCleanup);
             isRegisteredRef.current = false;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

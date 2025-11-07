@@ -74,7 +74,6 @@ export type {
     UseGlobalFormProps,
     UseGlobalFormReturn,
     UseGlobalFormaStateProps,
-    UseGlobalFormaStateSimpleProps,
     UseGlobalFormaStateReturn,
     UseRegisterGlobalFormProps,
     UseRegisterGlobalFormReturn,

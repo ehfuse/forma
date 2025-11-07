@@ -95,14 +95,6 @@ export interface UseGlobalFormaStateProps<T extends Record<string, any>> {
 }
 
 /**
- * useGlobalFormaState 훅의 Props 타입 (간단 버전 - stateId만) | useGlobalFormaState hook Props type (simple version - stateId only)
- */
-export interface UseGlobalFormaStateSimpleProps {
-    /** 전역에서 상태를 식별하는 고유 ID | Unique ID to identify state globally */
-    stateId: string;
-}
-
-/**
  * useGlobalForm 훅의 반환 타입 | useGlobalForm hook return type
  * useForm의 모든 기능에 글로벌 폼 전용 기능 추가 | All useForm features plus global form specific features
  */

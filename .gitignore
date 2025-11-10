@@ -64,6 +64,3 @@ temp/
 
 # Code quality tools
 .codacy/
-
-# Example development environment
-example/

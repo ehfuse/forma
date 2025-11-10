@@ -1,0 +1,180 @@
+.App {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 2rem;
+}
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.8rem;
+    margin-bottom: 2rem;
+    max-width: 1600px;
+}
+
+.tabs button {
+    padding: 0.6rem 1.2rem;
+    border: 2px solid #007bff;
+    background: white;
+    color: #007bff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.tabs button:hover {
+    background: #f8f9fa;
+}
+
+.tabs button.active {
+    background: #007bff;
+    color: white;
+}
+
+.content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.example-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: left;
+}
+
+.example-section h2 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.example-section p {
+    text-align: center;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.button-group button {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.button-group button[type="submit"],
+.button-group button:first-child {
+    background: #28a745;
+    color: white;
+}
+
+.button-group button[type="submit"]:hover,
+.button-group button:first-child:hover {
+    background: #218838;
+}
+
+.button-group button[type="submit"]:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.button-group button:not(:first-child) {
+    background: #6c757d;
+    color: white;
+}
+
+.button-group button:not(:first-child):hover {
+    background: #5a6268;
+}
+
+.status {
+    background: #e9ecef;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-top: 1.5rem;
+}
+
+.status p {
+    margin: 0.5rem 0;
+    font-weight: 600;
+    text-align: left;
+}
+
+.counter-display {
+    text-align: center;
+    margin: 2rem 0;
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #007bff;
+}
+
+.counter-display h3 {
+    font-size: 2rem;
+    margin: 0;
+    color: #007bff;
+}
+
+.counter-display p {
+    margin: 0.5rem 0;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+    .tabs {
+        flex-direction: column;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+
+    .example-section {
+        padding: 1rem;
+    }
+}

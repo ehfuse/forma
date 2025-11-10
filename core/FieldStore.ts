@@ -754,6 +754,10 @@ export class FieldStore<T extends Record<string, any>> {
             }
         } else {
             // 일반 필드 처리
+            const oldValue = this.fields.has(fieldName as keyof T)
+                ? this.fields.get(fieldName as keyof T)!.value
+                : undefined;
+
             if (!this.fields.has(fieldName as keyof T)) {
                 this.fields.set(fieldName as keyof T, {
                     value: value,
@@ -761,12 +765,127 @@ export class FieldStore<T extends Record<string, any>> {
                 });
             } else {
                 const field = this.fields.get(fieldName as keyof T);
-                if (field && field.value !== value) {
+                if (field) {
                     field.value = value;
+                }
+            }
+
+            // 값이 실제로 변경된 경우에만 리스너 수집
+            if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
+                const field = this.fields.get(fieldName as keyof T);
+                if (field) {
+                    // 루트 필드 구독자들 수집
                     field.listeners.forEach((listener) => {
                         affectedListeners.add(listener);
                     });
                 }
+
+                const fieldStr = fieldName as string;
+
+                // Dot notation 구독자들 수집 (setValue와 동일한 로직)
+                this.dotNotationListeners.forEach(
+                    (listeners, subscribedPath) => {
+                        // 1. 정확히 일치하는 경로
+                        if (subscribedPath === fieldStr) {
+                            listeners.forEach((listener) =>
+                                affectedListeners.add(listener)
+                            );
+                        }
+                        // 2. 배열 필드나 .length 구독자들에게 알림
+                        else if (subscribedPath === `${fieldStr}.length`) {
+                            const oldLength = Array.isArray(oldValue)
+                                ? oldValue.length
+                                : 0;
+                            const newLength = Array.isArray(value)
+                                ? value.length
+                                : 0;
+                            if (
+                                oldLength !== newLength ||
+                                (!oldValue && value)
+                            ) {
+                                listeners.forEach((listener) =>
+                                    affectedListeners.add(listener)
+                                );
+                            }
+                        }
+                        // 3. 객체 필드 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
+                        else if (
+                            subscribedPath.startsWith(fieldStr + ".") &&
+                            typeof value === "object" &&
+                            value !== null &&
+                            !Array.isArray(value)
+                        ) {
+                            const childPath = subscribedPath.substring(
+                                fieldStr.length + 1
+                            );
+                            const oldChildValue =
+                                oldValue && typeof oldValue === "object"
+                                    ? getNestedValue(oldValue, childPath)
+                                    : undefined;
+                            const newChildValue = getNestedValue(
+                                value,
+                                childPath
+                            );
+
+                            if (
+                                JSON.stringify(oldChildValue) !==
+                                JSON.stringify(newChildValue)
+                            ) {
+                                listeners.forEach((listener) =>
+                                    affectedListeners.add(listener)
+                                );
+                            }
+                        }
+                        // 4. 배열 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
+                        else if (
+                            Array.isArray(value) &&
+                            Array.isArray(oldValue) &&
+                            subscribedPath.startsWith(`${fieldStr}.`)
+                        ) {
+                            const pathParts = subscribedPath.split(".");
+                            if (
+                                pathParts.length >= 2 &&
+                                pathParts[0] === fieldStr
+                            ) {
+                                const index = parseInt(pathParts[1]);
+                                if (!isNaN(index) && index >= 0) {
+                                    const pathAfterIndex = pathParts
+                                        .slice(1)
+                                        .join(".");
+                                    const oldItemValue = getNestedValue(
+                                        oldValue,
+                                        pathAfterIndex
+                                    );
+                                    const newItemValue = getNestedValue(
+                                        value,
+                                        pathAfterIndex
+                                    );
+
+                                    if (
+                                        JSON.stringify(oldItemValue) !==
+                                        JSON.stringify(newItemValue)
+                                    ) {
+                                        listeners.forEach((listener) =>
+                                            affectedListeners.add(listener)
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        // 5. 배열이 새로 생성되거나 삭제된 경우
+                        else if (
+                            subscribedPath.startsWith(`${fieldStr}.`) &&
+                            ((Array.isArray(value) &&
+                                !Array.isArray(oldValue)) ||
+                                (!Array.isArray(value) &&
+                                    Array.isArray(oldValue)))
+                        ) {
+                            listeners.forEach((listener) =>
+                                affectedListeners.add(listener)
+                            );
+                        }
+                    }
+                );
             }
         }
     }

@@ -24,6 +24,7 @@ import { NestedSubscriptionTest } from "./pages/NestedSubscriptionTest";
 import GlobalStateShareTest from "./pages/GlobalStateShareTest";
 import SetValueChildNotificationTest from "./pages/SetValueChildNotificationTest";
 import SetValuesBugTest from "./pages/SetValuesBugTest";
+import TimingIssueTest from "./pages/TimingIssueTest";
 import {
     ZeroConfigExample,
     PureZeroConfigExample,
@@ -63,7 +64,8 @@ type TabType =
     | "nested-subscription-test"
     | "global-state-share-test"
     | "setvalue-child-notification"
-    | "setvalues-bug-test";
+    | "setvalues-bug-test"
+    | "timing-issue-test";
 
 function App() {
     const [activeTab, setActiveTab] = useState<TabType>("zero-config");
@@ -277,6 +279,14 @@ function App() {
                 >
                     🔴 setValues Bug Test
                 </button>
+                <button
+                    className={
+                        activeTab === "timing-issue-test" ? "active" : ""
+                    }
+                    onClick={() => setActiveTab("timing-issue-test")}
+                >
+                    ⏱️ Timing Issue Test
+                </button>
             </div>
 
             <div className="content">
@@ -324,6 +334,7 @@ function App() {
                     <SetValueChildNotificationTest />
                 )}
                 {activeTab === "setvalues-bug-test" && <SetValuesBugTest />}
+                {activeTab === "timing-issue-test" && <TimingIssueTest />}
             </div>
         </div>
     );

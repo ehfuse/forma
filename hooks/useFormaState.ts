@@ -115,32 +115,34 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
  * Individual field subscription hook for useFormaState
  * useFormaState를 위한 개별 필드 구독 훅
  *
+ * useSyncExternalStore를 사용하여 React 18의 동시성 모드를 지원하고
+ * 구독 등록과 값 읽기를 동기적으로 처리하여 타이밍 이슈를 방지합니다.
+ *
  * @param store FieldStore 인스턴스
  * @param fieldName 구독할 필드 이름 (dot notation 지원)
  * @returns 필드의 현재 값
  */
 function useFieldValue<T>(store: FieldStore<any>, fieldName: string): T {
-    const [value, setValue] = useState(() => store.getValue(fieldName));
-    const [, forceUpdate] = useReducer((x) => x + 1, 0);
-
-    useEffect(() => {
-        // 구독을 먼저 등록한 뒤 즉시 동기화합니다.
-        // 이렇게 하면 구독 등록과 값 읽기 사이에 발생하는 상태 변경을 놓치지 않습니다.
-        // Register subscription first, then sync immediately. This prevents missing updates
-        // that might occur between reading the current value and subscribing.
-        const unsubscribe = store.subscribe(fieldName, () => {
-            const newValue = store.getValue(fieldName);
-            setValue(newValue);
-            // useReducer를 사용한 강제 리렌더링
-            forceUpdate();
-        });
-
-        // 초기값 강제 동기화 (구독 등록 후 최신 값을 읽어 적용)
-        const currentValue = store.getValue(fieldName);
-        setValue(currentValue);
-
-        return unsubscribe;
-    }, [fieldName, store]); // 깔끔한 의존성 배열
+    // useSyncExternalStore를 사용하여 동기적으로 구독 등록
+    // 이렇게 하면 컴포넌트 렌더링 중에 구독이 등록되어
+    // setValues() 호출 시점과 상관없이 항상 알림을 받을 수 있습니다.
+    const value = useSyncExternalStore(
+        useCallback(
+            (onStoreChange) => {
+                // 구독 등록 (동기적으로 실행됨)
+                return store.subscribe(fieldName, onStoreChange);
+            },
+            [store, fieldName]
+        ),
+        useCallback(() => {
+            // 현재 값 읽기 (동기적으로 실행됨)
+            return store.getValue(fieldName);
+        }, [store, fieldName]),
+        useCallback(() => {
+            // 서버 사이드 렌더링용 초기값
+            return store.getValue(fieldName);
+        }, [store, fieldName])
+    );
 
     return value;
 }

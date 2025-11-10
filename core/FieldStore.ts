@@ -289,10 +289,11 @@ export class FieldStore<T extends Record<string, any>> {
 
             // Dot notation 구독자들 알림 / Notify dot notation subscribers
             this.dotNotationListeners.forEach((listeners, subscribedPath) => {
+                // 1. 정확히 일치하는 경로
                 if (subscribedPath === fieldStr) {
                     listeners.forEach((listener) => listener());
                 }
-                // 배열 필드나 .length 구독자들에게 알림
+                // 2. 배열 필드나 .length 구독자들에게 알림
                 // Notify array field or .length subscribers
                 else if (subscribedPath === `${fieldStr}.length`) {
                     // 이전 길이와 새 길이 계산
@@ -302,6 +303,32 @@ export class FieldStore<T extends Record<string, any>> {
                     const newLength = Array.isArray(value) ? value.length : 0;
                     // 길이가 변경되었거나 undefined에서 배열로 변경된 경우 알림
                     if (oldLength !== newLength || (!oldValue && value)) {
+                        listeners.forEach((listener) => listener());
+                    }
+                }
+                // 3. 객체 필드 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
+                // Notify individual field subscribers only if their actual values changed when entire object is replaced
+                else if (
+                    subscribedPath.startsWith(fieldStr + ".") &&
+                    typeof value === "object" &&
+                    value !== null &&
+                    !Array.isArray(value)
+                ) {
+                    // customer.name, customer.seq 등의 자식 경로
+                    const childPath = subscribedPath.substring(
+                        fieldStr.length + 1
+                    );
+                    const oldChildValue =
+                        oldValue && typeof oldValue === "object"
+                            ? getNestedValue(oldValue, childPath)
+                            : undefined;
+                    const newChildValue = getNestedValue(value, childPath);
+
+                    // 실제로 값이 변경된 경우에만 알림
+                    if (
+                        JSON.stringify(oldChildValue) !==
+                        JSON.stringify(newChildValue)
+                    ) {
                         listeners.forEach((listener) => listener());
                     }
                 }

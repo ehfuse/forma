@@ -221,10 +221,19 @@ export class FieldStore<T extends Record<string, any>> {
                         if (subscribedPath === fieldNameStr) {
                             listeners.forEach((listener) => listener());
                         }
-                        // 2. 구독 경로가 변경 경로의 부모인 경우
-                        // 예: subscribedPath가 "todos.2"이고 fieldNameStr이 "todos.2.completed"
+                        // 2. 자식 경로가 변경되면 부모 경로 구독자에게 알림
+                        // 예: fieldNameStr이 "checkboxes.0.checked", subscribedPath가 "checkboxes"
                         else if (
                             fieldNameStr.startsWith(subscribedPath + ".")
+                        ) {
+                            listeners.forEach((listener) => listener());
+                        }
+                        // 3. 부모 경로가 변경되면 자식 경로 구독자에게 알림 (중복 제거 필요)
+                        // 예: fieldNameStr이 "checkboxes", subscribedPath가 "checkboxes.0"
+                        // 단, rootFieldStr와 정확히 같은 경로는 루트 필드 구독자가 이미 처리
+                        else if (
+                            subscribedPath.startsWith(fieldNameStr + ".") &&
+                            subscribedPath !== rootFieldStr
                         ) {
                             listeners.forEach((listener) => listener());
                         }

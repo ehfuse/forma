@@ -923,19 +923,45 @@ export class FieldStore<T extends Record<string, any>> {
                 }
             });
         } else {
-            // 일반 모드: 초기값으로 재설정
-            this.fields.forEach((field, key) => {
-                const initialValue = this.initialValues[key as keyof T];
-                field.value = initialValue;
+            // 일반 모드: initialValues로 복원
+            // Normal mode: Restore to initialValues
+            Object.keys(this.initialValues).forEach((key) => {
+                const field = this.fields.get(key as keyof T);
+                if (field) {
+                    field.value = this.initialValues[key as keyof T];
+                }
             });
 
-            // 누락된 초기값 필드들 추가
+            // 2. 누락된 초기값 필드들 추가
             Object.keys(this.initialValues).forEach((key) => {
                 if (!this.fields.has(key)) {
                     this.fields.set(key, {
                         value: this.initialValues[key as keyof T],
                         listeners: new Set(),
                     });
+                }
+            });
+
+            // 3. dot notation 구독자가 있는 필드들도 초기값으로 재설정
+            // 이는 중첩된 필드 (예: labels, items 등)가 배열/객체일 때 중요
+            this.dotNotationListeners.forEach((listeners, path) => {
+                if (listeners.size > 0 && !path.includes(".")) {
+                    // 최상위 레벨 필드만 (dot이 없는 경로)
+                    const initialValue = this.initialValues[path as keyof T];
+                    if (initialValue !== undefined) {
+                        // setValue가 아닌 직접 설정 (무한 루프 방지)
+                        if (!this.fields.has(path as keyof T)) {
+                            this.fields.set(path as keyof T, {
+                                value: initialValue,
+                                listeners: new Set(),
+                            });
+                        } else {
+                            const field = this.fields.get(path as keyof T);
+                            if (field) {
+                                field.value = initialValue;
+                            }
+                        }
+                    }
                 }
             });
         }

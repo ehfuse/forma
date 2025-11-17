@@ -25,6 +25,7 @@ import GlobalStateShareTest from "./pages/GlobalStateShareTest";
 import SetValueChildNotificationTest from "./pages/SetValueChildNotificationTest";
 import SetValuesBugTest from "./pages/SetValuesBugTest";
 import TimingIssueTest from "./pages/TimingIssueTest";
+import ResetBugTest from "./pages/ResetBugTest";
 import {
     ZeroConfigExample,
     PureZeroConfigExample,
@@ -65,7 +66,8 @@ type TabType =
     | "global-state-share-test"
     | "setvalue-child-notification"
     | "setvalues-bug-test"
-    | "timing-issue-test";
+    | "timing-issue-test"
+    | "reset-bug-test";
 
 function App() {
     const [activeTab, setActiveTab] = useState<TabType>("zero-config");
@@ -287,6 +289,12 @@ function App() {
                 >
                     ⏱️ Timing Issue Test
                 </button>
+                <button
+                    className={activeTab === "reset-bug-test" ? "active" : ""}
+                    onClick={() => setActiveTab("reset-bug-test")}
+                >
+                    🔄 Reset Bug Test
+                </button>
             </div>
 
             <div className="content">
@@ -335,6 +343,7 @@ function App() {
                 )}
                 {activeTab === "setvalues-bug-test" && <SetValuesBugTest />}
                 {activeTab === "timing-issue-test" && <TimingIssueTest />}
+                {activeTab === "reset-bug-test" && <ResetBugTest />}
             </div>
         </div>
     );

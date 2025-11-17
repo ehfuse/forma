@@ -236,6 +236,10 @@ export function useFormaState<T extends Record<string, any>>(
                 Object.keys(currentValues).length === 0 &&
                 Object.keys(initialValues).length > 0
             ) {
+                // ⭐ initialValues 먼저 설정 (reset()이 참조함)
+                _externalStore.setInitialValues(initialValues);
+
+                // 그 다음 값 설정
                 Object.keys(initialValues).forEach((key) => {
                     _externalStore.setValue(key, initialValues[key as keyof T]);
                 });
@@ -388,24 +392,27 @@ export function useFormaState<T extends Record<string, any>>(
         const unsubscribers: Array<() => void> = [];
 
         for (const [path, callback] of Object.entries(options.watch)) {
-            const unsubscribe = store.watch(path, (value, prevValue) => {
-                const context: ActionContext<T> = {
-                    values: store.getValues(),
-                    getValue: (field: string | keyof T) =>
-                        store.getValue(field as string),
-                    setValue: (field: string | keyof T, value: any) =>
-                        store.setValue(field as string, value),
-                    setValues: (values: Partial<T>) => {
-                        const currentValues = store.getValues();
-                        const newValues = { ...currentValues, ...values };
-                        store.setValues(newValues as T);
-                    },
-                    reset: () => store.reset(),
-                    actions: boundActions,
-                };
+            const unsubscribe = store.watch(
+                path,
+                (value: any, prevValue: any) => {
+                    const context: ActionContext<T> = {
+                        values: store.getValues(),
+                        getValue: (field: string | keyof T) =>
+                            store.getValue(field as string),
+                        setValue: (field: string | keyof T, value: any) =>
+                            store.setValue(field as string, value),
+                        setValues: (values: Partial<T>) => {
+                            const currentValues = store.getValues();
+                            const newValues = { ...currentValues, ...values };
+                            store.setValues(newValues as T);
+                        },
+                        reset: () => store.reset(),
+                        actions: boundActions,
+                    };
 
-                callback(context, value, prevValue);
-            });
+                    callback(context, value, prevValue);
+                }
+            );
 
             unsubscribers.push(unsubscribe);
         }

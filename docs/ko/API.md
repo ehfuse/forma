@@ -1009,6 +1009,8 @@ interface ActionContext<T> {
 **특징:**
 
 -   ✅ **dot notation 지원**: 중첩된 객체의 필드도 감시 가능 (`user.profile.name`)
+-   ✅ **부모 경로 감시**: 부모 경로를 watch하면 자식 필드 변경 시에도 알림 받음 (`filters` watch → `filters.interval` 변경 감지)
+-   ✅ **와일드카드 패턴**: 동적 경로 매칭 지원 (`todos.*.completed` - 모든 todo의 completed 필드 감시)
 -   ✅ **성능 최적화**: watch에 등록된 필드만 체크하여 불필요한 오버헤드 없음
 -   ✅ **비동기 지원**: async 함수로 비동기 작업 가능
 -   ✅ **자동 정리**: 컴포넌트 언마운트 시 자동으로 watcher 제거
@@ -1017,7 +1019,46 @@ interface ActionContext<T> {
 **사용 예시:**
 
 ```typescript
-// 로그인 상태에 따라 자동으로 데이터 동기화
+// 1. 부모 경로 감시 - 자식 필드 변경도 감지
+const filterState = useFormaState({
+    initialValues: {
+        filters: {
+            interval: "1h",
+            state: "active",
+        },
+    },
+    watch: {
+        // filters 객체를 watch하면 filters.interval, filters.state 변경 시에도 트리거됨
+        filters: (context, value, prevValue) => {
+            console.log("필터 변경:", prevValue, "->", value);
+            // prevValue: { interval: '1h', state: 'active' }
+            // value: { interval: '5m', state: 'active' }
+        },
+    },
+});
+
+// 2. 와일드카드 패턴 - 배열 내 동적 경로 매칭
+const todoState = useFormaState({
+    initialValues: {
+        todos: [
+            { id: 1, title: "Task 1", completed: false },
+            { id: 2, title: "Task 2", completed: false },
+        ],
+    },
+    watch: {
+        // 모든 todo의 completed 필드 변경 감지
+        "todos.*.completed": (context, value, prevValue) => {
+            console.log("Todo 완료 상태 변경:", prevValue, "->", value);
+            // todos.0.completed, todos.1.completed 등 모두 매칭됨
+        },
+        // 부모 배열도 함께 감시 가능
+        todos: (context, value, prevValue) => {
+            console.log("전체 todos 배열 변경");
+        },
+    },
+});
+
+// 3. 로그인 상태에 따라 자동으로 데이터 동기화
 const appState = useGlobalFormaState({
     stateId: "app",
     initialValues: { logined: false, syncInterval: null },

@@ -206,7 +206,25 @@ export class FieldStore<T extends Record<string, any>> {
             );
 
             if (JSON.stringify(field.value) !== JSON.stringify(newRootValue)) {
-                const prevValue = field.value;
+                // 변경 전 자식 필드의 값 (watch용)
+                const prevChildValue = getNestedValue(
+                    field.value,
+                    remainingPath
+                );
+
+                // ⭐ 변경 전 부모 경로들의 값 저장 (부모 watch용)
+                const prevParentValues = new Map<string, any>();
+                if (fieldNameStr.includes(".")) {
+                    const parts = fieldNameStr.split(".");
+                    for (let i = 1; i < parts.length; i++) {
+                        const parentPath = parts.slice(0, i).join(".");
+                        prevParentValues.set(
+                            parentPath,
+                            this.getValue(parentPath)
+                        );
+                    }
+                }
+
                 field.value = newRootValue;
 
                 // 루트 필드 구독자들 알림 / Notify root field subscribers
@@ -262,7 +280,12 @@ export class FieldStore<T extends Record<string, any>> {
                 this.globalListeners.forEach((listener) => listener());
 
                 // Watcher 실행 (와일드카드 매칭 포함) / Execute watcher (including wildcard matching)
-                this.notifyWatchers(fieldNameStr, value, prevValue);
+                this.notifyWatchers(
+                    fieldNameStr,
+                    value,
+                    prevChildValue,
+                    prevParentValues
+                );
             }
             return;
         }
@@ -1019,8 +1042,14 @@ export class FieldStore<T extends Record<string, any>> {
      * @param path 변경된 필드 경로 / Changed field path
      * @param value 새 값 / New value
      * @param prevValue 이전 값 / Previous value
+     * @param prevParentValues 부모 경로들의 이전 값 맵 / Map of previous values for parent paths
      */
-    private notifyWatchers(path: string, value: any, prevValue: any): void {
+    private notifyWatchers(
+        path: string,
+        value: any,
+        prevValue: any,
+        prevParentValues?: Map<string, any>
+    ): void {
         // 값이 실제로 변경되지 않았으면 알림하지 않음 / Skip notification if value hasn't actually changed
         if (JSON.stringify(value) === JSON.stringify(prevValue)) {
             return;
@@ -1041,7 +1070,37 @@ export class FieldStore<T extends Record<string, any>> {
             });
         }
 
-        // 2. 와일드카드 패턴 매칭 / Wildcard pattern matching
+        // 2. 부모 경로들에게도 알림 / Notify parent paths
+        // 예: filters.interval 변경 시 filters watcher도 트리거
+        if (path.includes(".")) {
+            const parts = path.split(".");
+            for (let i = parts.length - 1; i > 0; i--) {
+                const parentPath = parts.slice(0, i).join(".");
+                const parentWatchers = this.watchers.get(parentPath);
+
+                if (parentWatchers && parentWatchers.size > 0) {
+                    // 부모 객체의 현재 값
+                    const parentValue = this.getValue(parentPath);
+
+                    // 부모 객체의 이전 값 (미리 저장된 값 사용)
+                    const parentPrevValue =
+                        prevParentValues?.get(parentPath) || parentValue;
+
+                    parentWatchers.forEach((callback) => {
+                        try {
+                            callback(parentValue, parentPrevValue);
+                        } catch (error) {
+                            console.error(
+                                `Error in parent watcher for path "${parentPath}" (triggered by "${path}"):`,
+                                error
+                            );
+                        }
+                    });
+                }
+            }
+        }
+
+        // 3. 와일드카드 패턴 매칭 / Wildcard pattern matching
         // todos.0.completed 변경 시 "todos.*.completed" 패턴도 트리거
         this.watchers.forEach((watcherSet, watcherPath) => {
             if (watcherPath.includes("*")) {

@@ -930,6 +930,8 @@ interface ActionContext<T> {
 **Features:**
 
 -   ✅ **Dot notation support**: Watch nested object fields (`user.profile.name`)
+-   ✅ **Parent path watching**: Watching parent path notifies on child field changes (`filters` watch → detects `filters.interval` changes)
+-   ✅ **Wildcard patterns**: Dynamic path matching support (`todos.*.completed` - watch all todos' completed fields)
 -   ✅ **Performance optimized**: Only checks registered fields to avoid unnecessary overhead
 -   ✅ **Async support**: Use async functions for asynchronous operations
 -   ✅ **Auto cleanup**: Automatically removes watchers on component unmount
@@ -938,7 +940,46 @@ interface ActionContext<T> {
 **Usage Example:**
 
 ```typescript
-// Automatically sync data based on login state
+// 1. Parent path watching - detects child field changes
+const filterState = useFormaState({
+    initialValues: {
+        filters: {
+            interval: "1h",
+            state: "active",
+        },
+    },
+    watch: {
+        // Watching filters triggers on filters.interval, filters.state changes
+        filters: (context, value, prevValue) => {
+            console.log("Filter changed:", prevValue, "->", value);
+            // prevValue: { interval: '1h', state: 'active' }
+            // value: { interval: '5m', state: 'active' }
+        },
+    },
+});
+
+// 2. Wildcard pattern - dynamic path matching in arrays
+const todoState = useFormaState({
+    initialValues: {
+        todos: [
+            { id: 1, title: "Task 1", completed: false },
+            { id: 2, title: "Task 2", completed: false },
+        ],
+    },
+    watch: {
+        // Detect all todos' completed field changes
+        "todos.*.completed": (context, value, prevValue) => {
+            console.log("Todo completion changed:", prevValue, "->", value);
+            // Matches todos.0.completed, todos.1.completed, etc.
+        },
+        // Can also watch parent array
+        todos: (context, value, prevValue) => {
+            console.log("Entire todos array changed");
+        },
+    },
+});
+
+// 3. Automatically sync data based on login state
 const appState = useGlobalFormaState({
     stateId: "app",
     initialValues: { logined: false, syncInterval: null },

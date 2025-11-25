@@ -26,6 +26,7 @@ import SetValueChildNotificationTest from "./pages/SetValueChildNotificationTest
 import SetValuesBugTest from "./pages/SetValuesBugTest";
 import TimingIssueTest from "./pages/TimingIssueTest";
 import ResetBugTest from "./pages/ResetBugTest";
+import WatchParentPathTest from "./pages/WatchParentPathTest";
 import {
     ZeroConfigExample,
     PureZeroConfigExample,
@@ -67,7 +68,8 @@ type TabType =
     | "setvalue-child-notification"
     | "setvalues-bug-test"
     | "timing-issue-test"
-    | "reset-bug-test";
+    | "reset-bug-test"
+    | "watch-parent-path-test";
 
 function App() {
     const [activeTab, setActiveTab] = useState<TabType>("zero-config");
@@ -295,6 +297,14 @@ function App() {
                 >
                     🔄 Reset Bug Test
                 </button>
+                <button
+                    className={
+                        activeTab === "watch-parent-path-test" ? "active" : ""
+                    }
+                    onClick={() => setActiveTab("watch-parent-path-test")}
+                >
+                    📍 Watch Parent Path Test
+                </button>
             </div>
 
             <div className="content">
@@ -344,6 +354,9 @@ function App() {
                 {activeTab === "setvalues-bug-test" && <SetValuesBugTest />}
                 {activeTab === "timing-issue-test" && <TimingIssueTest />}
                 {activeTab === "reset-bug-test" && <ResetBugTest />}
+                {activeTab === "watch-parent-path-test" && (
+                    <WatchParentPathTest />
+                )}
             </div>
         </div>
     );

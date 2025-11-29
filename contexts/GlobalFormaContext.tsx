@@ -170,6 +170,8 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
     const cleanupTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
         new Map()
     );
+    // formId별 영구 보존 플래그 (autoCleanup: false인 경우 true) | Persist forever flag by formId (true when autoCleanup: false)
+    const persistForeverRef = useRef<Map<string, boolean>>(new Map());
     // cleanup 지연 시간 (밀리초) - 리렌더링 대기 시간 | Cleanup delay time (milliseconds) - wait for re-rendering
     const CLEANUP_DELAY_MS = 100;
 
@@ -230,6 +232,11 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         // }
 
         autoCleanupSettings.set(formId, autoCleanup);
+
+        // autoCleanup: false인 경우 영구 보존 플래그 설정 | Set persist forever flag when autoCleanup is false
+        if (!autoCleanup) {
+            persistForeverRef.current.set(formId, true);
+        }
     };
 
     /**
@@ -267,6 +274,7 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
             refCounts.delete(formId); // 참조 카운트도 함께 제거 | Remove reference count as well
             autoCleanupRefCounts.delete(formId); // autoCleanup 참조 카운트도 제거 | Remove autoCleanup reference count as well
             autoCleanupSettings.delete(formId); // autoCleanup 설정도 제거 | Remove autoCleanup settings as well
+            persistForeverRef.current.delete(formId); // persistForever 설정도 제거 | Remove persistForever setting as well
 
             // 관련 핸들러와 actions도 함께 제거 | Remove related handlers and actions as well
             handlersRef.current.delete(formId);
@@ -297,6 +305,7 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         refCounts.clear();
         autoCleanupRefCounts.clear();
         autoCleanupSettings.clear();
+        persistForeverRef.current.clear();
 
         // 모든 핸들러와 actions도 함께 정리 | Clear all handlers and actions as well
         handlersRef.current.clear();
@@ -370,7 +379,12 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
 
             // autoCleanup 참조가 0이 되면 지연된 스토어 정리 예약
             // Schedule delayed store cleanup when autoCleanup refs reach 0
-            if (newAutoCleanupCount === 0) {
+            // 단, persistForever가 true인 store는 절대 삭제하지 않음
+            // However, never delete stores with persistForever flag
+            if (
+                newAutoCleanupCount === 0 &&
+                !persistForeverRef.current.get(formId)
+            ) {
                 // 기존 타이머가 있으면 취소 (중복 방지)
                 // Cancel existing timer if any (prevent duplicates)
                 const existingTimer = cleanupTimers.get(formId);

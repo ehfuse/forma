@@ -28,29 +28,34 @@
  */
 
 // ===== Core Hooks =====
-export { useForm } from "./hooks/useForm";
-export { useGlobalForm } from "./hooks/useGlobalForm";
-export { useRegisterGlobalForm } from "./hooks/useRegisterGlobalForm";
-export { useUnregisterGlobalForm } from "./hooks/useUnregisterGlobalForm";
-export { useFormaState, useFieldSubscription } from "./hooks/useFormaState";
-export { useGlobalFormaState } from "./hooks/useGlobalFormaState";
-export { useRegisterGlobalFormaState } from "./hooks/useRegisterGlobalFormaState";
-export { useUnregisterGlobalFormaState } from "./hooks/useUnregisterGlobalFormaState";
-export { useModal } from "./hooks/useModal";
-export { useBreakpoint } from "./hooks/useBreakpoint";
+export { useForm } from "./src/hooks/useForm";
+export { useGlobalForm } from "./src/hooks/useGlobalForm";
+export { useRegisterGlobalForm } from "./src/hooks/useRegisterGlobalForm";
+export { useUnregisterGlobalForm } from "./src/hooks/useUnregisterGlobalForm";
+export { useFormaState, useFieldSubscription } from "./src/hooks/useFormaState";
+export { useGlobalFormaState } from "./src/hooks/useGlobalFormaState";
+export { useRegisterGlobalFormaState } from "./src/hooks/useRegisterGlobalFormaState";
+export { useUnregisterGlobalFormaState } from "./src/hooks/useUnregisterGlobalFormaState";
+export { useModal } from "./src/hooks/useModal";
+export { useBreakpoint } from "./src/hooks/useBreakpoint";
 
 // ===== Context & Providers =====
 export {
     GlobalFormaContext,
     GlobalFormaProvider,
-} from "./contexts/GlobalFormaContext";
+} from "./src/contexts/GlobalFormaContext";
 
 // ===== Core Classes =====
-export { FieldStore } from "./core/FieldStore";
+export { FieldStore } from "./src/core/FieldStore";
 
 // ===== Utility Functions =====
-export { getNestedValue, setNestedValue } from "./utils/dotNotation";
-export { isDevelopment, devWarn, devError, devLog } from "./utils/environment";
+export { getNestedValue, setNestedValue } from "./src/utils/dotNotation";
+export {
+    isDevelopment,
+    devWarn,
+    devError,
+    devLog,
+} from "./src/utils/environment";
 
 // ===== TypeScript Types =====
 // Form Types
@@ -61,13 +66,13 @@ export type {
     FormChangeEvent,
     ActionContext,
     Actions,
-} from "./types/form";
+} from "./src/types/form";
 
 // Field State Types
 export type {
     UseFormaStateOptions,
     UseFormaStateReturn,
-} from "./hooks/useFormaState";
+} from "./src/hooks/useFormaState";
 
 // Global Forma Types
 export type {
@@ -90,10 +95,13 @@ export type {
     GlobalFormConfig,
     GlobalFormMiddleware,
     ExtendedGlobalFormaProviderProps,
-} from "./types/globalForm";
+} from "./src/types/globalForm";
 
 // Breakpoint Types
-export type { BreakpointState, UseBreakpointReturn } from "./types/breakpoint";
+export type {
+    BreakpointState,
+    UseBreakpointReturn,
+} from "./src/types/breakpoint";
 
 /**
  * Forma library version

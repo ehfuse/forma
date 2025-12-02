@@ -64,6 +64,7 @@ export type {
     UseFormReturn,
     FormValidationResult,
     FormChangeEvent,
+    FormChangeHandler,
     ActionContext,
     Actions,
 } from "./src/types/form";

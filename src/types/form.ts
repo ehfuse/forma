@@ -53,6 +53,16 @@ export type FormChangeEvent =
       };
 
 /**
+ * 폼 변경 핸들러 타입 | Form change handler type
+ * 이벤트 객체 또는 (name, value) 직접 전달 모두 지원
+ * Supports both event object and direct (name, value) arguments
+ */
+export type FormChangeHandler = {
+    (event: FormChangeEvent): void;
+    (name: string, value: any): void;
+};
+
+/**
  * DatePicker 전용 핸들러 타입
  * MUI DatePicker 컴포넌트와의 통합을 위한 타입
  */
@@ -108,8 +118,8 @@ export interface UseFormPropsOptional<
 export interface UseFormReturn<T extends Record<string, any>> {
     /** 개별 필드 값 구독 함수 | Individual field value subscription function */
     useFormValue: (fieldName: keyof T | string) => any;
-    /** 폼 변경 핸들러 (MUI 컴포넌트용) | Form change handler (for MUI components) */
-    handleFormChange: (event: FormChangeEvent) => void;
+    /** 폼 변경 핸들러 (이벤트 또는 name,value 직접 전달) | Form change handler (event or direct name,value) */
+    handleFormChange: FormChangeHandler;
     /** DatePicker 변경 핸들러 | DatePicker change handler */
     handleDatePickerChange: DatePickerChangeHandler;
     /** 모든 폼 값 가져오기 | Get all form values */

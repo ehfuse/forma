@@ -30,6 +30,7 @@
 
 import {
     FormChangeEvent,
+    FormChangeHandler,
     DatePickerChangeHandler,
     UseFormProps,
     UseFormPropsOptional,
@@ -131,36 +132,52 @@ export function useForm<T extends Record<string, any>>(
      * 통합 폼 변경 핸들러 / Unified form change handler
      * MUI Select, TextField, DatePicker 등 모든 컴포넌트 지원
      * Supports all components: MUI Select, TextField, DatePicker, etc.
+     *
+     * 두 가지 호출 방식 지원 / Supports two calling patterns:
+     * 1. handleFormChange(event) - 이벤트 객체 전달
+     * 2. handleFormChange(name, value) - 직접 name, value 전달
      */
-    const handleFormChange = useCallback(
-        (e: FormChangeEvent) => {
-            const target = e.target;
-            if (!target || !target.name) return;
+    const handleFormChange: FormChangeHandler = useCallback(
+        (eventOrName: FormChangeEvent | string, directValue?: any) => {
+            let name: string;
+            let value: any;
 
-            const { name, type, value, checked } = target as any;
-            let newValue = value;
+            // (name, value) 형태로 직접 호출된 경우
+            if (typeof eventOrName === "string") {
+                name = eventOrName;
+                value = directValue;
+            } else {
+                // 이벤트 객체로 호출된 경우
+                const target = eventOrName.target;
+                if (!target || !target.name) return;
+
+                const { type, checked } = target as any;
+                name = target.name;
+                value = target.value;
+
+                // 체크박스 처리 / Checkbox handling
+                if (type === "checkbox") {
+                    value = checked;
+                }
+                // 숫자 타입 처리 / Number type handling
+                else if (type === "number") {
+                    value = Number(value);
+                }
+            }
 
             // DatePicker 처리 (Dayjs 객체) / DatePicker handling (Dayjs object)
             if (value && typeof value === "object" && value.format) {
-                newValue = value.format("YYYY-MM-DD");
-            }
-            // 체크박스 처리 / Checkbox handling
-            else if (type === "checkbox") {
-                newValue = checked;
-            }
-            // 숫자 타입 처리 / Number type handling
-            else if (type === "number") {
-                newValue = Number(value);
+                value = value.format("YYYY-MM-DD");
             }
             // null 값 처리 / Null value handling
             else if (value === null) {
-                newValue = undefined;
+                value = undefined;
             }
 
-            fieldState.setValue(name, newValue);
+            fieldState.setValue(name, value);
         },
         [fieldState.setValue]
-    );
+    ) as FormChangeHandler;
 
     /**
      * DatePicker 전용 변경 핸들러 / DatePicker-specific change handler

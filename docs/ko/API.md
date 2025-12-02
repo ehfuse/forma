@@ -308,23 +308,23 @@ state.refreshFields("user");
 
 #### 빠른 참조
 
-| 카테고리    | 메서드                              | 설명                                  | 반환값                    |
-| ----------- | ----------------------------------- | ------------------------------------- | ------------------------- |
-| **상태**    | `isSubmitting`                      | 폼이 현재 제출 중인지 여부            | `boolean`                 |
-|             | `isValidating`                      | 폼이 현재 검증 중인지 여부            | `boolean`                 |
-|             | `isModified`                        | 폼이 초기값에서 수정되었는지 여부     | `boolean`                 |
-| **값 조회** | `useFormValue(fieldName)`           | 특정 필드 값 구독 (성능 최적화, 권장) | `any`                     |
-|             | `getFormValue(fieldName)`           | 특정 필드 값 조회 (구독 없음)         | `any`                     |
-|             | `getFormValues()`                   | 모든 필드 값 조회 (구독 없음)         | `T`                       |
-| **값 설정** | `setFormValue(name, value)`         | 특정 필드 값 설정                     | `void`                    |
-|             | `setFormValues(values)`             | 여러 필드 값 한 번에 설정             | `void`                    |
-|             | `setInitialFormValues(values)`      | 초기값 변경                           | `void`                    |
-| **이벤트**  | `handleFormChange(event)`           | 폼 입력 변경 이벤트 처리              | `void`                    |
-|             | `handleDatePickerChange(fieldName)` | 날짜 선택기 변경 핸들러 생성          | `DatePickerChangeHandler` |
-| **폼 액션** | `submit()`                          | 폼 제출 (검증 후, Promise<boolean>)   | `Promise<boolean>`        |
-|             | `resetForm()`                       | 초기값으로 폼 재설정                  | `void`                    |
-|             | `validateForm()`                    | 폼 검증 실행                          | `Promise<boolean>`        |
-| **호환성**  | `values`                            | 모든 필드 값 (비권장, 전체 리렌더링)  | `T`                       |
+| 카테고리    | 메서드                                                         | 설명                                  | 반환값                    |
+| ----------- | -------------------------------------------------------------- | ------------------------------------- | ------------------------- |
+| **상태**    | `isSubmitting`                                                 | 폼이 현재 제출 중인지 여부            | `boolean`                 |
+|             | `isValidating`                                                 | 폼이 현재 검증 중인지 여부            | `boolean`                 |
+|             | `isModified`                                                   | 폼이 초기값에서 수정되었는지 여부     | `boolean`                 |
+| **값 조회** | `useFormValue(fieldName)`                                      | 특정 필드 값 구독 (성능 최적화, 권장) | `any`                     |
+|             | `getFormValue(fieldName)`                                      | 특정 필드 값 조회 (구독 없음)         | `any`                     |
+|             | `getFormValues()`                                              | 모든 필드 값 조회 (구독 없음)         | `T`                       |
+| **값 설정** | `setFormValue(name, value)`                                    | 특정 필드 값 설정                     | `void`                    |
+|             | `setFormValues(values)`                                        | 여러 필드 값 한 번에 설정             | `void`                    |
+|             | `setInitialFormValues(values)`                                 | 초기값 변경                           | `void`                    |
+| **이벤트**  | `handleFormChange(event)` 또는 `handleFormChange(name, value)` | 폼 입력 변경 처리                     | `void`                    |
+|             | `handleDatePickerChange(fieldName)`                            | 날짜 선택기 변경 핸들러 생성          | `DatePickerChangeHandler` |
+| **폼 액션** | `submit()`                                                     | 폼 제출 (검증 후, Promise<boolean>)   | `Promise<boolean>`        |
+|             | `resetForm()`                                                  | 초기값으로 폼 재설정                  | `void`                    |
+|             | `validateForm()`                                               | 폼 검증 실행                          | `Promise<boolean>`        |
+| **호환성**  | `values`                                                       | 모든 필드 값 (비권장, 전체 리렌더링)  | `T`                       |
 
 #### Signature
 
@@ -376,8 +376,8 @@ interface UseFormReturn<T> {
     setFormValues: (values: Partial<T>) => void;
     setInitialFormValues: (values: T) => void;
 
-    // 이벤트 핸들러
-    handleFormChange: (e: FormChangeEvent) => void;
+    // 이벤트 핸들러 (두 가지 시그니처 지원)
+    handleFormChange: FormChangeHandler; // (event) 또는 (name, value)
     handleDatePickerChange: (fieldName: string) => DatePickerChangeHandler;
 
     // 폼 액션
@@ -498,24 +498,24 @@ await form.actions.submitOrder(); // 워크플로우 실행
 
 #### Functions
 
-| Function                 | Signature                                        | Description                                   |
-| ------------------------ | ------------------------------------------------ | --------------------------------------------- |
-| `isSubmitting`           | `boolean`                                        | 폼이 현재 제출 중인지 여부.                   |
-| `isValidating`           | `boolean`                                        | 폼이 현재 검증 중인지 여부.                   |
-| `isModified`             | `boolean`                                        | 폼이 초기값에서 수정되었는지 여부.            |
-| `useFormValue`           | `(fieldName: string) => any`                     | 특정 폼 필드 값 구독 (성능을 위해 권장).      |
-| `getFormValue`           | `(fieldName: string) => any`                     | 구독 없이 특정 폼 필드 값 가져옴.             |
-| `getFormValues`          | `() => T`                                        | 모든 현재 폼 값 가져옴.                       |
-| `setFormValue`           | `(name: string, value: any) => void`             | 특정 폼 필드 값 설정.                         |
-| `setFormValues`          | `(values: Partial<T>) => void`                   | 여러 폼 값 한 번에 설정.                      |
-| `setInitialFormValues`   | `(values: T) => void`                            | 초기 폼 값 업데이트.                          |
-| `handleFormChange`       | `(e: FormChangeEvent) => void`                   | 폼 입력 변경 이벤트 처리.                     |
-| `handleDatePickerChange` | `(fieldName: string) => DatePickerChangeHandler` | 특정 필드용 date picker 변경 핸들러 생성.     |
-| `submit`                 | `() => Promise<boolean>`                         | 폼 제출, 검증 후 결과 반환.                   |
-| `resetForm`              | `() => void`                                     | 폼을 초기값으로 재설정.                       |
-| `validateForm`           | `() => Promise<boolean>`                         | 폼 검증, 검증 결과 반환.                      |
-| `actions`                | `any`                                            | 커스텀 액션 (computed getter 및 handler).     |
-| `values`                 | `T`                                              | 모든 폼 값 (전체 리렌더링 발생하므로 비권장). |
+| Function                 | Signature                                        | Description                                           |
+| ------------------------ | ------------------------------------------------ | ----------------------------------------------------- |
+| `isSubmitting`           | `boolean`                                        | 폼이 현재 제출 중인지 여부.                           |
+| `isValidating`           | `boolean`                                        | 폼이 현재 검증 중인지 여부.                           |
+| `isModified`             | `boolean`                                        | 폼이 초기값에서 수정되었는지 여부.                    |
+| `useFormValue`           | `(fieldName: string) => any`                     | 특정 폼 필드 값 구독 (성능을 위해 권장).              |
+| `getFormValue`           | `(fieldName: string) => any`                     | 구독 없이 특정 폼 필드 값 가져옴.                     |
+| `getFormValues`          | `() => T`                                        | 모든 현재 폼 값 가져옴.                               |
+| `setFormValue`           | `(name: string, value: any) => void`             | 특정 폼 필드 값 설정.                                 |
+| `setFormValues`          | `(values: Partial<T>) => void`                   | 여러 폼 값 한 번에 설정.                              |
+| `setInitialFormValues`   | `(values: T) => void`                            | 초기 폼 값 업데이트.                                  |
+| `handleFormChange`       | `FormChangeHandler`                              | 폼 입력 변경 처리 (이벤트 또는 name,value 직접 전달). |
+| `handleDatePickerChange` | `(fieldName: string) => DatePickerChangeHandler` | 특정 필드용 date picker 변경 핸들러 생성.             |
+| `submit`                 | `() => Promise<boolean>`                         | 폼 제출, 검증 후 결과 반환.                           |
+| `resetForm`              | `() => void`                                     | 폼을 초기값으로 재설정.                               |
+| `validateForm`           | `() => Promise<boolean>`                         | 폼 검증, 검증 결과 반환.                              |
+| `actions`                | `any`                                            | 커스텀 액션 (computed getter 및 handler).             |
+| `values`                 | `T`                                              | 모든 폼 값 (전체 리렌더링 발생하므로 비권장).         |
 
 #### setInitialFormValues 메서드
 
@@ -1961,6 +1961,34 @@ type FormChangeEvent =
               context: PickerChangeHandlerContext<any>
           ) => void;
       };
+```
+
+### FormChangeHandler
+
+`handleFormChange`의 타입입니다. 이벤트 객체 또는 `(name, value)` 직접 전달 방식을 모두 지원합니다.
+
+```typescript
+type FormChangeHandler = {
+    (event: FormChangeEvent): void;
+    (name: string, value: any): void;
+};
+```
+
+**사용 예시:**
+
+```typescript
+const { handleFormChange } = useForm({ initialValues: { name: '', category: '' } });
+
+// 1️⃣ 기존 방식 - 이벤트 객체
+<TextField name="name" onChange={handleFormChange} />
+
+// 2️⃣ 새로운 방식 - (name, value) 직접 전달
+<CustomSelect
+    onChange={(name, value) => handleFormChange(name, value)}
+/>
+
+// 또는 컴포넌트가 (name, value)로 호출하면
+<CustomSelect name="category" onChange={handleFormChange} />
 ```
 
 ### DatePickerChangeHandler

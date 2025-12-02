@@ -290,23 +290,23 @@ A basic hook for managing local form state.
 
 #### Quick Reference
 
-| Category          | Method                              | Description                                                            | Return                    |
-| ----------------- | ----------------------------------- | ---------------------------------------------------------------------- | ------------------------- |
-| **Status**        | `isSubmitting`                      | Whether form is currently being submitted                              | `boolean`                 |
-|                   | `isValidating`                      | Whether form is currently being validated                              | `boolean`                 |
-|                   | `isModified`                        | Whether form has been modified from initial values                     | `boolean`                 |
-| **Get Values**    | `useFormValue(fieldName)`           | Subscribe to specific field value (performance optimized, recommended) | `any`                     |
-|                   | `getFormValue(fieldName)`           | Get specific field value (no subscription)                             | `any`                     |
-|                   | `getFormValues()`                   | Get all field values (no subscription)                                 | `T`                       |
-| **Set Values**    | `setFormValue(name, value)`         | Set specific field value                                               | `void`                    |
-|                   | `setFormValues(values)`             | Set multiple field values at once                                      | `void`                    |
-|                   | `setInitialFormValues(values)`      | Change initial values                                                  | `void`                    |
-| **Events**        | `handleFormChange(event)`           | Handle form input change events                                        | `void`                    |
-|                   | `handleDatePickerChange(fieldName)` | Create date picker change handler                                      | `DatePickerChangeHandler` |
-| **Form Actions**  | `submit()`                          | Submit form (with validation, returns Promise<boolean>)                | `Promise<boolean>`        |
-|                   | `resetForm()`                       | Reset form to initial values                                           | `void`                    |
-|                   | `validateForm()`                    | Run form validation                                                    | `Promise<boolean>`        |
-| **Compatibility** | `values`                            | All field values (not recommended, causes full re-render)              | `T`                       |
+| Category          | Method                                                       | Description                                                            | Return                    |
+| ----------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- | ------------------------- |
+| **Status**        | `isSubmitting`                                               | Whether form is currently being submitted                              | `boolean`                 |
+|                   | `isValidating`                                               | Whether form is currently being validated                              | `boolean`                 |
+|                   | `isModified`                                                 | Whether form has been modified from initial values                     | `boolean`                 |
+| **Get Values**    | `useFormValue(fieldName)`                                    | Subscribe to specific field value (performance optimized, recommended) | `any`                     |
+|                   | `getFormValue(fieldName)`                                    | Get specific field value (no subscription)                             | `any`                     |
+|                   | `getFormValues()`                                            | Get all field values (no subscription)                                 | `T`                       |
+| **Set Values**    | `setFormValue(name, value)`                                  | Set specific field value                                               | `void`                    |
+|                   | `setFormValues(values)`                                      | Set multiple field values at once                                      | `void`                    |
+|                   | `setInitialFormValues(values)`                               | Change initial values                                                  | `void`                    |
+| **Events**        | `handleFormChange(event)` or `handleFormChange(name, value)` | Handle form input change                                               | `void`                    |
+|                   | `handleDatePickerChange(fieldName)`                          | Create date picker change handler                                      | `DatePickerChangeHandler` |
+| **Form Actions**  | `submit()`                                                   | Submit form (with validation, returns Promise<boolean>)                | `Promise<boolean>`        |
+|                   | `resetForm()`                                                | Reset form to initial values                                           | `void`                    |
+|                   | `validateForm()`                                             | Run form validation                                                    | `Promise<boolean>`        |
+| **Compatibility** | `values`                                                     | All field values (not recommended, causes full re-render)              | `T`                       |
 
 #### Signature
 
@@ -358,8 +358,8 @@ interface UseFormReturn<T> {
     setFormValues: (values: Partial<T>) => void;
     setInitialFormValues: (values: T) => void;
 
-    // Event handlers
-    handleFormChange: (e: FormChangeEvent) => void;
+    // Event handlers (supports two signatures)
+    handleFormChange: FormChangeHandler; // (event) or (name, value)
     handleDatePickerChange: (fieldName: string) => DatePickerChangeHandler;
 
     // Form actions
@@ -426,7 +426,7 @@ const handleSubmit = async () => {
 | `setFormValue`           | `(name: string, value: any) => void`             | Set specific form field value.                                        |
 | `setFormValues`          | `(values: Partial<T>) => void`                   | Set multiple form values at once.                                     |
 | `setInitialFormValues`   | `(values: T) => void`                            | Update initial form values.                                           |
-| `handleFormChange`       | `(e: FormChangeEvent) => void`                   | Handle form input change events.                                      |
+| `handleFormChange`       | `FormChangeHandler`                              | Handle form input changes (event or direct name,value).               |
 | `handleDatePickerChange` | `(fieldName: string) => DatePickerChangeHandler` | Create date picker change handler for specific field.                 |
 | `submit`                 | `() => Promise<boolean>`                         | Submit the form, returns validation result.                           |
 | `resetForm`              | `() => void`                                     | Reset form to initial values.                                         |
@@ -1886,6 +1886,34 @@ type FormChangeEvent =
               context: PickerChangeHandlerContext<any>
           ) => void;
       };
+```
+
+### FormChangeHandler
+
+Type for `handleFormChange`. Supports both event object and direct `(name, value)` arguments.
+
+```typescript
+type FormChangeHandler = {
+    (event: FormChangeEvent): void;
+    (name: string, value: any): void;
+};
+```
+
+**Usage Examples:**
+
+```typescript
+const { handleFormChange } = useForm({ initialValues: { name: '', category: '' } });
+
+// 1️⃣ Traditional - event object
+<TextField name="name" onChange={handleFormChange} />
+
+// 2️⃣ New - direct (name, value) arguments
+<CustomSelect
+    onChange={(name, value) => handleFormChange(name, value)}
+/>
+
+// Or if component calls with (name, value)
+<CustomSelect name="category" onChange={handleFormChange} />
 ```
 
 ### DatePickerChangeHandler

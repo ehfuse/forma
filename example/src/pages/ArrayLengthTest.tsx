@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { useGlobalFormaState } from "../../../hooks/useGlobalFormaState";
+import { useGlobalFormaState } from "@ehfuse/forma";
 import { Button, Box, Typography, Paper } from "@mui/material";
 
 /**

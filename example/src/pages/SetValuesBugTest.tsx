@@ -4,7 +4,7 @@
  * Bug: setValues로 중첩 객체 설정 시 useFormValue 구독이 작동하지 않는 문제 재현
  */
 
-import { useForm } from "../../../hooks/useForm";
+import { useForm } from "@ehfuse/forma";
 
 // customer.seq 구독자
 function CustomerSeqDisplay({ form }: { form: any }) {

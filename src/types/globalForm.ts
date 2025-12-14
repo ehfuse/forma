@@ -28,7 +28,7 @@
 
 import { ReactNode } from "react";
 import { FieldStore } from "../core/FieldStore";
-import { UseFormReturn, Actions, ActionContext } from "./form";
+import { UseFormReturn, Actions, ActionContext, PersistConfig } from "./form";
 import { UseFormaStateReturn } from "../hooks/useFormaState";
 
 /**
@@ -36,6 +36,8 @@ import { UseFormaStateReturn } from "../hooks/useFormaState";
  */
 export interface GlobalFormaProviderProps {
     children: ReactNode;
+    /** localStorage 키 prefix (앱별 구분용) | localStorage key prefix (for app separation) */
+    storagePrefix?: string;
 }
 
 /**
@@ -59,6 +61,8 @@ export interface UseGlobalFormProps<T extends Record<string, any>> {
     actions?: Actions<T> | Actions<T>[];
     /** 필드 변경 감시 | Watch field changes */
     watch?: WatchConfig<T>;
+    /** localStorage/sessionStorage 영속성 설정 | localStorage/sessionStorage persistence config */
+    persist?: PersistConfig;
 }
 
 /**
@@ -92,6 +96,8 @@ export interface UseGlobalFormaStateProps<T extends Record<string, any>> {
     actions?: Actions<T> | Actions<T>[];
     /** 필드 변경 감시 | Watch field changes */
     watch?: WatchConfig<T>;
+    /** localStorage/sessionStorage 영속성 설정 | localStorage/sessionStorage persistence config */
+    persist?: PersistConfig;
 }
 
 /**
@@ -423,6 +429,10 @@ export interface GlobalFormHandlers<T extends Record<string, any>> {
  * 폼 스토어 관리와 모달 스택 관리 기능을 제공
  */
 export interface GlobalFormaContextType {
+    // ========== Storage Prefix ==========
+    /** localStorage/sessionStorage 키 prefix | Storage key prefix */
+    storagePrefix?: string;
+
     // ========== FieldStore 관련 ==========
     getOrCreateStore: <T extends Record<string, any>>(
         formId: string
@@ -456,14 +466,9 @@ export interface GlobalFormaContextType {
 
     // ========== Actions 관리 ==========
     /** 글로벌 actions 등록 | Register global actions */
-    registerActions: <T extends Record<string, any>>(
-        formId: string,
-        actions: any
-    ) => void;
+    registerActions: (formId: string, actions: any) => void;
     /** 글로벌 actions 조회 | Get global actions */
-    getActions: <T extends Record<string, any>>(
-        formId: string
-    ) => any | undefined;
+    getActions: (formId: string) => any | undefined;
     /** 글로벌 actions 제거 | Remove global actions */
     unregisterActions: (formId: string) => void;
 

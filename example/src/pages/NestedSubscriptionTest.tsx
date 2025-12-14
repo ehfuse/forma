@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { useGlobalFormaState } from "../../../hooks/useGlobalFormaState";
+import { useGlobalFormaState } from "@ehfuse/forma";
 
 interface Checkbox {
     id: number;

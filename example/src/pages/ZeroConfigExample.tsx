@@ -8,8 +8,7 @@
  * @license MIT License
  */
 
-import { useForm } from "../../../hooks/useForm";
-import { useFormaState } from "../../../hooks/useFormaState";
+import { useForm, useFormaState } from "@ehfuse/forma";
 
 interface UserData {
     name: string;

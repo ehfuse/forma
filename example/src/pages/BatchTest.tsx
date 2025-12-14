@@ -9,7 +9,7 @@ import {
     Chip,
     Paper,
 } from "@mui/material";
-import { useFormaState } from "../../../hooks/useFormaState";
+import { useFormaState } from "@ehfuse/forma";
 
 // 🔥 핵심: 개별 항목을 구독하는 컴포넌트 - 의도적으로 무거운 렌더링
 // setValue: 각 필드 변경마다 이 컴포넌트가 리렌더링됨

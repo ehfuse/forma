@@ -26,24 +26,20 @@
  * SOFTWARE.
  */
 
-import {
-    createContext,
-    useRef,
-    ReactNode,
-    useState,
-    useEffect,
-    useCallback,
-} from "react";
+import { createContext, useRef, useState, useEffect, useCallback } from "react";
 import { FieldStore } from "../core/FieldStore";
 import {
     GlobalFormaContextType,
     GlobalFormHandlers,
+    GlobalFormaProviderProps,
 } from "../types/globalForm";
 
 /**
  * 글로벌 폼 상태 관리를 위한 React Context | React Context for global form state management
  */
 export const GlobalFormaContext = createContext<GlobalFormaContextType>({
+    // Storage Prefix
+    storagePrefix: undefined,
     // FieldStore 관련
     getOrCreateStore: () => {
         throw new Error(
@@ -153,7 +149,10 @@ export const GlobalFormaContext = createContext<GlobalFormaContextType>({
  * }
  * ```
  */
-export function GlobalFormaProvider({ children }: { children: ReactNode }) {
+export function GlobalFormaProvider({
+    children,
+    storagePrefix,
+}: GlobalFormaProviderProps) {
     // formId별 FieldStore 인스턴스들을 관리하는 Map | Map managing FieldStore instances by formId
     const storesRef = useRef<Map<string, FieldStore<any>>>(new Map());
     // formId별 참조 카운트를 관리하는 Map | Map managing reference count by formId
@@ -221,15 +220,8 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
         autoCleanup: boolean
     ): void => {
         const autoCleanupSettings = autoCleanupSettingsRef.current;
-        const existingSetting = autoCleanupSettings.get(formId);
-
-        // if (existingSetting !== undefined && existingSetting !== autoCleanup) {
-        //     console.warn(
-        //         `⚠️ Conflicting autoCleanup settings for stateId "${formId}": ` +
-        //             `existing=${existingSetting}, new=${autoCleanup}. ` +
-        //             `All components using the same stateId should have consistent autoCleanup settings.`
-        //     );
-        // }
+        // Note: existingSetting check removed - was used for warning only
+        // const existingSetting = autoCleanupSettings.get(formId);
 
         autoCleanupSettings.set(formId, autoCleanup);
 
@@ -473,10 +465,7 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
      * @param formId 폼/상태 식별자 | Form/state identifier
      * @param actions 등록할 actions | Actions to register
      */
-    const registerActions = <T extends Record<string, any>>(
-        formId: string,
-        actions: any
-    ): void => {
+    const registerActions = (formId: string, actions: any): void => {
         actionsRef.current.set(formId, actions);
     };
 
@@ -486,9 +475,7 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
      * @param formId 폼/상태 식별자 | Form/state identifier
      * @returns actions 또는 undefined | Actions or undefined
      */
-    const getActions = <T extends Record<string, any>>(
-        formId: string
-    ): any | undefined => {
+    const getActions = (formId: string): any | undefined => {
         return actionsRef.current.get(formId);
     };
 
@@ -574,6 +561,8 @@ export function GlobalFormaProvider({ children }: { children: ReactNode }) {
     }, [closeLastModal]);
 
     const contextValue: GlobalFormaContextType = {
+        // Storage Prefix
+        storagePrefix,
         // FieldStore 관련
         getOrCreateStore,
         registerStore,

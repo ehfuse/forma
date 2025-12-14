@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { useGlobalFormaState } from "../../../hooks/useGlobalFormaState";
+import { useGlobalFormaState } from "@ehfuse/forma";
 
 // FilterDialogMobile 역할 (구독자)
 function FilterDialogMobile() {

@@ -14,6 +14,8 @@ This document provides a detailed reference for all APIs in the Forma library.
 |                  | [useRegisterGlobalFormaState](#useregisterglobalformastate)     | Global state registration hook          |
 |                  | [useUnregisterGlobalForm](#useunregisterglobalform)             | Global form unregistration hook         |
 |                  | [useUnregisterGlobalFormaState](#useunregisterglobalformastate) | Global state unregistration hook        |
+|                  | [useLocalStorage](#uselocalstorage)                             | localStorage state management hook      |
+|                  | [useStoragePrefix](#usestorageprefix)                           | storagePrefix getter hook               |
 |                  | [useModal](#usemodal)                                           | Modal management hook                   |
 |                  | [useBreakpoint](#usebreakpoint)                                 | Responsive design hook                  |
 | **Methods**      | [setBatch](#setbatch)                                           | Batch update method                     |
@@ -332,8 +334,24 @@ interface UseFormProps<T> {
     actions?: Actions<T> | Actions<T>[];
     /** Watch callbacks - detect specific path changes (wildcard supported: "todos.*.completed") */
     watch?: WatchOptions<T>;
+    /** localStorage/sessionStorage persistence configuration */
+    persist?: PersistConfig;
     /** Internal API: External store (used in useGlobalForm) */
     _externalStore?: FieldStore<T>;
+}
+
+// Persist configuration type
+type PersistConfig = string | PersistOptions;
+
+interface PersistOptions {
+    /** localStorage key */
+    key: string;
+    /** Save debounce time (ms, default: 300) */
+    debounce?: number;
+    /** Fields to exclude from saving */
+    exclude?: string[];
+    /** Storage type (default: 'localStorage') */
+    storage?: "localStorage" | "sessionStorage";
 }
 ```
 
@@ -367,9 +385,41 @@ interface UseFormReturn<T> {
     resetForm: () => void;
     validateForm: () => Promise<boolean>;
 
+    // Custom actions
+    actions: any;
+
+    // Persist
+    clearPersisted: () => void; // Remove persisted data
+    hasPersisted: boolean; // Whether persisted data exists
+
     // Compatibility (not recommended - causes full re-render)
     values: T;
 }
+```
+
+#### Using persist Option
+
+```typescript
+// Simple usage (key only)
+const form = useForm({
+    initialValues: { name: "", email: "" },
+    persist: "user-form",
+});
+
+// Detailed configuration
+const form = useForm({
+    initialValues: { name: "", email: "", password: "" },
+    persist: {
+        key: "user-form",
+        debounce: 500, // Save after 500ms
+        exclude: ["password"], // Exclude password field
+        storage: "sessionStorage", // Delete when tab closes
+    },
+});
+
+// Managing persisted data
+console.log(form.hasPersisted); // true/false
+form.clearPersisted(); // Remove persisted data
 ```
 
 #### Basic Usage
@@ -1601,7 +1651,125 @@ function ImageGallery() {
 
 📚 **[Detailed Breakpoint Examples →](./examples.md#usebreakpoint-examples)**
 
-———
+---
+
+### useLocalStorage
+
+A hook for managing localStorage/sessionStorage data with a pattern similar to `useState`. The `storagePrefix` from `GlobalFormaProvider` is automatically applied to keys.
+
+> ⚠️ **Required Setup**: To use `useLocalStorage`, you must set `storagePrefix` in `GlobalFormaProvider`. An error will be thrown if not set.
+>
+> ```tsx
+> // ❌ Error thrown
+> <GlobalFormaProvider>
+>   <App /> {/* Error when using useLocalStorage */}
+> </GlobalFormaProvider>
+>
+> // ✅ Correct usage
+> <GlobalFormaProvider storagePrefix="myapp">
+>   <App />
+> </GlobalFormaProvider>
+> ```
+
+#### Signature
+
+```typescript
+function useLocalStorage<T>(
+    key: string,
+    defaultValue: T,
+    options?: UseLocalStorageOptions
+): UseLocalStorageReturn<T>;
+```
+
+#### Parameters
+
+| Parameter         | Type      | Description                                     |
+| ----------------- | --------- | ----------------------------------------------- |
+| `key`             | `string`  | localStorage key                                |
+| `defaultValue`    | `T`       | Default value                                   |
+| `options.session` | `boolean` | Use sessionStorage if `true` (default: `false`) |
+
+#### Return Value
+
+```typescript
+interface UseLocalStorageReturn<T> {
+    /** Current stored value */
+    value: T;
+    /** Set value (supports functional updates) */
+    setValue: (value: T | ((prev: T) => T)) => void;
+    /** Remove stored value */
+    remove: () => void;
+    /** Whether value exists */
+    has: boolean;
+}
+```
+
+#### Examples
+
+```typescript
+import { useLocalStorage } from "@ehfuse/forma";
+
+// Basic usage
+const { value: theme, setValue: setTheme } = useLocalStorage<string>(
+    "theme",
+    "light"
+);
+
+// Object storage
+interface UserSettings {
+    theme: "light" | "dark";
+    fontSize: number;
+}
+const { value: settings, setValue: setSettings } =
+    useLocalStorage<UserSettings>("settings", {
+        theme: "light",
+        fontSize: 14,
+    });
+
+// Functional update
+setSettings((prev) => ({ ...prev, theme: "dark" }));
+
+// Using sessionStorage
+const { value } = useLocalStorage("temp", "", { session: true });
+```
+
+#### storagePrefix Auto-application
+
+```typescript
+// main.tsx
+<GlobalFormaProvider storagePrefix="myapp">
+    <App />
+</GlobalFormaProvider>;
+
+// In component
+const { value } = useLocalStorage("theme", "light");
+// Actual localStorage key: "myapp:theme"
+```
+
+---
+
+### useStoragePrefix
+
+A utility hook to get the `storagePrefix` set in `GlobalFormaProvider`.
+
+#### Signature
+
+```typescript
+function useStoragePrefix(): string | undefined;
+```
+
+#### Examples
+
+```typescript
+import { useStoragePrefix } from "@ehfuse/forma";
+
+function DebugComponent() {
+    const prefix = useStoragePrefix();
+    console.log("Current prefix:", prefix); // "myapp" or undefined
+}
+```
+
+---
 
 ## Methods
 
@@ -1665,22 +1833,32 @@ Context Provider for global Forma state management.
 #### Signature
 
 ```typescript
-function GlobalFormaProvider({
-    children,
-}: {
+function GlobalFormaProvider(props: GlobalFormaProviderProps): JSX.Element;
+
+interface GlobalFormaProviderProps {
     children: ReactNode;
-}): JSX.Element;
+    /** localStorage key prefix (for app separation) */
+    storagePrefix?: string;
+}
 ```
+
+#### Props
+
+| Prop            | Type        | Default     | Description                                                                                                  |
+| --------------- | ----------- | ----------- | ------------------------------------------------------------------------------------------------------------ |
+| `children`      | `ReactNode` | -           | Child components                                                                                             |
+| `storagePrefix` | `string`    | `undefined` | localStorage/sessionStorage key prefix. Automatically applied to `useLocalStorage` hook and `persist` option |
 
 #### Usage
 
 ```typescript
 // App.tsx
-import { GlobalFormaProvider } from "@/forma";
+import { GlobalFormaProvider } from "@ehfuse/forma";
 
 function App() {
     return (
-        <GlobalFormaProvider>
+        // Setting storagePrefix auto-applies to all storage keys
+        <GlobalFormaProvider storagePrefix="myapp">
             <Router>
                 <Routes>
                     <Route path="/step1" element={<Step1 />} />
@@ -1690,6 +1868,23 @@ function App() {
         </GlobalFormaProvider>
     );
 }
+```
+
+#### Using storagePrefix
+
+```typescript
+// With storagePrefix="myapp" set
+
+// Using useLocalStorage
+const { value } = useLocalStorage("theme", "light");
+// Actual key: "myapp:theme"
+
+// Using persist option
+const form = useForm({
+    initialValues: { name: "" },
+    persist: "user-form",
+});
+// Actual key: "myapp:user-form"
 ```
 
 ---

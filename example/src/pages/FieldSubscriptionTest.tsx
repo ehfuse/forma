@@ -1,4 +1,4 @@
-import { useFormaState } from "../../../hooks/useFormaState";
+import { useFormaState } from "@ehfuse/forma";
 
 /**
  * useFormaState의 필드 구독 테스트

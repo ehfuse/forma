@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from "react";
-import { useGlobalFormaState } from "../../../hooks/useGlobalFormaState";
+import { useGlobalFormaState } from "@ehfuse/forma";
 
 const DebugFormaState: React.FC = () => {
     const [stateId] = useState("debug-test");

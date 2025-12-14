@@ -38,6 +38,14 @@ import {
 } from "../types/form";
 import { useFormaState } from "./useFormaState";
 import { devError, mergeActions } from "../utils";
+import {
+    loadPersistedData,
+    savePersistedData,
+    clearPersistedData,
+    hasPersistedData,
+    normalizePersistConfig,
+    debounce,
+} from "../utils/persist";
 
 import React, {
     useEffect,
@@ -45,10 +53,12 @@ import React, {
     useCallback,
     useRef,
     useMemo,
+    useContext,
 } from "react";
+import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 
 // MUI DatePicker 타입 (선택적 import) / MUI DatePicker type (optional import)
-type PickerChangeHandlerContext<T> = any;
+type PickerChangeHandlerContext = any;
 
 /**
  * Forma 핵심 폼 관리 훅 / Forma core form management hook
@@ -94,13 +104,35 @@ export function useForm<T extends Record<string, any>>(
         actions: userActions,
         watch,
         _externalStore,
+        persist,
     } = props;
+
+    // GlobalFormaContext에서 storagePrefix 가져오기 | Get storagePrefix from GlobalFormaContext
+    const context = useContext(GlobalFormaContext);
+    const storagePrefix = context?.storagePrefix;
+
+    // Persist 설정 정규화 | Normalize persist config
+    const persistConfig = persist ? normalizePersistConfig(persist) : null;
 
     // 초기값 안정화: 첫 번째 렌더링에서만 초기값을 고정
     // Stabilize initial values: fix initial values only on first render
+    // persist가 있으면 localStorage에서 복원 시도
     const stableInitialValues = useRef<T | null>(null);
     if (!stableInitialValues.current) {
-        stableInitialValues.current = initialValues;
+        let mergedInitialValues = initialValues;
+
+        // persist 설정이 있으면 저장된 데이터 복원 시도
+        if (persistConfig) {
+            const persisted = loadPersistedData<T>(
+                persistConfig,
+                storagePrefix
+            );
+            if (persisted) {
+                mergedInitialValues = { ...initialValues, ...persisted };
+            }
+        }
+
+        stableInitialValues.current = mergedInitialValues;
     }
 
     // useFormaState를 기반으로 사용 / Use useFormaState as foundation
@@ -127,6 +159,43 @@ export function useForm<T extends Record<string, any>>(
 
         return unsubscribe;
     }, [fieldState._store]);
+
+    // Persist: 디바운스된 저장 함수 생성 | Create debounced save function
+    const debouncedSaveRef = useRef<((values: T) => void) | null>(null);
+
+    useEffect(() => {
+        if (!persistConfig) return;
+
+        const debounceTime = persistConfig.debounce ?? 300;
+        debouncedSaveRef.current = debounce((values: T) => {
+            savePersistedData(persistConfig, values, storagePrefix);
+        }, debounceTime);
+    }, [persistConfig, storagePrefix]);
+
+    // Persist: 값 변경 시 저장 | Save on value change
+    useEffect(() => {
+        if (!persistConfig || !debouncedSaveRef.current) return;
+
+        const unsubscribe = fieldState._store.subscribeGlobal(() => {
+            const currentValues = fieldState._store.getValues();
+            debouncedSaveRef.current?.(currentValues);
+        });
+
+        return unsubscribe;
+    }, [fieldState._store, persistConfig]);
+
+    // Persist: clearPersisted 함수 | clearPersisted function
+    const clearPersisted = useCallback(() => {
+        if (persistConfig) {
+            clearPersistedData(persistConfig, storagePrefix);
+        }
+    }, [persistConfig, storagePrefix]);
+
+    // Persist: hasPersisted 상태 | hasPersisted state
+    const hasPersisted = useMemo(() => {
+        if (!persistConfig) return false;
+        return hasPersistedData(persistConfig, storagePrefix);
+    }, [persistConfig, storagePrefix]);
 
     /**
      * 통합 폼 변경 핸들러 / Unified form change handler
@@ -185,7 +254,7 @@ export function useForm<T extends Record<string, any>>(
      */
     const handleDatePickerChange: DatePickerChangeHandler = useCallback(
         (fieldName: string) => {
-            return (value: any, _context?: PickerChangeHandlerContext<any>) => {
+            return (value: any, _context?: PickerChangeHandlerContext) => {
                 let newValue = value;
 
                 // DatePicker 처리 (Dayjs 객체) / DatePicker handling (Dayjs object)
@@ -406,6 +475,10 @@ export function useForm<T extends Record<string, any>>(
             // Actions
             actions: boundActions, // 사용자 정의 actions / user-defined actions
 
+            // Persist
+            clearPersisted, // 저장된 데이터 삭제 / clear persisted data
+            hasPersisted, // 저장된 데이터 있는지 / has persisted data
+
             // 호환성 / Compatibility
             values: fieldState.getValues(), // 호환성을 위한 values 객체 (비권장) / Values object for compatibility (not recommended)
 
@@ -428,6 +501,8 @@ export function useForm<T extends Record<string, any>>(
             resetForm,
             validateForm,
             boundActions, // actions 의존성 추가
+            clearPersisted,
+            hasPersisted,
             fieldState._store, // Store 의존성으로 대체
         ]
     );

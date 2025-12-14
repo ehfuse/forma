@@ -1,5 +1,5 @@
 import { useRef, useState, memo } from "react";
-import { useFormaState } from "../../../hooks/useFormaState";
+import { useFormaState } from "@ehfuse/forma";
 
 // 렌더링 횟수를 추적하는 컴포넌트 - 개별 필드 구독
 const RenderCounter = ({

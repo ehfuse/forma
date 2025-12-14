@@ -12,19 +12,23 @@ import {
     useRef,
     useCallback,
     useMemo,
-    useState,
     useEffect,
     useSyncExternalStore,
-    useReducer,
+    useContext,
 } from "react";
 import { FieldStore } from "../core/FieldStore";
-import {
-    getNestedValue,
-    setNestedValue,
-    devWarn,
-    mergeActions,
-} from "../utils";
+import { devWarn, mergeActions } from "../utils";
 import { FormChangeEvent, ActionContext, Actions } from "../types/form";
+import {
+    PersistConfig,
+    loadPersistedData,
+    savePersistedData,
+    clearPersistedData,
+    hasPersistedData,
+    normalizePersistConfig,
+    debounce,
+} from "../utils/persist";
+import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 
 /**
  * Options for configuring useFormaState hook
@@ -58,6 +62,9 @@ export interface UseFormaStateOptions<T extends Record<string, any>> {
             prevValue: any
         ) => void | Promise<void>
     >;
+
+    /** localStorage 영속성 설정 | localStorage persistence config */
+    persist?: PersistConfig;
 }
 
 /**
@@ -106,6 +113,12 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
 
     /** Custom actions bound to this state | 이 상태에 바인딩된 커스텀 액션 */
     actions: any;
+
+    /** 저장된 데이터 삭제 | Clear persisted data */
+    clearPersisted: () => void;
+
+    /** 저장된 데이터 존재 여부 | Has persisted data */
+    hasPersisted: boolean;
 
     /** Direct access to the internal store for advanced usage | 고급 사용을 위한 내부 스토어 직접 접근 */
     _store: FieldStore<T>;
@@ -209,14 +222,39 @@ export function useFormaState<T extends Record<string, any>>(
 ): UseFormaStateReturn<T> {
     const {
         onChange,
-        deepEquals = false,
+        deepEquals: _deepEquals = false,
         _externalStore,
         actions: actionsDefinition,
+        persist,
     } = options;
+
+    // GlobalFormaContext에서 storagePrefix 가져오기 | Get storagePrefix from GlobalFormaContext
+    const context = useContext(GlobalFormaContext);
+    const storagePrefix = context?.storagePrefix;
+
+    // Persist 설정 정규화 | Normalize persist config
+    const persistConfig = persist ? normalizePersistConfig(persist) : null;
 
     // 초기값 안정화: 첫 번째 렌더링에서만 초기값을 고정
     // Stabilize initial values: fix initial values only on first render
+    // persist가 있으면 localStorage에서 복원 시도
     const stableInitialValues = useRef<T | null>(null);
+    if (!stableInitialValues.current) {
+        let mergedInitialValues = initialValues;
+
+        // persist 설정이 있으면 저장된 데이터 복원 시도
+        if (persistConfig) {
+            const persisted = loadPersistedData<T>(
+                persistConfig,
+                storagePrefix
+            );
+            if (persisted) {
+                mergedInitialValues = { ...initialValues, ...persisted };
+            }
+        }
+
+        stableInitialValues.current = mergedInitialValues;
+    }
     if (!stableInitialValues.current) {
         stableInitialValues.current = initialValues;
     }
@@ -297,6 +335,43 @@ export function useFormaState<T extends Record<string, any>>(
     const reset = useCallback(() => {
         store.reset();
     }, [store]); // store 의존성 추가
+
+    // Persist: 디바운스된 저장 함수 생성 | Create debounced save function
+    const debouncedSaveRef = useRef<((values: T) => void) | null>(null);
+
+    useEffect(() => {
+        if (!persistConfig) return;
+
+        const debounceTime = persistConfig.debounce ?? 300;
+        debouncedSaveRef.current = debounce((values: T) => {
+            savePersistedData(persistConfig, values, storagePrefix);
+        }, debounceTime);
+    }, [persistConfig, storagePrefix]);
+
+    // Persist: 값 변경 시 저장 | Save on value change
+    useEffect(() => {
+        if (!persistConfig || !debouncedSaveRef.current) return;
+
+        const unsubscribe = store.subscribeGlobal(() => {
+            const currentValues = store.getValues();
+            debouncedSaveRef.current?.(currentValues);
+        });
+
+        return unsubscribe;
+    }, [store, persistConfig]);
+
+    // Persist: clearPersisted 함수 | clearPersisted function
+    const clearPersisted = useCallback(() => {
+        if (persistConfig) {
+            clearPersistedData(persistConfig, storagePrefix);
+        }
+    }, [persistConfig, storagePrefix]);
+
+    // Persist: hasPersisted 상태 | hasPersisted state
+    const hasPersisted = useMemo(() => {
+        if (!persistConfig) return false;
+        return hasPersistedData(persistConfig, storagePrefix);
+    }, [persistConfig, storagePrefix]);
 
     // Set new initial values (for dynamic initialization)
     // 새 초기값 설정 (동적 초기화용)
@@ -468,5 +543,7 @@ export function useFormaState<T extends Record<string, any>>(
         ),
         actions: boundActions,
         _store: store,
+        clearPersisted,
+        hasPersisted,
     };
 }

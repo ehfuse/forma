@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGlobalForm } from "../../../hooks/useGlobalForm";
+import { useGlobalForm } from "@ehfuse/forma";
 
 /**
  * 핸들러 공유 예제

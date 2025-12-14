@@ -9,6 +9,20 @@
  */
 
 /**
+ * Check if the current environment is a browser
+ * 현재 환경이 브라우저 환경인지 확인
+ *
+ * @returns {boolean} true if browser environment, false otherwise
+ */
+export function isBrowser(): boolean {
+    return (
+        typeof window !== "undefined" &&
+        typeof window.document !== "undefined" &&
+        typeof window.localStorage !== "undefined"
+    );
+}
+
+/**
  * Check if the current environment is development
  * 현재 환경이 개발 환경인지 확인
  *

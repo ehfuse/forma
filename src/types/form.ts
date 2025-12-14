@@ -27,12 +27,16 @@
  */
 
 import { FieldStore } from "../core/FieldStore";
+import { PersistConfig } from "../utils/persist";
+
+// PersistConfig를 re-export (globalForm.ts에서 사용)
+export type { PersistConfig };
 
 // MUI 타입들 (선택적 import) | MUI types (optional import)
 type SelectChangeEvent<T = string> = {
     target: { name?: string; value: T };
 };
-type PickerChangeHandlerContext<T> = any;
+type PickerChangeHandlerContext = any;
 
 /**
  * 폼 이벤트 타입 정의 | Form event type definitions
@@ -46,10 +50,7 @@ export type FormChangeEvent =
     | SelectChangeEvent<string | number>
     | {
           target: { name: string; value: any };
-          onChange?: (
-              value: any,
-              context: PickerChangeHandlerContext<any>
-          ) => void;
+          onChange?: (value: any, context: PickerChangeHandlerContext) => void;
       };
 
 /**
@@ -68,7 +69,7 @@ export type FormChangeHandler = {
  */
 export type DatePickerChangeHandler = (
     fieldName: string
-) => (value: any, context?: PickerChangeHandlerContext<any>) => void;
+) => (value: any, context?: PickerChangeHandlerContext) => void;
 
 /**
  * useForm 훅의 Props 타입 | useForm hook Props type
@@ -86,6 +87,8 @@ export interface UseFormProps<T extends Record<string, any>> {
     actions?: Actions<T> | Actions<T>[];
     /** Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원) | Watch callbacks - Detect specific path changes (wildcard supported) */
     watch?: WatchOptions<T>;
+    /** localStorage 영속성 설정 | localStorage persistence config */
+    persist?: PersistConfig;
     /** 내부 API - 전역 상태용 외부 스토어 | Internal API - external store for global state */
     _externalStore?: FieldStore<T>;
 }
@@ -108,6 +111,8 @@ export interface UseFormPropsOptional<
     actions?: Actions<T> | Actions<T>[];
     /** Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원) | Watch callbacks - Detect specific path changes (wildcard supported) */
     watch?: WatchOptions<T>;
+    /** localStorage 영속성 설정 | localStorage persistence config */
+    persist?: PersistConfig;
     /** 내부 API - 전역 상태용 외부 스토어 | Internal API - external store for global state */
     _externalStore?: FieldStore<T>;
 }
@@ -146,6 +151,10 @@ export interface UseFormReturn<T extends Record<string, any>> {
     isValidating: boolean;
     /** 사용자 정의 액션 함수들 (context 바인딩됨) | User-defined action functions (with bound context) */
     actions: BoundActions<T>;
+    /** 저장된 데이터 삭제 | Clear persisted data */
+    clearPersisted: () => void;
+    /** 저장된 데이터 존재 여부 | Has persisted data */
+    hasPersisted: boolean;
     /** 호환성을 위한 values 객체 (비권장) | Values object for compatibility (not recommended) */
     values: T;
     /** 내부 스토어 직접 접근 | Direct access to internal store */

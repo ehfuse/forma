@@ -7,7 +7,7 @@
  * - 제대로 알림을 받는지 테스트
  */
 
-import { useGlobalFormaState } from "../../../hooks/useGlobalFormaState";
+import { useGlobalFormaState } from "@ehfuse/forma";
 
 interface Customer {
     seq: string;

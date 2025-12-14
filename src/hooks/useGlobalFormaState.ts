@@ -151,6 +151,7 @@ export function useGlobalFormaState<T extends Record<string, any>>(
         autoCleanup = true,
         actions,
         watch,
+        persist,
     } = props;
     const context = useContext(GlobalFormaContext);
 
@@ -206,12 +207,12 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
     if (actions) {
         const mergedActions = mergeActions(actions);
         if (mergedActions) {
-            registerActions<T>(stateId, mergedActions);
+            registerActions(stateId, mergedActions);
         }
     }
 
     // 글로벌 actions 가져오기 / Get global actions
-    const globalActions = getActions<T>(stateId);
+    const globalActions = getActions(stateId);
 
     // 로컬 actions가 없으면 글로벌 actions 사용 / Use global actions if local actions are not provided
     const effectiveActions = actions || globalActions;
@@ -221,6 +222,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
         _externalStore: store,
         actions: effectiveActions,
         watch, // watch 옵션 전달
+        persist, // persist 옵션 전달
     });
 
     // 초기값이 있고 스토어가 비어있다면 초기값 설정 (올바른 방법으로)
@@ -237,7 +239,6 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
         if (!autoCleanup) return;
 
         // 첫 번째 등록시에만 참조 카운트 증가
-        const componentId = componentIdRef.current!;
         incrementRef(stateId, autoCleanup);
         isRegisteredRef.current = true;
 
@@ -254,7 +255,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
         return new Proxy({} as any, {
             get: (_target, prop) => {
                 // 항상 최신 글로벌 actions를 가져옴 / Always get the latest global actions
-                const currentGlobalActions = getActions<T>(stateId);
+                const currentGlobalActions = getActions(stateId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
 
@@ -286,19 +287,19 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
                 return action;
             },
             has: (_target, prop) => {
-                const currentGlobalActions = getActions<T>(stateId);
+                const currentGlobalActions = getActions(stateId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
                 return prop in currentEffectiveActions;
             },
             ownKeys: (_target) => {
-                const currentGlobalActions = getActions<T>(stateId);
+                const currentGlobalActions = getActions(stateId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
                 return Reflect.ownKeys(currentEffectiveActions);
             },
             getOwnPropertyDescriptor: (_target, prop) => {
-                const currentGlobalActions = getActions<T>(stateId);
+                const currentGlobalActions = getActions(stateId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
                 if (prop in currentEffectiveActions) {

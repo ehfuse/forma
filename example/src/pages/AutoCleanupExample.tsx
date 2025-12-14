@@ -1,5 +1,5 @@
 import React, { useState, memo } from "react";
-import { useGlobalFormaState } from "../../../index";
+import { useGlobalFormaState } from "@ehfuse/forma";
 
 interface UserData {
     name: string;

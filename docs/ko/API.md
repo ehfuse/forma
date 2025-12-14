@@ -4,22 +4,24 @@
 
 ## 📑 목차
 
-| 카테고리         | API                                                             | 설명                     |
-| ---------------- | --------------------------------------------------------------- | ------------------------ |
-| **Hooks**        | [useFormaState](#useformastate)                                 | 일반 상태 관리용 기본 훅 |
-|                  | [useForm](#useform)                                             | 폼 상태 관리 훅          |
-|                  | [useGlobalForm](#useglobalform)                                 | 글로벌 폼 상태 공유 훅   |
-|                  | [useGlobalFormaState](#useglobalformastate)                     | 글로벌 일반 상태 공유 훅 |
-|                  | [useRegisterGlobalForm](#useregisterglobalform)                 | 글로벌 폼 등록 훅        |
-|                  | [useRegisterGlobalFormaState](#useregisterglobalformastate)     | 글로벌 상태 등록 훅      |
-|                  | [useUnregisterGlobalForm](#useunregisterglobalform)             | 글로벌 폼 등록 해제 훅   |
-|                  | [useUnregisterGlobalFormaState](#useunregisterglobalformastate) | 글로벌 상태 등록 해제 훅 |
-|                  | [useModal](#usemodal)                                           | 모달 관리 훅             |
-|                  | [useBreakpoint](#usebreakpoint)                                 | 반응형 디자인 훅         |
-| **Methods**      | [setBatch](#setbatch)                                           | 일괄 업데이트 메서드     |
-| **Components**   | [GlobalFormaProvider](#globalformaprovider)                     | 글로벌 Forma 상태 제공자 |
-| **Core Classes** | [FieldStore](#fieldstore)                                       | 핵심 상태 관리 클래스    |
-| **Types**        | [TypeScript Types](#typescript-types)                           | 모든 타입 정의           |
+| 카테고리         | API                                                             | 설명                      |
+| ---------------- | --------------------------------------------------------------- | ------------------------- |
+| **Hooks**        | [useFormaState](#useformastate)                                 | 일반 상태 관리용 기본 훅  |
+|                  | [useForm](#useform)                                             | 폼 상태 관리 훅           |
+|                  | [useGlobalForm](#useglobalform)                                 | 글로벌 폼 상태 공유 훅    |
+|                  | [useGlobalFormaState](#useglobalformastate)                     | 글로벌 일반 상태 공유 훅  |
+|                  | [useRegisterGlobalForm](#useregisterglobalform)                 | 글로벌 폼 등록 훅         |
+|                  | [useRegisterGlobalFormaState](#useregisterglobalformastate)     | 글로벌 상태 등록 훅       |
+|                  | [useUnregisterGlobalForm](#useunregisterglobalform)             | 글로벌 폼 등록 해제 훅    |
+|                  | [useUnregisterGlobalFormaState](#useunregisterglobalformastate) | 글로벌 상태 등록 해제 훅  |
+|                  | [useLocalStorage](#uselocalstorage)                             | localStorage 상태 관리 훅 |
+|                  | [useStoragePrefix](#usestorageprefix)                           | storagePrefix 조회 훅     |
+|                  | [useModal](#usemodal)                                           | 모달 관리 훅              |
+|                  | [useBreakpoint](#usebreakpoint)                                 | 반응형 디자인 훅          |
+| **Methods**      | [setBatch](#setbatch)                                           | 일괄 업데이트 메서드      |
+| **Components**   | [GlobalFormaProvider](#globalformaprovider)                     | 글로벌 Forma 상태 제공자  |
+| **Core Classes** | [FieldStore](#fieldstore)                                       | 핵심 상태 관리 클래스     |
+| **Types**        | [TypeScript Types](#typescript-types)                           | 모든 타입 정의            |
 
 ---
 
@@ -350,8 +352,24 @@ interface UseFormProps<T> {
     actions?: Actions<T> | Actions<T>[];
     /** Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원: "todos.*.completed") */
     watch?: WatchOptions<T>;
+    /** localStorage/sessionStorage 영속성 설정 */
+    persist?: PersistConfig;
     /** 내부 API: 외부 스토어 (useGlobalForm에서 사용) */
     _externalStore?: FieldStore<T>;
+}
+
+// persist 설정 타입
+type PersistConfig = string | PersistOptions;
+
+interface PersistOptions {
+    /** localStorage 키 */
+    key: string;
+    /** 저장 디바운스 시간 (ms, 기본값: 300) */
+    debounce?: number;
+    /** 저장에서 제외할 필드 */
+    exclude?: string[];
+    /** 스토리지 타입 (기본값: 'localStorage') */
+    storage?: "localStorage" | "sessionStorage";
 }
 ```
 
@@ -388,9 +406,38 @@ interface UseFormReturn<T> {
     // 커스텀 액션
     actions: any;
 
+    // Persist
+    clearPersisted: () => void; // 저장된 데이터 삭제
+    hasPersisted: boolean; // 저장된 데이터 존재 여부
+
     // 호환성 (비권장 - 전체 리렌더링 발생)
     values: T;
 }
+```
+
+#### persist 옵션 사용법
+
+```typescript
+// 간단한 사용 (키만 지정)
+const form = useForm({
+    initialValues: { name: "", email: "" },
+    persist: "user-form",
+});
+
+// 상세 설정
+const form = useForm({
+    initialValues: { name: "", email: "", password: "" },
+    persist: {
+        key: "user-form",
+        debounce: 500, // 500ms 후 저장
+        exclude: ["password"], // password 필드 제외
+        storage: "sessionStorage", // 탭 닫으면 삭제
+    },
+});
+
+// 저장된 데이터 관리
+console.log(form.hasPersisted); // true/false
+form.clearPersisted(); // 저장된 데이터 삭제
 ```
 
 #### 기본 사용법
@@ -1680,7 +1727,125 @@ function ImageGallery() {
 
 📚 **[브레이크포인트 상세 예제 →](./examples.md#usebreakpoint-예제)**
 
-———
+---
+
+### useLocalStorage
+
+`useState`와 유사한 패턴으로 localStorage/sessionStorage 데이터를 관리하는 훅입니다. `GlobalFormaProvider`의 `storagePrefix`가 자동으로 키에 적용됩니다.
+
+> ⚠️ **필수 설정**: `useLocalStorage`를 사용하려면 `GlobalFormaProvider`에 `storagePrefix`를 반드시 설정해야 합니다. 설정하지 않으면 에러가 발생합니다.
+>
+> ```tsx
+> // ❌ 에러 발생
+> <GlobalFormaProvider>
+>   <App /> {/* useLocalStorage 사용 시 에러 */}
+> </GlobalFormaProvider>
+>
+> // ✅ 올바른 사용
+> <GlobalFormaProvider storagePrefix="myapp">
+>   <App />
+> </GlobalFormaProvider>
+> ```
+
+#### Signature
+
+```typescript
+function useLocalStorage<T>(
+    key: string,
+    defaultValue: T,
+    options?: UseLocalStorageOptions
+): UseLocalStorageReturn<T>;
+```
+
+#### Parameters
+
+| 파라미터          | 타입      | 설명                                           |
+| ----------------- | --------- | ---------------------------------------------- |
+| `key`             | `string`  | localStorage 키                                |
+| `defaultValue`    | `T`       | 기본값                                         |
+| `options.session` | `boolean` | `true`면 sessionStorage 사용 (기본값: `false`) |
+
+#### Return Value
+
+```typescript
+interface UseLocalStorageReturn<T> {
+    /** 현재 저장된 값 */
+    value: T;
+    /** 값 설정 (함수형 업데이트 지원) */
+    setValue: (value: T | ((prev: T) => T)) => void;
+    /** 저장된 값 삭제 */
+    remove: () => void;
+    /** 값 존재 여부 */
+    has: boolean;
+}
+```
+
+#### Examples
+
+```typescript
+import { useLocalStorage } from "@ehfuse/forma";
+
+// 기본 사용
+const { value: theme, setValue: setTheme } = useLocalStorage<string>(
+    "theme",
+    "light"
+);
+
+// 객체 저장
+interface UserSettings {
+    theme: "light" | "dark";
+    fontSize: number;
+}
+const { value: settings, setValue: setSettings } =
+    useLocalStorage<UserSettings>("settings", {
+        theme: "light",
+        fontSize: 14,
+    });
+
+// 함수형 업데이트
+setSettings((prev) => ({ ...prev, theme: "dark" }));
+
+// sessionStorage 사용
+const { value } = useLocalStorage("temp", "", { session: true });
+```
+
+#### storagePrefix 자동 적용
+
+```typescript
+// main.tsx
+<GlobalFormaProvider storagePrefix="myapp">
+    <App />
+</GlobalFormaProvider>;
+
+// 컴포넌트에서
+const { value } = useLocalStorage("theme", "light");
+// 실제 localStorage 키: "myapp:theme"
+```
+
+---
+
+### useStoragePrefix
+
+`GlobalFormaProvider`에 설정된 `storagePrefix`를 가져오는 유틸리티 훅입니다.
+
+#### Signature
+
+```typescript
+function useStoragePrefix(): string | undefined;
+```
+
+#### Examples
+
+```typescript
+import { useStoragePrefix } from "@ehfuse/forma";
+
+function DebugComponent() {
+    const prefix = useStoragePrefix();
+    console.log("현재 prefix:", prefix); // "myapp" 또는 undefined
+}
+```
+
+---
 
 ## Methods
 
@@ -1746,22 +1911,32 @@ state.setBatch({
 #### Signature
 
 ```typescript
-function GlobalFormaProvider({
-    children,
-}: {
+function GlobalFormaProvider(props: GlobalFormaProviderProps): JSX.Element;
+
+interface GlobalFormaProviderProps {
     children: ReactNode;
-}): JSX.Element;
+    /** localStorage 키 prefix (앱별 구분용) */
+    storagePrefix?: string;
+}
 ```
+
+#### Props
+
+| Prop            | 타입        | 기본값      | 설명                                                                                       |
+| --------------- | ----------- | ----------- | ------------------------------------------------------------------------------------------ |
+| `children`      | `ReactNode` | -           | 자식 컴포넌트                                                                              |
+| `storagePrefix` | `string`    | `undefined` | localStorage/sessionStorage 키 prefix. `useLocalStorage` 훅과 `persist` 옵션에 자동 적용됨 |
 
 #### Usage
 
 ```typescript
 // App.tsx
-import { GlobalFormaProvider } from "@/forma";
+import { GlobalFormaProvider } from "@ehfuse/forma";
 
 function App() {
     return (
-        <GlobalFormaProvider>
+        // storagePrefix를 설정하면 모든 storage 키에 자동 적용
+        <GlobalFormaProvider storagePrefix="myapp">
             <Router>
                 <Routes>
                     <Route path="/step1" element={<Step1 />} />
@@ -1771,6 +1946,23 @@ function App() {
         </GlobalFormaProvider>
     );
 }
+```
+
+#### storagePrefix 활용
+
+```typescript
+// storagePrefix="myapp" 설정 시
+
+// useLocalStorage 사용
+const { value } = useLocalStorage("theme", "light");
+// 실제 키: "myapp:theme"
+
+// persist 옵션 사용
+const form = useForm({
+    initialValues: { name: "" },
+    persist: "user-form",
+});
+// 실제 키: "myapp:user-form"
 ```
 
 ---

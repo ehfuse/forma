@@ -16,7 +16,7 @@ import {
     Alert,
     Stack,
 } from "@mui/material";
-import { useFormaState } from "../../../hooks/useFormaState";
+import { useFormaState } from "@ehfuse/forma";
 
 interface User {
     name: string;

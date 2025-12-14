@@ -4,8 +4,7 @@
  * useGlobalFormaState("stateId") 및 useGlobalForm("formId") 간단 접근 테스트
  */
 
-import { useGlobalFormaState } from "../../../hooks/useGlobalFormaState";
-import { useGlobalForm } from "../../../hooks/useGlobalForm";
+import { useGlobalFormaState, useGlobalForm } from "@ehfuse/forma";
 import { Box, Button, TextField, Typography, Paper } from "@mui/material";
 
 interface UserState {

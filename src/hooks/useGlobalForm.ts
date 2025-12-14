@@ -81,6 +81,7 @@ export function useGlobalForm<T extends Record<string, any>>(
         onComplete,
         actions,
         watch,
+        persist,
     } = props;
     const context = useContext(GlobalFormaContext);
 
@@ -136,7 +137,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
     if (actions) {
         const mergedActions = mergeActions(actions);
         if (mergedActions) {
-            registerActions<T>(formId, mergedActions);
+            registerActions(formId, mergedActions);
         }
     }
 
@@ -144,7 +145,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
     const globalHandlers = getHandlers<T>(formId);
 
     // 글로벌 actions 가져오기 / Get global actions
-    const globalActions = getActions<T>(formId);
+    const globalActions = getActions(formId);
 
     // 로컬 핸들러가 없으면 글로벌 핸들러 사용 / Use global handlers if local handlers are not provided
     const effectiveOnSubmit = onSubmit || globalHandlers?.onSubmit;
@@ -162,6 +163,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
         onValidate: effectiveOnValidate,
         onComplete: effectiveOnComplete,
         actions: effectiveActions,
+        persist, // persist 옵션 전달
     });
 
     // 초기값이 있고 스토어가 비어있다면 초기값 설정 (올바른 방법으로)
@@ -212,7 +214,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
             const unsubscribe = store.watch(path, (value, prevValue) => {
                 // context 업데이트 (최신 값) / Update context with latest values
                 actionContext.values = store.getValues();
-                actionContext.actions = getActions<T>(formId) || {};
+                actionContext.actions = getActions(formId) || {};
 
                 handler(actionContext, value, prevValue);
             });
@@ -231,7 +233,7 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
         return new Proxy({} as any, {
             get: (_target, prop) => {
                 // 항상 최신 글로벌 actions를 가져옴 / Always get the latest global actions
-                const currentGlobalActions = getActions<T>(formId);
+                const currentGlobalActions = getActions(formId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
 
@@ -264,19 +266,19 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
                 return action;
             },
             has: (_target, prop) => {
-                const currentGlobalActions = getActions<T>(formId);
+                const currentGlobalActions = getActions(formId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
                 return prop in currentEffectiveActions;
             },
             ownKeys: (_target) => {
-                const currentGlobalActions = getActions<T>(formId);
+                const currentGlobalActions = getActions(formId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
                 return Reflect.ownKeys(currentEffectiveActions);
             },
             getOwnPropertyDescriptor: (_target, prop) => {
-                const currentGlobalActions = getActions<T>(formId);
+                const currentGlobalActions = getActions(formId);
                 const currentEffectiveActions =
                     actions || currentGlobalActions || {};
                 if (prop in currentEffectiveActions) {

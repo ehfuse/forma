@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useGlobalFormaState } from "../../../hooks/useGlobalFormaState";
+import { useGlobalFormaState } from "@ehfuse/forma";
 
 const EmptyInitialValueTest: React.FC = () => {
     const [stateId] = useState("empty-initial-test");

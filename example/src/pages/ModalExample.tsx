@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useModal } from "../../../hooks/useModal";
+import { useModal } from "@ehfuse/forma";
 import {
     Dialog,
     DialogTitle,

@@ -26,6 +26,14 @@
 
 export { getNestedValue, setNestedValue } from "./dotNotation";
 export { isDevelopment, devWarn, devError, devLog } from "./environment";
+export {
+    loadPersistedData,
+    savePersistedData,
+    clearPersistedData,
+    hasPersistedData,
+    normalizePersistConfig,
+} from "./persist";
+export type { PersistOptions, PersistConfig } from "./persist";
 
 /**
  * Actions 배열을 단일 객체로 병합

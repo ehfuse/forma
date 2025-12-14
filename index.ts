@@ -38,6 +38,11 @@ export { useRegisterGlobalFormaState } from "./src/hooks/useRegisterGlobalFormaS
 export { useUnregisterGlobalFormaState } from "./src/hooks/useUnregisterGlobalFormaState";
 export { useModal } from "./src/hooks/useModal";
 export { useBreakpoint } from "./src/hooks/useBreakpoint";
+export { useLocalStorage, useStoragePrefix } from "./src/hooks/useLocalStorage";
+export type {
+    UseLocalStorageReturn,
+    UseLocalStorageOptions,
+} from "./src/hooks/useLocalStorage";
 
 // ===== Context & Providers =====
 export {
@@ -56,6 +61,13 @@ export {
     devError,
     devLog,
 } from "./src/utils/environment";
+export {
+    loadPersistedData,
+    savePersistedData,
+    clearPersistedData,
+    hasPersistedData,
+} from "./src/utils/persist";
+export type { PersistOptions, PersistConfig } from "./src/utils/persist";
 
 // ===== TypeScript Types =====
 // Form Types

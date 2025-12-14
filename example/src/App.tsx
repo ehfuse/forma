@@ -27,6 +27,8 @@ import SetValuesBugTest from "./pages/SetValuesBugTest";
 import TimingIssueTest from "./pages/TimingIssueTest";
 import ResetBugTest from "./pages/ResetBugTest";
 import WatchParentPathTest from "./pages/WatchParentPathTest";
+import PersistTest from "./pages/PersistTest";
+import LocalStorageTest from "./pages/LocalStorageTest";
 import {
     ZeroConfigExample,
     PureZeroConfigExample,
@@ -69,7 +71,9 @@ type TabType =
     | "setvalues-bug-test"
     | "timing-issue-test"
     | "reset-bug-test"
-    | "watch-parent-path-test";
+    | "watch-parent-path-test"
+    | "persist-test"
+    | "localstorage-test";
 
 function App() {
     const [activeTab, setActiveTab] = useState<TabType>("zero-config");
@@ -305,6 +309,20 @@ function App() {
                 >
                     📍 Watch Parent Path Test
                 </button>
+                <button
+                    className={activeTab === "persist-test" ? "active" : ""}
+                    onClick={() => setActiveTab("persist-test")}
+                >
+                    💾 Persist Test
+                </button>
+                <button
+                    className={
+                        activeTab === "localstorage-test" ? "active" : ""
+                    }
+                    onClick={() => setActiveTab("localstorage-test")}
+                >
+                    🗄️ LocalStorage Test
+                </button>
             </div>
 
             <div className="content">
@@ -357,6 +375,8 @@ function App() {
                 {activeTab === "watch-parent-path-test" && (
                     <WatchParentPathTest />
                 )}
+                {activeTab === "persist-test" && <PersistTest />}
+                {activeTab === "localstorage-test" && <LocalStorageTest />}
             </div>
         </div>
     );

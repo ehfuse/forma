@@ -156,6 +156,7 @@ function MainContent() {
 -   🚫 **No Props Drilling** | Props 전달 불필요
 -   👀 **Reactive watch** | 반응형 감시
 -   🎬 **Actions system** | 액션 시스템
+-   💾 **localStorage/sessionStorage** | 영속성 저장소 관리
 -   🎭 **Modal management** | 모달 관리
 -   📱 **Breakpoint detection** | 반응형 감지
 
@@ -167,6 +168,7 @@ function MainContent() {
 -   ✅ **Individual Field Subscription**: Surgical re-rendering | 수술적 리렌더링
 -   🌟 **Dot Notation**: Deep nested access `user.profile.name` | 깊은 중첩 접근
 -   🌐 **Global State Sharing**: Share across components | 컴포넌트 간 공유
+-   💾 **localStorage Persistence**: useLocalStorage hook & persist option | localStorage 영속성 지원
 -   🎭 **Modal Stack**: Mobile-friendly with back button | 뒤로가기 지원 모달
 -   📱 **Breakpoint Management**: Responsive UI made easy | 반응형 UI 간편화
 -   ✅ **Full MUI Compatibility**: Perfect Material-UI integration | MUI 완벽 통합
@@ -316,6 +318,70 @@ function TodoApp() {
 -   📦 **Modular actions** - Easy to test and maintain | 모듈화된 액션 - 테스트와 유지보수 용이
 -   ⚡ **Optimized rendering** - Only `todosLength`, `filter`, `lastSync` trigger re-renders | 최적화된 렌더링
 -   🔄 **Automatic persistence** - Watch auto-saves changes | 자동 저장 - Watch가 변경사항 자동 저장
+
+---
+
+### useLocalStorage: Simple Persistent State | 간단한 영속 상태
+
+```tsx
+import { useLocalStorage, GlobalFormaProvider } from "@ehfuse/forma";
+
+// 1. Setup: Add storagePrefix to GlobalFormaProvider
+// 1. 설정: GlobalFormaProvider에 storagePrefix 추가
+function App() {
+    return (
+        <GlobalFormaProvider storagePrefix="myapp">
+            <ThemeToggle />
+        </GlobalFormaProvider>
+    );
+}
+
+// 2. Use like useState, but persisted!
+// 2. useState처럼 사용하면 자동으로 저장!
+function ThemeToggle() {
+    const { value: theme, setValue: setTheme } = useLocalStorage("theme", "light");
+    // Stored as "myapp:theme" in localStorage
+    // localStorage에 "myapp:theme"으로 저장됨
+
+    return (
+        <button onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+            Current: {theme}
+        </button>
+    );
+}
+
+// 3. Works with complex objects too!
+// 3. 복잡한 객체도 지원!
+function UserSettings() {
+    const { value: settings, setValue: setSettings } = useLocalStorage("settings", {
+        notifications: true,
+        language: "ko",
+        fontSize: 14,
+    });
+
+    return (
+        <div>
+            <label>
+                <input
+                    type="checkbox"
+                    checked={settings.notifications}
+                    onChange={(e) =>
+                        setSettings({ ...settings, notifications: e.target.checked })
+                    }
+                />
+                Enable Notifications
+            </label>
+        </div>
+    );
+}
+```
+
+**Benefits | 이점:**
+
+-   💾 **Auto-persistence** - Values survive page refresh | 페이지 새로고침 후에도 값 유지
+-   🔑 **Centralized prefix** - No key collision between apps | 앱 간 키 충돌 방지
+-   📦 **JSON support** - Objects & arrays work seamlessly | 객체와 배열 자동 직렬화
+-   🎯 **useState-like API** - Familiar and easy to use | 익숙하고 사용하기 쉬운 API
 
 ---
 

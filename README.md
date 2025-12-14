@@ -339,7 +339,10 @@ function App() {
 // 2. Use like useState, but persisted!
 // 2. useState처럼 사용하면 자동으로 저장!
 function ThemeToggle() {
-    const { value: theme, setValue: setTheme } = useLocalStorage("theme", "light");
+    const { value: theme, setValue: setTheme } = useLocalStorage(
+        "theme",
+        "light"
+    );
     // Stored as "myapp:theme" in localStorage
     // localStorage에 "myapp:theme"으로 저장됨
 
@@ -353,11 +356,14 @@ function ThemeToggle() {
 // 3. Works with complex objects too!
 // 3. 복잡한 객체도 지원!
 function UserSettings() {
-    const { value: settings, setValue: setSettings } = useLocalStorage("settings", {
-        notifications: true,
-        language: "ko",
-        fontSize: 14,
-    });
+    const { value: settings, setValue: setSettings } = useLocalStorage(
+        "settings",
+        {
+            notifications: true,
+            language: "ko",
+            fontSize: 14,
+        }
+    );
 
     return (
         <div>
@@ -366,7 +372,10 @@ function UserSettings() {
                     type="checkbox"
                     checked={settings.notifications}
                     onChange={(e) =>
-                        setSettings({ ...settings, notifications: e.target.checked })
+                        setSettings({
+                            ...settings,
+                            notifications: e.target.checked,
+                        })
                     }
                 />
                 Enable Notifications

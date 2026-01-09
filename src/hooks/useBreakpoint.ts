@@ -27,12 +27,15 @@ import type { UseBreakpointReturn } from "../types/breakpoint";
 
 // 브레이크포인트 정의 (픽셀 단위)
 const breakpoints = {
-    xs: 0,
-    sm: 600,
-    md: 900,
-    lg: 1200,
-    xl: 1536,
-    xxl: 1920,
+    xxxxs: 224, // 14rem
+    xxxs: 256, // 16rem
+    xxs: 288, // 18rem
+    xs: 352, // 22rem
+    sm: 640, // 40rem
+    md: 768, // 48rem
+    lg: 1024, // 64rem
+    xl: 1280, // 80rem
+    xxl: 1536, // 96rem
 } as const;
 
 /**
@@ -77,6 +80,9 @@ export const useBreakpoint = (): UseBreakpointReturn => {
     }, []);
 
     // 각 브레이크포인트별 미디어쿼리 결과 (해당 브레이크포인트 이하인지)
+    const xxxxs = windowWidth < breakpoints.xxxs;
+    const xxxs = windowWidth < breakpoints.xxs;
+    const xxs = windowWidth < breakpoints.xs;
     const xs = windowWidth < breakpoints.sm;
     const sm = windowWidth < breakpoints.md;
     const md = windowWidth < breakpoints.lg;
@@ -84,6 +90,9 @@ export const useBreakpoint = (): UseBreakpointReturn => {
     const xl = windowWidth < breakpoints.xxl;
     const xxl = windowWidth >= breakpoints.xxl;
 
+    const xxxxsUp = windowWidth >= breakpoints.xxxxs;
+    const xxxsUp = windowWidth >= breakpoints.xxxs;
+    const xxsUp = windowWidth >= breakpoints.xxs;
     const xsUp = windowWidth >= breakpoints.xs;
     const smUp = windowWidth >= breakpoints.sm;
     const mdUp = windowWidth >= breakpoints.md;
@@ -93,12 +102,18 @@ export const useBreakpoint = (): UseBreakpointReturn => {
 
     // 객체 형태로 반환하여 breakpoint.sm 식으로 접근 가능
     return {
+        xxxxs,
+        xxxs,
+        xxs,
         xs,
         sm,
         md,
         lg,
         xl,
         xxl,
+        xxxxsUp,
+        xxxsUp,
+        xxsUp,
         xsUp,
         smUp,
         mdUp,
@@ -106,12 +121,18 @@ export const useBreakpoint = (): UseBreakpointReturn => {
         xlUp,
         xxlUp,
         breakpoint: {
+            xxxxs,
+            xxxs,
+            xxs,
             xs,
             sm,
             md,
             lg,
             xl,
             xxl,
+            xxxxsUp,
+            xxxsUp,
+            xxsUp,
             xsUp,
             smUp,
             mdUp,

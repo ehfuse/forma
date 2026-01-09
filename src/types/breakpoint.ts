@@ -27,29 +27,41 @@
  * 브레이크포인트 상태 객체
  */
 export interface BreakpointState {
-    /** Extra small: < 600px */
+    /** 4x Extra small: < 256px (14rem) */
+    xxxxs: boolean;
+    /** 3x Extra small: < 288px (16rem) */
+    xxxs: boolean;
+    /** 2x Extra small: < 352px (18rem) */
+    xxs: boolean;
+    /** Extra small: < 640px (22rem) */
     xs: boolean;
-    /** Small: < 900px */
+    /** Small: < 768px (40rem) */
     sm: boolean;
-    /** Medium: < 1200px */
+    /** Medium: < 1024px (48rem) */
     md: boolean;
-    /** Large: < 1536px */
+    /** Large: < 1280px (64rem) */
     lg: boolean;
-    /** Extra large: < 1920px */
+    /** Extra large: < 1536px (80rem) */
     xl: boolean;
-    /** Extra extra large: >= 1920px */
+    /** Extra extra large: >= 1536px (96rem) */
     xxl: boolean;
-    /** >= 0px */
+    /** >= 224px (14rem) */
+    xxxxsUp: boolean;
+    /** >= 256px (16rem) */
+    xxxsUp: boolean;
+    /** >= 288px (18rem) */
+    xxsUp: boolean;
+    /** >= 352px (22rem) */
     xsUp: boolean;
-    /** >= 600px */
+    /** >= 640px (40rem) */
     smUp: boolean;
-    /** >= 900px */
+    /** >= 768px (48rem) */
     mdUp: boolean;
-    /** >= 1200px */
+    /** >= 1024px (64rem) */
     lgUp: boolean;
-    /** >= 1536px */
+    /** >= 1280px (80rem) */
     xlUp: boolean;
-    /** >= 1920px */
+    /** >= 1536px (96rem) */
     xxlUp: boolean;
 }
 

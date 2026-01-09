@@ -23,8 +23,8 @@
  */
 
 /**
- * Breakpoint state object
- * 브레이크포인트 상태 객체
+ * Breakpoint state object (width-based)
+ * 브레이크포인트 상태 객체 (가로 기준)
  */
 export interface BreakpointState {
     /** 4x Extra small: < 256px (14rem) */
@@ -66,10 +66,53 @@ export interface BreakpointState {
 }
 
 /**
+ * Height breakpoint state object (height-based)
+ * 세로 브레이크포인트 상태 객체 (높이 기준)
+ */
+export interface HeightBreakpointState {
+    /** Height < 400px */
+    hxxs: boolean;
+    /** Height < 500px */
+    hxs: boolean;
+    /** Height < 600px */
+    hsm: boolean;
+    /** Height < 768px */
+    hmd: boolean;
+    /** Height < 900px */
+    hlg: boolean;
+    /** Height < 1080px */
+    hxl: boolean;
+    /** Height >= 1080px */
+    hxxl: boolean;
+    /** Height >= 400px */
+    hxxsUp: boolean;
+    /** Height >= 500px */
+    hxsUp: boolean;
+    /** Height >= 600px */
+    hsmUp: boolean;
+    /** Height >= 768px */
+    hmdUp: boolean;
+    /** Height >= 900px */
+    hlgUp: boolean;
+    /** Height >= 1080px */
+    hxlUp: boolean;
+    /** Height >= 1080px (same as hxlUp) */
+    hxxlUp: boolean;
+}
+
+/**
  * Return type of useBreakpoint hook
  * useBreakpoint 훅의 반환 타입
  */
-export interface UseBreakpointReturn extends BreakpointState {
-    /** Breakpoint state object (same as root level) */
+export interface UseBreakpointReturn
+    extends BreakpointState,
+        HeightBreakpointState {
+    /** Width breakpoint state object (same as root level) */
     breakpoint: BreakpointState;
+    /** Height breakpoint state object */
+    heightBreakpoint: HeightBreakpointState;
+    /** Current window width in pixels */
+    width: number;
+    /** Current window height in pixels */
+    height: number;
 }

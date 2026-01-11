@@ -1560,6 +1560,10 @@ interface UseBreakpointReturn {
     xxlUp: boolean;
     /** 브레이크포인트 상태 객체 (루트 레벨과 동일) */
     breakpoint: BreakpointState;
+    /** 화면이 가로모드인지 여부 (width > height) */
+    landscape: boolean;
+    /** 화면이 세로모드인지 여부 (height >= width) */
+    portrait: boolean;
 }
 ```
 
@@ -1578,6 +1582,7 @@ interface UseBreakpointReturn {
 
 -   **"down" 상태**: `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - 해당 브레이크포인트 **이하**인지 판별
 -   **"up" 상태**: `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - 해당 브레이크포인트 **이상**인지 판별
+-   **화면 방향 감지**: `landscape`, `portrait` - 화면 방향 감지 (가로모드: width > height)
 -   **자동 업데이트**: 창 크기 변경 시 자동으로 상태 갱신
 -   **SSR 안전**: 서버 사이드 렌더링 환경에서도 안전하게 동작
 
@@ -1647,6 +1652,27 @@ function ImageGallery() {
                 </Grid>
             ))}
         </Grid>
+    );
+}
+```
+
+#### 화면 방향 감지
+
+```typescript
+function OrientationAwareLayout() {
+    const { landscape, portrait } = useBreakpoint();
+
+    return (
+        <div>
+            {landscape ? (
+                <HorizontalLayout />
+            ) : (
+                <VerticalLayout />
+            )}
+            <div className="orientation">
+                현재: {landscape ? "가로모드" : "세로모드"}
+            </div>
+        </div>
     );
 }
 ```

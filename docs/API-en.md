@@ -1481,6 +1481,10 @@ interface UseBreakpointReturn {
     xxlUp: boolean;
     /** Breakpoint state object (same as root level) */
     breakpoint: BreakpointState;
+    /** Whether the screen is in landscape mode (width > height) */
+    landscape: boolean;
+    /** Whether the screen is in portrait mode (height >= width) */
+    portrait: boolean;
 }
 ```
 
@@ -1499,6 +1503,7 @@ interface UseBreakpointReturn {
 
 -   **"down" states**: `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - Check if screen is **below or at** the breakpoint
 -   **"up" states**: `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - Check if screen is **at or above** the breakpoint
+-   **Orientation Detection**: `landscape`, `portrait` - Detect screen orientation (landscape when width > height)
 -   **Auto-update**: State automatically updates on window resize
 -   **SSR Safe**: Works safely in server-side rendering environments
 
@@ -1568,6 +1573,27 @@ function ImageGallery() {
                 </Grid>
             ))}
         </Grid>
+    );
+}
+```
+
+#### Screen Orientation Detection
+
+```typescript
+function OrientationAwareLayout() {
+    const { landscape, portrait } = useBreakpoint();
+
+    return (
+        <div>
+            {landscape ? (
+                <HorizontalLayout />
+            ) : (
+                <VerticalLayout />
+            )}
+            <div className="orientation">
+                Current: {landscape ? "Landscape" : "Portrait"}
+            </div>
+        </div>
     );
 }
 ```

@@ -1585,11 +1585,7 @@ function OrientationAwareLayout() {
 
     return (
         <div>
-            {landscape ? (
-                <HorizontalLayout />
-            ) : (
-                <VerticalLayout />
-            )}
+            {landscape ? <HorizontalLayout /> : <VerticalLayout />}
             <div className="orientation">
                 Current: {landscape ? "Landscape" : "Portrait"}
             </div>

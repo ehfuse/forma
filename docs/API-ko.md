@@ -1664,11 +1664,7 @@ function OrientationAwareLayout() {
 
     return (
         <div>
-            {landscape ? (
-                <HorizontalLayout />
-            ) : (
-                <VerticalLayout />
-            )}
+            {landscape ? <HorizontalLayout /> : <VerticalLayout />}
             <div className="orientation">
                 현재: {landscape ? "가로모드" : "세로모드"}
             </div>

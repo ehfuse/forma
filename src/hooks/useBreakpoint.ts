@@ -171,6 +171,9 @@ export const useBreakpoint = (): UseBreakpointReturn => {
         // 현재 크기
         width: windowWidth,
         height: windowHeight,
+        // 화면 방향 (가로/세로 모드)
+        landscape: windowWidth > windowHeight,
+        portrait: windowHeight >= windowWidth,
         // 객체 형태
         breakpoint: {
             xxxxs,

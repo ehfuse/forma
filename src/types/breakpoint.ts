@@ -115,4 +115,10 @@ export interface UseBreakpointReturn
     width: number;
     /** Current window height in pixels */
     height: number;
+    /** Whether the screen is in landscape mode (width > height) */
+    /** 화면이 가로모드인지 여부 (width > height) */
+    landscape: boolean;
+    /** Whether the screen is in portrait mode (height >= width) */
+    /** 화면이 세로모드인지 여부 (height >= width) */
+    portrait: boolean;
 }

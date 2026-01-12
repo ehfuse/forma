@@ -1510,7 +1510,7 @@ function FormModal() {
 
 ### useBreakpoint
 
-A hook for managing responsive breakpoint state based on screen size. Use this to implement UI that adapts to mobile, tablet, desktop, and other screen sizes.
+A hook for managing responsive breakpoint state based on screen size. Detects horizontal/vertical breakpoints, screen dimensions, and screen orientation to implement UI that adapts to various screen sizes and orientations.
 
 #### Signature
 
@@ -1526,52 +1526,166 @@ None
 
 ```typescript
 interface UseBreakpointReturn {
-    /** Extra small: < 600px */
+    // Horizontal breakpoints (width-based)
+    /** < 256px (16rem) */
+    xxxxs: boolean;
+    /** < 288px (18rem) */
+    xxxs: boolean;
+    /** < 352px (22rem) */
+    xxs: boolean;
+    /** < 640px (40rem) */
     xs: boolean;
-    /** Small: < 900px */
+    /** < 768px (48rem) */
     sm: boolean;
-    /** Medium: < 1200px */
+    /** < 1024px (64rem) */
     md: boolean;
-    /** Large: < 1536px */
+    /** < 1280px (80rem) */
     lg: boolean;
-    /** Extra large: < 1920px */
+    /** < 1536px (96rem) */
     xl: boolean;
-    /** Extra extra large: >= 1920px */
+    /** >= 1536px (96rem) */
     xxl: boolean;
-    /** >= 0px */
+
+    /** >= 224px (14rem) */
+    xxxxsUp: boolean;
+    /** >= 256px (16rem) */
+    xxxsUp: boolean;
+    /** >= 288px (18rem) */
+    xxsUp: boolean;
+    /** >= 352px (22rem) */
     xsUp: boolean;
-    /** >= 600px */
+    /** >= 640px (40rem) */
     smUp: boolean;
-    /** >= 900px */
+    /** >= 768px (48rem) */
     mdUp: boolean;
-    /** >= 1200px */
+    /** >= 1024px (64rem) */
     lgUp: boolean;
-    /** >= 1536px */
+    /** >= 1280px (80rem) */
     xlUp: boolean;
-    /** >= 1920px */
+    /** >= 1536px (96rem) */
     xxlUp: boolean;
-    /** Breakpoint state object (same as root level) */
-    breakpoint: BreakpointState;
+
+    // Vertical breakpoints (height-based)
+    /** < 500px */
+    hxxs: boolean;
+    /** < 600px */
+    hxs: boolean;
+    /** < 768px */
+    hsm: boolean;
+    /** < 900px */
+    hmd: boolean;
+    /** < 1080px */
+    hlg: boolean;
+    /** < 1080px */
+    hxl: boolean;
+    /** >= 1080px */
+    hxxl: boolean;
+
+    /** >= 400px */
+    hxxsUp: boolean;
+    /** >= 500px */
+    hxsUp: boolean;
+    /** >= 600px */
+    hsmUp: boolean;
+    /** >= 768px */
+    hmdUp: boolean;
+    /** >= 900px */
+    hlgUp: boolean;
+    /** >= 1080px */
+    hxlUp: boolean;
+    /** >= 1080px */
+    hxxlUp: boolean;
+
+    // Current screen dimensions
+    /** Current window width (pixels) */
+    width: number;
+    /** Current window height (pixels) */
+    height: number;
+
+    // Screen orientation
+    /** Landscape mode (width > height) */
+    landscape: boolean;
+    /** Portrait mode (height >= width) */
+    portrait: boolean;
+
+    // Grouped objects
+    /** Horizontal breakpoint state object */
+    breakpoint: {
+        xxxxs: boolean;
+        xxxs: boolean;
+        xxs: boolean;
+        xs: boolean;
+        sm: boolean;
+        md: boolean;
+        lg: boolean;
+        xl: boolean;
+        xxl: boolean;
+        xxxxsUp: boolean;
+        xxxsUp: boolean;
+        xxsUp: boolean;
+        xsUp: boolean;
+        smUp: boolean;
+        mdUp: boolean;
+        lgUp: boolean;
+        xlUp: boolean;
+        xxlUp: boolean;
+    };
+    /** Vertical breakpoint state object */
+    heightBreakpoint: {
+        hxxs: boolean;
+        hxs: boolean;
+        hsm: boolean;
+        hmd: boolean;
+        hlg: boolean;
+        hxl: boolean;
+        hxxl: boolean;
+        hxxsUp: boolean;
+        hxsUp: boolean;
+        hsmUp: boolean;
+        hmdUp: boolean;
+        hlgUp: boolean;
+        hxlUp: boolean;
+        hxxlUp: boolean;
+    };
 }
 ```
 
-#### Breakpoint Definitions
+#### Horizontal Breakpoint Definitions
 
-| Breakpoint | Size Range      |
-| ---------- | --------------- |
-| `xs`       | 0px ~ 599px     |
-| `sm`       | 600px ~ 899px   |
-| `md`       | 900px ~ 1199px  |
-| `lg`       | 1200px ~ 1535px |
-| `xl`       | 1536px ~ 1919px |
-| `xxl`      | 1920px and up   |
+| Breakpoint | Pixel Value | rem Value | Size Range       |
+| ---------- | ----------- | --------- | ---------------- |
+| `xxxxs`    | 224px       | 14rem     | 0px ~ 255px      |
+| `xxxs`     | 256px       | 16rem     | 224px ~ 287px    |
+| `xxs`      | 288px       | 18rem     | 256px ~ 351px    |
+| `xs`       | 352px       | 22rem     | 288px ~ 639px    |
+| `sm`       | 640px       | 40rem     | 352px ~ 767px    |
+| `md`       | 768px       | 48rem     | 640px ~ 1023px   |
+| `lg`       | 1024px      | 64rem     | 768px ~ 1279px   |
+| `xl`       | 1280px      | 80rem     | 1024px ~ 1535px  |
+| `xxl`      | 1536px      | 96rem     | 1280px and above |
+
+#### Vertical Breakpoint Definitions
+
+| Breakpoint | Pixel Value | Size Range       |
+| ---------- | ----------- | ---------------- |
+| `hxxs`     | 400px       | 0px ~ 499px      |
+| `hxs`      | 500px       | 400px ~ 599px    |
+| `hsm`      | 600px       | 500px ~ 767px    |
+| `hmd`      | 768px       | 600px ~ 899px    |
+| `hlg`      | 900px       | 768px ~ 1079px   |
+| `hxl`      | 1080px      | 900px ~ 1079px   |
+| `hxxl`     | 1080px      | 1080px and above |
 
 #### Features
 
--   **"down" states**: `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - Check if screen is **below or at** the breakpoint
--   **"up" states**: `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - Check if screen is **at or above** the breakpoint
+-   **Horizontal "down" states**: `xxxxs`, `xxxs`, `xxs`, `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - Check if screen width is **below** the breakpoint
+-   **Horizontal "up" states**: `xxxxsUp`, `xxxsUp`, `xxsUp`, `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - Check if screen width is **at or above** the breakpoint
+-   **Vertical "down" states**: `hxxs`, `hxs`, `hsm`, `hmd`, `hlg`, `hxl`, `hxxl` - Check if screen height is **below** the breakpoint
+-   **Vertical "up" states**: `hxxsUp`, `hxsUp`, `hsmUp`, `hmdUp`, `hlgUp`, `hxlUp`, `hxxlUp` - Check if screen height is **at or above** the breakpoint
+-   **Screen dimensions**: `width`, `height` - Current window dimensions in pixels
+-   **Screen orientation**: `landscape` (horizontal), `portrait` (vertical) - Detect screen orientation
 -   **Auto-update**: State automatically updates on window resize
--   **SSR Safe**: Works safely in server-side rendering environments
+-   **SSR Safe**: Works safely in server-side rendering environments (initial value 0)
 
 #### Basic Usage Example
 
@@ -1643,11 +1757,82 @@ function ImageGallery() {
 }
 ```
 
+#### Screen Orientation Detection
+
+```typescript
+function OrientationAwareLayout() {
+    const { landscape, portrait } = useBreakpoint();
+
+    return (
+        <div>
+            {landscape ? <HorizontalLayout /> : <VerticalLayout />}
+            <div className="orientation">
+                Current orientation: {landscape ? "Landscape" : "Portrait"}
+            </div>
+        </div>
+    );
+}
+```
+
+#### Using Vertical Breakpoints
+
+```typescript
+function VerticalResponsiveLayout() {
+    const { hsmUp, hmdUp } = useBreakpoint();
+
+    return (
+        <div className="container">
+            <Header />
+            <MainContent />
+            {hsmUp && <MiddleSection />}
+            {hmdUp && <BottomSection />}
+        </div>
+    );
+}
+```
+
+#### Using Exact Screen Dimensions
+
+```typescript
+function DynamicSizing() {
+    const { width, height } = useBreakpoint();
+
+    return (
+        <div>
+            <p>
+                Current window size: {width} x {height}px
+            </p>
+            <div style={{ width: width * 0.8, height: height * 0.6 }}>
+                Size-based content
+            </div>
+        </div>
+    );
+}
+```
+
+#### Using Breakpoint Objects
+
+```typescript
+function BreakpointInfo() {
+    const { breakpoint, heightBreakpoint } = useBreakpoint();
+
+    return (
+        <div>
+            <h3>Horizontal Breakpoints</h3>
+            <pre>{JSON.stringify(breakpoint, null, 2)}</pre>
+            <h3>Vertical Breakpoints</h3>
+            <pre>{JSON.stringify(heightBreakpoint, null, 2)}</pre>
+        </div>
+    );
+}
+```
+
 #### Important Notes
 
 -   Re-renders occur on window resize.
 -   Use only when necessary for performance (prefer CSS media queries when possible).
 -   Initial value is 0px during server-side rendering.
+-   `width` and `height` update in real-time, so destructure only the values you need.
 
 📚 **[Detailed Breakpoint Examples →](./examples.md#usebreakpoint-examples)**
 

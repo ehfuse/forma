@@ -1586,7 +1586,7 @@ function FormModal() {
 
 ### useBreakpoint
 
-화면 크기에 따른 반응형 브레이크포인트 상태를 관리하는 훅입니다. 모바일, 태블릿, 데스크톱 등 다양한 화면 크기에 대응하는 UI를 구현할 때 사용합니다.
+화면 크기에 따른 반응형 브레이크포인트 상태를 관리하는 훅입니다. 가로/세로 브레이크포인트, 화면 크기, 화면 방향 등을 감지하여 다양한 화면 크기와 방향에 대응하는 UI를 구현할 때 사용합니다.
 
 #### Signature
 
@@ -1602,52 +1602,166 @@ function useBreakpoint(): UseBreakpointReturn;
 
 ```typescript
 interface UseBreakpointReturn {
-    /** Extra small: < 600px */
+    // 가로 브레이크포인트 (width-based)
+    /** < 256px (16rem) */
+    xxxxs: boolean;
+    /** < 288px (18rem) */
+    xxxs: boolean;
+    /** < 352px (22rem) */
+    xxs: boolean;
+    /** < 640px (40rem) */
     xs: boolean;
-    /** Small: < 900px */
+    /** < 768px (48rem) */
     sm: boolean;
-    /** Medium: < 1200px */
+    /** < 1024px (64rem) */
     md: boolean;
-    /** Large: < 1536px */
+    /** < 1280px (80rem) */
     lg: boolean;
-    /** Extra large: < 1920px */
+    /** < 1536px (96rem) */
     xl: boolean;
-    /** Extra extra large: >= 1920px */
+    /** >= 1536px (96rem) */
     xxl: boolean;
-    /** >= 0px */
+
+    /** >= 224px (14rem) */
+    xxxxsUp: boolean;
+    /** >= 256px (16rem) */
+    xxxsUp: boolean;
+    /** >= 288px (18rem) */
+    xxsUp: boolean;
+    /** >= 352px (22rem) */
     xsUp: boolean;
-    /** >= 600px */
+    /** >= 640px (40rem) */
     smUp: boolean;
-    /** >= 900px */
+    /** >= 768px (48rem) */
     mdUp: boolean;
-    /** >= 1200px */
+    /** >= 1024px (64rem) */
     lgUp: boolean;
-    /** >= 1536px */
+    /** >= 1280px (80rem) */
     xlUp: boolean;
-    /** >= 1920px */
+    /** >= 1536px (96rem) */
     xxlUp: boolean;
-    /** 브레이크포인트 상태 객체 (루트 레벨과 동일) */
-    breakpoint: BreakpointState;
+
+    // 세로 브레이크포인트 (height-based)
+    /** < 500px */
+    hxxs: boolean;
+    /** < 600px */
+    hxs: boolean;
+    /** < 768px */
+    hsm: boolean;
+    /** < 900px */
+    hmd: boolean;
+    /** < 1080px */
+    hlg: boolean;
+    /** < 1080px */
+    hxl: boolean;
+    /** >= 1080px */
+    hxxl: boolean;
+
+    /** >= 400px */
+    hxxsUp: boolean;
+    /** >= 500px */
+    hxsUp: boolean;
+    /** >= 600px */
+    hsmUp: boolean;
+    /** >= 768px */
+    hmdUp: boolean;
+    /** >= 900px */
+    hlgUp: boolean;
+    /** >= 1080px */
+    hxlUp: boolean;
+    /** >= 1080px */
+    hxxlUp: boolean;
+
+    // 현재 화면 크기
+    /** 현재 창 너비 (픽셀) */
+    width: number;
+    /** 현재 창 높이 (픽셀) */
+    height: number;
+
+    // 화면 방향
+    /** 가로 모드 (width > height) */
+    landscape: boolean;
+    /** 세로 모드 (height >= width) */
+    portrait: boolean;
+
+    // 객체 형태로 그룹화
+    /** 가로 브레이크포인트 상태 객체 */
+    breakpoint: {
+        xxxxs: boolean;
+        xxxs: boolean;
+        xxs: boolean;
+        xs: boolean;
+        sm: boolean;
+        md: boolean;
+        lg: boolean;
+        xl: boolean;
+        xxl: boolean;
+        xxxxsUp: boolean;
+        xxxsUp: boolean;
+        xxsUp: boolean;
+        xsUp: boolean;
+        smUp: boolean;
+        mdUp: boolean;
+        lgUp: boolean;
+        xlUp: boolean;
+        xxlUp: boolean;
+    };
+    /** 세로 브레이크포인트 상태 객체 */
+    heightBreakpoint: {
+        hxxs: boolean;
+        hxs: boolean;
+        hsm: boolean;
+        hmd: boolean;
+        hlg: boolean;
+        hxl: boolean;
+        hxxl: boolean;
+        hxxsUp: boolean;
+        hxsUp: boolean;
+        hsmUp: boolean;
+        hmdUp: boolean;
+        hlgUp: boolean;
+        hxlUp: boolean;
+        hxxlUp: boolean;
+    };
 }
 ```
 
-#### 브레이크포인트 정의
+#### 가로 브레이크포인트 정의
 
-| 브레이크포인트 | 크기 범위       |
-| -------------- | --------------- |
-| `xs`           | 0px ~ 599px     |
-| `sm`           | 600px ~ 899px   |
-| `md`           | 900px ~ 1199px  |
-| `lg`           | 1200px ~ 1535px |
-| `xl`           | 1536px ~ 1919px |
-| `xxl`          | 1920px 이상     |
+| 브레이크포인트 | 픽셀 값 | rem 값 | 크기 범위       |
+| -------------- | ------- | ------ | --------------- |
+| `xxxxs`        | 224px   | 14rem  | 0px ~ 255px     |
+| `xxxs`         | 256px   | 16rem  | 224px ~ 287px   |
+| `xxs`          | 288px   | 18rem  | 256px ~ 351px   |
+| `xs`           | 352px   | 22rem  | 288px ~ 639px   |
+| `sm`           | 640px   | 40rem  | 352px ~ 767px   |
+| `md`           | 768px   | 48rem  | 640px ~ 1023px  |
+| `lg`           | 1024px  | 64rem  | 768px ~ 1279px  |
+| `xl`           | 1280px  | 80rem  | 1024px ~ 1535px |
+| `xxl`          | 1536px  | 96rem  | 1280px 이상     |
+
+#### 세로 브레이크포인트 정의
+
+| 브레이크포인트 | 픽셀 값 | 크기 범위      |
+| -------------- | ------- | -------------- |
+| `hxxs`         | 400px   | 0px ~ 499px    |
+| `hxs`          | 500px   | 400px ~ 599px  |
+| `hsm`          | 600px   | 500px ~ 767px  |
+| `hmd`          | 768px   | 600px ~ 899px  |
+| `hlg`          | 900px   | 768px ~ 1079px |
+| `hxl`          | 1080px  | 900px ~ 1079px |
+| `hxxl`         | 1080px  | 1080px 이상    |
 
 #### 특징
 
--   **"down" 상태**: `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - 해당 브레이크포인트 **이하**인지 판별
--   **"up" 상태**: `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - 해당 브레이크포인트 **이상**인지 판별
+-   **가로 "down" 상태**: `xxxxs`, `xxxs`, `xxs`, `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - 해당 브레이크포인트 **이하**인지 판별
+-   **가로 "up" 상태**: `xxxxsUp`, `xxxsUp`, `xxsUp`, `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - 해당 브레이크포인트 **이상**인지 판별
+-   **세로 "down" 상태**: `hxxs`, `hxs`, `hsm`, `hmd`, `hlg`, `hxl`, `hxxl` - 해당 높이 **이하**인지 판별
+-   **세로 "up" 상태**: `hxxsUp`, `hxsUp`, `hsmUp`, `hmdUp`, `hlgUp`, `hxlUp`, `hxxlUp` - 해당 높이 **이상**인지 판별
+-   **화면 크기**: `width`, `height` - 현재 창의 정확한 픽셀 크기
+-   **화면 방향**: `landscape` (가로), `portrait` (세로) - 화면 방향 감지
 -   **자동 업데이트**: 창 크기 변경 시 자동으로 상태 갱신
--   **SSR 안전**: 서버 사이드 렌더링 환경에서도 안전하게 동작
+-   **SSR 안전**: 서버 사이드 렌더링 환경에서도 안전하게 동작 (초기값 0)
 
 #### 기본 사용 예제
 
@@ -1719,11 +1833,82 @@ function ImageGallery() {
 }
 ```
 
+#### 화면 방향 감지
+
+```typescript
+function OrientationAwareLayout() {
+    const { landscape, portrait } = useBreakpoint();
+
+    return (
+        <div>
+            {landscape ? <HorizontalLayout /> : <VerticalLayout />}
+            <div className="orientation">
+                현재 방향: {landscape ? "가로" : "세로"}
+            </div>
+        </div>
+    );
+}
+```
+
+#### 세로 브레이크포인트 활용
+
+```typescript
+function VerticalResponsiveLayout() {
+    const { hsmUp, hmdUp } = useBreakpoint();
+
+    return (
+        <div className="container">
+            <Header />
+            <MainContent />
+            {hsmUp && <MiddleSection />}
+            {hmdUp && <BottomSection />}
+        </div>
+    );
+}
+```
+
+#### 정확한 화면 크기 사용
+
+```typescript
+function DynamicSizing() {
+    const { width, height } = useBreakpoint();
+
+    return (
+        <div>
+            <p>
+                현재 창 크기: {width} x {height}px
+            </p>
+            <div style={{ width: width * 0.8, height: height * 0.6 }}>
+                크기 기반 컨텐츠
+            </div>
+        </div>
+    );
+}
+```
+
+#### breakpoint 객체 활용
+
+```typescript
+function BreakpointInfo() {
+    const { breakpoint, heightBreakpoint } = useBreakpoint();
+
+    return (
+        <div>
+            <h3>가로 브레이크포인트</h3>
+            <pre>{JSON.stringify(breakpoint, null, 2)}</pre>
+            <h3>세로 브레이크포인트</h3>
+            <pre>{JSON.stringify(heightBreakpoint, null, 2)}</pre>
+        </div>
+    );
+}
+```
+
 #### 주의사항
 
 -   창 크기 변경 시 리렌더링이 발생합니다.
 -   성능을 위해 필요한 경우에만 사용하세요 (CSS 미디어 쿼리로 처리 가능한 경우 CSS 사용 권장).
 -   서버 사이드 렌더링 시 초기값은 0px로 설정됩니다.
+-   `width`와 `height`는 실시간으로 업데이트되므로, 필요한 값만 구조 분해하여 사용하는 것이 좋습니다.
 
 📚 **[브레이크포인트 상세 예제 →](./examples.md#usebreakpoint-예제)**
 

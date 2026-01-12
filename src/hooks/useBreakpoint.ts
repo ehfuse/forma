@@ -90,6 +90,9 @@ export const useBreakpoint = (): UseBreakpointReturn => {
             setWindowHeight(window.innerHeight);
         };
 
+        // 마운트 시 즉시 현재 크기 설정
+        handleResize();
+
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, []);

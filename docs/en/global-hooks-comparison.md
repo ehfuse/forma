@@ -6,13 +6,13 @@ The Forma library provides 4 main state management hooks:
 
 **Local Hooks (Component-internal state)**:
 
--   `useFormaState`: General state management
--   `useForm`: Form-specific state management
+- `useFormaState`: General state management
+- `useForm`: Form-specific state management
 
 **Global Hooks (Shared state across components)**:
 
--   `useGlobalFormaState`: General global state management
--   `useGlobalForm`: Form-specific global state management
+- `useGlobalFormaState`: General global state management
+- `useGlobalForm`: Form-specific global state management
 
 ## 🎯 useForm vs useFormaState Differences
 
@@ -21,10 +21,10 @@ The Forma library provides 4 main state management hooks:
 **Purpose**: Local management of HTML form elements
 **Additional Features**:
 
--   ✅ Form validation (`onValidate`)
--   ✅ Form submission (`onSubmit`, `submit()`)
--   ✅ Submission state (`isSubmitting`)
--   ✅ Submission complete callback (`onComplete`)
+- ✅ Form validation (`onValidate`)
+- ✅ Form submission (`onSubmit`, `submit()`)
+- ✅ Submission state (`isSubmitting`)
+- ✅ Submission complete callback (`onComplete`)
 
 **Usage Example**:
 
@@ -45,10 +45,10 @@ form.submit(); // Validate then submit
 **Purpose**: Local management of general app state
 **Characteristics**:
 
--   ✅ Provides pure state management only
--   ✅ Individual field subscriptions
--   ❌ No form validation
--   ❌ No form submission features
+- ✅ Provides pure state management only
+- ✅ Individual field subscriptions
+- ❌ No form validation
+- ❌ No form submission features
 
 **Usage Example**:
 
@@ -73,12 +73,12 @@ Follows the same pattern as local hooks, but **shares state across multiple comp
 
 **Included Features**:
 
--   ✅ Form validation
--   ✅ Form submission
--   ✅ Submission state (isSubmitting)
--   ✅ Error handling
--   ✅ onSubmit callback
--   ✅ onComplete callback
+- ✅ Form validation
+- ✅ Form submission
+- ✅ Submission state (isSubmitting)
+- ✅ Error handling
+- ✅ onSubmit callback
+- ✅ onComplete callback
 
 **Usage Example**:
 
@@ -343,7 +343,8 @@ const form = useGlobalForm({```
 
 console.log(form.isSubmitting); // true/falseconst gameState = useGlobalFormaState({ stateId: "game-state" });
 
-console.log(form.isModified); // true/false
+const isModified = useFormModified(form);
+console.log(isModified); // true/false
 
 ```// Game data subscriptions
 
@@ -445,24 +446,24 @@ const form = useGlobalForm({
 
 ### 3. Independent Operation
 
--   **FormaState**: Real-time data, filters, UI state management
--   **Form**: User input, validation, submission tasks
+- **FormaState**: Real-time data, filters, UI state management
+- **Form**: User input, validation, submission tasks
 
 ## 💡 Selection Guide
 
 ### Choose useGlobalFormaState when:
 
--   Simple state sharing between multiple components is needed
--   Real-time data synchronization is required
--   Managing UI state (theme, language, sidebar state, etc.)
--   Performance optimization through individual field subscriptions is important
+- Simple state sharing between multiple components is needed
+- Real-time data synchronization is required
+- Managing UI state (theme, language, sidebar state, etc.)
+- Performance optimization through individual field subscriptions is important
 
 ### Choose useGlobalForm when:
 
--   Managing actual HTML form elements
--   Form validation and submission logic is needed
--   Maintaining form state across multiple steps/pages
--   Error handling and loading state management is required
+- Managing actual HTML form elements
+- Form validation and submission logic is needed
+- Maintaining form state across multiple steps/pages
+- Error handling and loading state management is required
 
 ## ⚠️ Precautions
 
@@ -473,6 +474,6 @@ const form = useGlobalForm({
 
 ## 📚 Related Documentation
 
--   [useGlobalForm Guide](./useGlobalForm-guide.md)
--   [useFormaState Usage](./getting-started.md)
--   [Performance Optimization Tips](./performance-optimization-report.md)
+- [useGlobalForm Guide](./useGlobalForm-guide.md)
+- [useFormaState Usage](./getting-started.md)
+- [Performance Optimization Tips](./performance-optimization-report.md)

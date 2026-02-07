@@ -1,4 +1,4 @@
-import { useForm } from "@ehfuse/forma";
+import { useForm, useFormModified } from "@ehfuse/forma";
 import { UserForm } from "../types";
 
 export function PureZeroConfigExample() {
@@ -11,7 +11,7 @@ export function PureZeroConfigExample() {
         alert(
             `Pure Zero-Config Form submitted! Check console for details.\nName: ${
                 values.name || "empty"
-            }`
+            }`,
         );
     };
 
@@ -24,6 +24,8 @@ export function PureZeroConfigExample() {
         form.setFormValue("address.city", "");
         console.log("Pure Zero-Config form manually reset");
     };
+
+    const isModified = useFormModified(form);
 
     return (
         <div className="example-section">
@@ -102,7 +104,7 @@ export function PureZeroConfigExample() {
                     onClick={() =>
                         console.log(
                             "Pure Zero-Config values:",
-                            form.getFormValues()
+                            form.getFormValues(),
                         )
                     }
                 >
@@ -111,7 +113,7 @@ export function PureZeroConfigExample() {
             </div>
 
             <div className="status">
-                <p>Modified: {form.isModified ? "✅ Yes" : "❌ No"}</p>
+                <p>Modified: {isModified ? "✅ Yes" : "❌ No"}</p>
                 <p>Submitting: {form.isSubmitting ? "⏳ Yes" : "✅ No"}</p>
                 <p>
                     <strong>Note:</strong> Pure Zero-Config doesn't have

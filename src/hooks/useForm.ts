@@ -79,22 +79,22 @@ type PickerChangeHandlerContext = any;
 
 // Zero-Config 오버로드: props 없이 사용
 export function useForm<
-    T extends Record<string, any> = Record<string, any>
+    T extends Record<string, any> = Record<string, any>,
 >(): UseFormReturn<T>;
 
 // Zero-Config 오버로드: 옵셔널 props를 가진 경우
 export function useForm<T extends Record<string, any> = Record<string, any>>(
-    props?: UseFormPropsOptional<T>
+    props?: UseFormPropsOptional<T>,
 ): UseFormReturn<T>;
 
 // 전체 props를 가진 기본 오버로드
 export function useForm<T extends Record<string, any>>(
-    props: UseFormProps<T>
+    props: UseFormProps<T>,
 ): UseFormReturn<T>;
 export function useForm<T extends Record<string, any>>(
     props:
         | UseFormProps<T>
-        | UseFormPropsOptional<T> = {} as UseFormPropsOptional<T>
+        | UseFormPropsOptional<T> = {} as UseFormPropsOptional<T>,
 ): UseFormReturn<T> {
     const {
         initialValues = {} as T,
@@ -125,7 +125,7 @@ export function useForm<T extends Record<string, any>>(
         if (persistConfig) {
             const persisted = loadPersistedData<T>(
                 persistConfig,
-                storagePrefix
+                storagePrefix,
             );
             if (persisted) {
                 mergedInitialValues = { ...initialValues, ...persisted };
@@ -144,21 +144,6 @@ export function useForm<T extends Record<string, any>>(
     // 폼 특정 상태 관리 / Form-specific state management
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isValidating, setIsValidating] = useState(false);
-
-    // 폼이 수정되었는지 확인 / Check if form is modified
-    // Store의 변경 사항을 추적하여 효율적으로 감지
-    const [isModified, setIsModified] = useState(false);
-
-    useEffect(() => {
-        const unsubscribe = fieldState._store.subscribeGlobal(() => {
-            setIsModified(fieldState._store.isModified());
-        });
-
-        // 초기 상태 설정
-        setIsModified(fieldState._store.isModified());
-
-        return unsubscribe;
-    }, [fieldState._store]);
 
     // Persist: 디바운스된 저장 함수 생성 | Create debounced save function
     const debouncedSaveRef = useRef<((values: T) => void) | null>(null);
@@ -245,7 +230,7 @@ export function useForm<T extends Record<string, any>>(
 
             fieldState.setValue(name, value);
         },
-        [fieldState.setValue]
+        [fieldState.setValue],
     ) as FormChangeHandler;
 
     /**
@@ -267,7 +252,7 @@ export function useForm<T extends Record<string, any>>(
                 fieldState.setValue(fieldName, newValue);
             };
         },
-        [fieldState.setValue]
+        [fieldState.setValue],
     );
 
     /**
@@ -286,7 +271,7 @@ export function useForm<T extends Record<string, any>>(
 
             fieldState.setValue(name as string, processedValue);
         },
-        [fieldState.setValue]
+        [fieldState.setValue],
     );
 
     /**
@@ -296,7 +281,7 @@ export function useForm<T extends Record<string, any>>(
         (newValues: Partial<T>) => {
             fieldState.setValues(newValues);
         },
-        [fieldState.setValues]
+        [fieldState.setValues],
     );
 
     /**
@@ -307,7 +292,7 @@ export function useForm<T extends Record<string, any>>(
             stableInitialValues.current = newInitialValues;
             fieldState._store.setInitialValues(newInitialValues);
         },
-        [fieldState._store]
+        [fieldState._store],
     );
 
     /**
@@ -317,7 +302,7 @@ export function useForm<T extends Record<string, any>>(
         (fieldName: keyof T | string): any => {
             return fieldState._store.getValue(fieldName as string);
         },
-        [fieldState._store]
+        [fieldState._store],
     );
 
     /**
@@ -358,7 +343,7 @@ export function useForm<T extends Record<string, any>>(
                 setIsValidating(false);
             }
         },
-        [onValidate, fieldState.getValues]
+        [onValidate, fieldState.getValues],
     );
 
     /**
@@ -405,7 +390,7 @@ export function useForm<T extends Record<string, any>>(
                 setIsSubmitting(false);
             }
         },
-        [onSubmit, onComplete, validateForm, fieldState.getValues]
+        [onSubmit, onComplete, validateForm, fieldState.getValues],
     );
 
     // Actions 바인딩 - context와 함께 사용할 수 있도록 / Actions binding - to use with context
@@ -451,7 +436,6 @@ export function useForm<T extends Record<string, any>>(
             // 상태 / State
             isSubmitting,
             isValidating,
-            isModified,
 
             // 값 가져오기 / Get values
             useFormValue, // Hook - 구독 있음 (성능 최적화) / with subscription (performance optimized)
@@ -488,7 +472,6 @@ export function useForm<T extends Record<string, any>>(
         [
             isSubmitting,
             isValidating,
-            isModified,
             useFormValue,
             getFormValue,
             getFormValues,
@@ -504,6 +487,6 @@ export function useForm<T extends Record<string, any>>(
             clearPersisted,
             hasPersisted,
             fieldState._store, // Store 의존성으로 대체
-        ]
+        ],
     );
 }

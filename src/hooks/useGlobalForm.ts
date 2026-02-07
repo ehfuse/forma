@@ -39,7 +39,7 @@ import { mergeActions } from "../utils";
  * Global form state management hook (Overload 1: Full options)
  */
 export function useGlobalForm<T extends Record<string, any>>(
-    props: UseGlobalFormProps<T>
+    props: UseGlobalFormProps<T>,
 ): UseGlobalFormReturn<T>;
 
 /**
@@ -47,7 +47,7 @@ export function useGlobalForm<T extends Record<string, any>>(
  * Global form state management hook (Overload 2: formId only)
  */
 export function useGlobalForm<T extends Record<string, any>>(
-    formId: string
+    formId: string,
 ): UseGlobalFormReturn<T>;
 
 /**
@@ -64,7 +64,7 @@ export function useGlobalForm<T extends Record<string, any>>(
  * @returns 글로벌 폼 관리 API 객체 / Global form management API object
  */
 export function useGlobalForm<T extends Record<string, any>>(
-    propsOrFormId: UseGlobalFormProps<T> | string
+    propsOrFormId: UseGlobalFormProps<T> | string,
 ): UseGlobalFormReturn<T> {
     // 문자열로 전달된 경우 props 객체로 변환
     const props: UseGlobalFormProps<T> =

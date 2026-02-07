@@ -1,4 +1,4 @@
-import { useForm } from "@ehfuse/forma";
+import { useForm, useFormModified } from "@ehfuse/forma";
 import { UserForm } from "../types";
 
 export function ZeroConfigExample() {
@@ -21,9 +21,11 @@ export function ZeroConfigExample() {
         alert(
             `Form submitted! Check console for details.\nName: ${
                 values.name || "empty"
-            }`
+            }`,
         );
     };
+
+    const isModified = useFormModified(form);
 
     return (
         <div className="example-section">
@@ -107,7 +109,7 @@ export function ZeroConfigExample() {
             </div>
 
             <div className="status">
-                <p>Modified: {form.isModified ? "✅ Yes" : "❌ No"}</p>
+                <p>Modified: {isModified ? "✅ Yes" : "❌ No"}</p>
                 <p>Submitting: {form.isSubmitting ? "⏳ Yes" : "✅ No"}</p>
             </div>
         </div>

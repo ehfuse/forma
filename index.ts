@@ -29,6 +29,7 @@
 
 // ===== Core Hooks =====
 export { useForm } from "./src/hooks/useForm";
+export { useFormModified } from "./src/hooks/useFormModified";
 export { useGlobalForm } from "./src/hooks/useGlobalForm";
 export { useRegisterGlobalForm } from "./src/hooks/useRegisterGlobalForm";
 export { useUnregisterGlobalForm } from "./src/hooks/useUnregisterGlobalForm";
@@ -119,7 +120,7 @@ export type {
 /**
  * Forma library version
  */
-export const FORMA_VERSION = "1.0.0";
+export const FORMA_VERSION = "3.1.0";
 
 /**
  * Forma library metadata

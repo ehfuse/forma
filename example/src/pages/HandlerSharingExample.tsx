@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGlobalForm } from "@ehfuse/forma";
+import { useFormModified, useGlobalForm } from "@ehfuse/forma";
 
 /**
  * 핸들러 공유 예제
@@ -141,6 +141,7 @@ function FormViewer() {
         // → 컴포넌트 A에서 등록한 핸들러 자동 사용
     });
 
+    const isModified = useFormModified(form);
     const name = form.useFormValue("name");
     const email = form.useFormValue("email");
 
@@ -174,7 +175,7 @@ function FormViewer() {
                     <strong>현재 이메일:</strong> {email || "(비어있음)"}
                 </div>
                 <div>
-                    <strong>수정됨:</strong> {form.isModified ? "예" : "아니오"}
+                    <strong>수정됨:</strong> {isModified ? "예" : "아니오"}
                 </div>
             </div>
 
@@ -221,7 +222,7 @@ function FormWithCustomHandler() {
             console.log("🔥 커스텀 onSubmit 실행됨:", values);
 
             alert(
-                `커스텀 제출!\n이 컴포넌트만 다른 로직을 사용합니다.\n이름: ${values.name}`
+                `커스텀 제출!\n이 컴포넌트만 다른 로직을 사용합니다.\n이름: ${values.name}`,
             );
             return true;
         },

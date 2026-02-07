@@ -1,4 +1,4 @@
-import { useForm } from "@ehfuse/forma";
+import { useForm, useFormModified } from "@ehfuse/forma";
 import { UserForm } from "../types";
 
 export function TraditionalFormExample() {
@@ -28,6 +28,8 @@ export function TraditionalFormExample() {
             return true;
         },
     });
+
+    const isModified = useFormModified(form);
 
     return (
         <div className="example-section">
@@ -108,7 +110,7 @@ export function TraditionalFormExample() {
             </form>
 
             <div className="status">
-                <p>Modified: {form.isModified ? "✅ Yes" : "❌ No"}</p>
+                <p>Modified: {isModified ? "✅ Yes" : "❌ No"}</p>
                 <p>Submitting: {form.isSubmitting ? "⏳ Yes" : "✅ No"}</p>
                 <p>Validating: {form.isValidating ? "⏳ Yes" : "✅ No"}</p>
             </div>

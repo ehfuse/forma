@@ -55,13 +55,13 @@ A basic hook for managing general state such as arrays and objects. Optimizes pe
 // Overload for starting with an empty object
 function useFormaState<T extends Record<string, any> = Record<string, any>>(
     initialValues?: T,
-    options?: UseFormaStateOptions<T>
+    options?: UseFormaStateOptions<T>,
 ): UseFormaStateReturn<T>;
 
 // Overload for cases with explicit types
 function useFormaState<T extends Record<string, any>>(
     initialValues: T,
-    options?: UseFormaStateOptions<T>
+    options?: UseFormaStateOptions<T>,
 ): UseFormaStateReturn<T>;
 ```
 
@@ -110,7 +110,7 @@ interface UseFormaStateReturn<T> {
     handleChange: (
         event: React.ChangeEvent<
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
+        >,
     ) => void;
     /** Check if field exists */
     hasField: (path: string) => boolean;
@@ -179,7 +179,7 @@ const state = useFormaState(
                 return true;
             },
         },
-    }
+    },
 );
 
 // Use actions
@@ -251,9 +251,9 @@ const todoCount = state.useValue("todos.length"); // 2
 
 **Key Features:**
 
--   ✅ **Smart Notifications**: Notifies only when array length actually changes
--   ✅ **Performance Optimization**: Prevents unnecessary re-renders when array contents change
--   ✅ **Auto Detection**: Automatically notifies `.length` subscribers when arrays change
+- ✅ **Smart Notifications**: Notifies only when array length actually changes
+- ✅ **Performance Optimization**: Prevents unnecessary re-renders when array contents change
+- ✅ **Auto Detection**: Automatically notifies `.length` subscribers when arrays change
 
 📚 **[Detailed Array Length Subscription Guide →](./performance-warnings.md#array-length-subscription-array-length-subscription)**
 
@@ -273,15 +273,15 @@ state.refreshFields("user");
 
 **💡 Use Cases:**
 
--   **Server Data Synchronization**: Force UI refresh even when server data is identical to current values
--   **Force Re-validation**: Re-run validation or formatting even when values are same
--   **External State Sync**: Synchronization with external libraries or systems
+- **Server Data Synchronization**: Force UI refresh even when server data is identical to current values
+- **Force Re-validation**: Re-run validation or formatting even when values are same
+- **External State Sync**: Synchronization with external libraries or systems
 
 **⚠️ Important Notes:**
 
--   `refreshFields` is not a performance optimization tool
--   Individual field subscribers will still re-render individually
--   For bulk data updates, **array replacement** is the most efficient approach
+- `refreshFields` is not a performance optimization tool
+- Individual field subscribers will still re-render individually
+- For bulk data updates, **array replacement** is the most efficient approach
 
 📚 **[Field Refresh Usage Examples →](./examples.md#field-refresh-utilization)**  
 🔗 **[Bulk Data Optimization Guide →](./performance-warnings.md#-bulk-data-batch-processing-optimization)**
@@ -296,7 +296,6 @@ A basic hook for managing local form state.
 | ----------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- | ------------------------- |
 | **Status**        | `isSubmitting`                                               | Whether form is currently being submitted                              | `boolean`                 |
 |                   | `isValidating`                                               | Whether form is currently being validated                              | `boolean`                 |
-|                   | `isModified`                                                 | Whether form has been modified from initial values                     | `boolean`                 |
 | **Get Values**    | `useFormValue(fieldName)`                                    | Subscribe to specific field value (performance optimized, recommended) | `any`                     |
 |                   | `getFormValue(fieldName)`                                    | Get specific field value (no subscription)                             | `any`                     |
 |                   | `getFormValues()`                                            | Get all field values (no subscription)                                 | `T`                       |
@@ -314,7 +313,7 @@ A basic hook for managing local form state.
 
 ```typescript
 function useForm<T extends Record<string, any>>(
-    props: UseFormProps<T>
+    props: UseFormProps<T>,
 ): UseFormReturn<T>;
 ```
 
@@ -362,7 +361,6 @@ interface UseFormReturn<T> {
     // State
     isSubmitting: boolean; // Whether submitting
     isValidating: boolean; // Whether validating
-    isModified: boolean; // Whether modified
 
     // Value retrieval (with subscription - recommended)
     useFormValue: (fieldName: string) => any;
@@ -457,9 +455,9 @@ const handleSubmit = async () => {
 
 **💡 onSubmit Return Value Handling:**
 
--   `true` or `undefined`: Submission success
--   `false`: Submission failure (no need to throw exceptions)
--   Exception thrown: Automatically treated as submission failure
+- `true` or `undefined`: Submission success
+- `false`: Submission failure (no need to throw exceptions)
+- Exception thrown: Automatically treated as submission failure
 
 📚 **[Detailed Form Usage Examples →](./examples.md#useform-examples)**
 
@@ -469,7 +467,6 @@ const handleSubmit = async () => {
 | ------------------------ | ------------------------------------------------ | --------------------------------------------------------------------- |
 | `isSubmitting`           | `boolean`                                        | Whether the form is currently submitting.                             |
 | `isValidating`           | `boolean`                                        | Whether the form is currently validating.                             |
-| `isModified`             | `boolean`                                        | Whether the form has been modified from initial values.               |
 | `useFormValue`           | `(fieldName: string) => any`                     | Subscribe to specific form field value (recommended for performance). |
 | `getFormValue`           | `(fieldName: string) => any`                     | Get specific form field value without subscription.                   |
 | `getFormValues`          | `() => T`                                        | Get all current form values.                                          |
@@ -483,6 +480,25 @@ const handleSubmit = async () => {
 | `validateForm`           | `() => Promise<boolean>`                         | Validate the form, returns validation result.                         |
 | `actions`                | `any`                                            | Custom actions (computed getters and handlers).                       |
 | `values`                 | `T`                                              | All form values (not recommended - causes full re-render).            |
+
+### useFormModified
+
+Subscribe to the form's modified status only where needed.
+
+#### Signature
+
+```typescript
+function useFormModified<T extends Record<string, any>>(
+    source: FieldStore<T> | Pick<UseFormReturn<T>, "_store">,
+): boolean;
+```
+
+#### Example
+
+```typescript
+const form = useForm({ initialValues: { name: "" } });
+const isModified = useFormModified(form);
+```
 
 #### setInitialFormValues Method
 
@@ -506,9 +522,9 @@ form.resetForm(); // name: "John Doe", email: "john@example.com"
 
 **Key Features:**
 
--   Dynamically change initial values of already created forms
--   New initial values are set and form state is updated accordingly
--   Calling `resetForm()` resets to the new initial values
+- Dynamically change initial values of already created forms
+- New initial values are set and form state is updated accordingly
+- Calling `resetForm()` resets to the new initial values
 
 ---
 
@@ -522,7 +538,7 @@ An extended hook for managing global form state. Includes all features of useFor
 
 ```typescript
 function useGlobalForm<T extends Record<string, any>>(
-    props: UseGlobalFormProps<T>
+    props: UseGlobalFormProps<T>,
 ): UseGlobalFormReturn<T>;
 ```
 
@@ -602,11 +618,11 @@ sharedForm.actions.clearForm(); // actions also available
 
 **Key Points:**
 
--   **Automatic Handler Sharing**: `onValidate`, `onSubmit`, `onComplete` registered by the first component are automatically shared globally
--   **Automatic Actions Sharing**: `actions` registered by the first component are also automatically shared globally
--   **Intuitive behavior**: Same `formId` shares data, handlers, and actions as expected
--   **Flexible override**: Specific components can use different handlers or actions by redefining locally
--   **Validation flow**: `onValidate` returns `false` → `onSubmit` will NOT execute / returns `true` → `onSubmit` will execute
+- **Automatic Handler Sharing**: `onValidate`, `onSubmit`, `onComplete` registered by the first component are automatically shared globally
+- **Automatic Actions Sharing**: `actions` registered by the first component are also automatically shared globally
+- **Intuitive behavior**: Same `formId` shares data, handlers, and actions as expected
+- **Flexible override**: Specific components can use different handlers or actions by redefining locally
+- **Validation flow**: `onValidate` returns `false` → `onSubmit` will NOT execute / returns `true` → `onSubmit` will execute
 
 **Handler Priority:**
 
@@ -721,16 +737,16 @@ const persistentForm = useGlobalForm({
 
 **Auto Cleanup Behavior:**
 
--   Automatically cleans up the form when the last user unmounts
--   `autoCleanup: false`: Manual cleanup with `useUnregisterGlobalForm` required
+- Automatically cleans up the form when the last user unmounts
+- `autoCleanup: false`: Manual cleanup with `useUnregisterGlobalForm` required
 
 **Delayed Cleanup Mechanism:**
 
 `autoCleanup: true` uses a **100ms delayed cleanup** to safely handle React's re-rendering scenarios:
 
--   When a component unmounts, the actual cleanup is executed after 100ms
--   If the component remounts within 100ms, the cleanup is cancelled
--   This ensures data is safely preserved during fast mount/unmount cycles in React Strict Mode or conditional rendering
+- When a component unmounts, the actual cleanup is executed after 100ms
+- If the component remounts within 100ms, the cleanup is cancelled
+- This ensures data is safely preserved during fast mount/unmount cycles in React Strict Mode or conditional rendering
 
 ```typescript
 // Works safely even in React Strict Mode
@@ -749,9 +765,9 @@ function MyComponent() {
 
 ✅ **Recommendations:**
 
--   Use `autoCleanup: true` (default) in most cases
--   Use manual cleanup only after full form completion or user logout
--   Rely on auto cleanup for shared forms to ensure safety
+- Use `autoCleanup: true` (default) in most cases
+- Use manual cleanup only after full form completion or user logout
+- Rely on auto cleanup for shared forms to ensure safety
 
 ⚠️ **Caution:** Manual unregister immediately affects all components using that `formId`
 
@@ -765,7 +781,7 @@ A hook for managing globally shared FormaState. Supports individual field subscr
 
 ```typescript
 function useGlobalFormaState<
-    T extends Record<string, any> = Record<string, any>
+    T extends Record<string, any> = Record<string, any>,
 >(props: UseGlobalFormaStateProps<T>): UseFormaStateReturn<T>;
 ```
 
@@ -792,10 +808,10 @@ Returns the same `UseFormaStateReturn<T>` interface as `useFormaState`.
 
 #### Features
 
--   **Global Sharing**: All components using the same `stateId` share state
--   **Individual Field Subscriptions**: Supports independent re-rendering per field
--   **Auto Creation**: Creates new if `stateId` doesn't exist
--   **Type Safety**: Complete type inference with TypeScript
+- **Global Sharing**: All components using the same `stateId` share state
+- **Individual Field Subscriptions**: Supports independent re-rendering per field
+- **Auto Creation**: Creates new if `stateId` doesn't exist
+- **Type Safety**: Complete type inference with TypeScript
 
 #### Basic Usage
 
@@ -896,9 +912,9 @@ function ProductList() {
 
 **Key Points:**
 
--   `itemCount = cart.useValue("items.length")`: Subscribe only to array length
--   Instead of `items?.length || 0`, use `.length` subscription
--   Performance optimization: Prevents unnecessary re-renders when array contents change
+- `itemCount = cart.useValue("items.length")`: Subscribe only to array length
+- Instead of `items?.length || 0`, use `.length` subscription
+- Performance optimization: Prevents unnecessary re-renders when array contents change
 
 📚 **[Detailed Array Length Subscription Guide →](./performance-warnings.md#array-length-subscription-array-length-subscription)**
 🔗 **[Performance Optimization Best Practices →](./performance-guide.md#performance-optimization)**
@@ -955,7 +971,7 @@ const state = useGlobalFormaState({
 type WatchHandler<T> = (
     context: ActionContext<T>,
     value: any,
-    prevValue: any | undefined
+    prevValue: any | undefined,
 ) => void | Promise<void>;
 
 type WatchConfig<T> = {
@@ -979,13 +995,13 @@ interface ActionContext<T> {
 
 **Features:**
 
--   ✅ **Dot notation support**: Watch nested object fields (`user.profile.name`)
--   ✅ **Parent path watching**: Watching parent path notifies on child field changes (`filters` watch → detects `filters.interval` changes)
--   ✅ **Wildcard patterns**: Dynamic path matching support (`todos.*.completed` - watch all todos' completed fields)
--   ✅ **Performance optimized**: Only checks registered fields to avoid unnecessary overhead
--   ✅ **Async support**: Use async functions for asynchronous operations
--   ✅ **Auto cleanup**: Automatically removes watchers on component unmount
--   ✅ **Error handling**: Logs errors to console and continues execution if watch handler fails
+- ✅ **Dot notation support**: Watch nested object fields (`user.profile.name`)
+- ✅ **Parent path watching**: Watching parent path notifies on child field changes (`filters` watch → detects `filters.interval` changes)
+- ✅ **Wildcard patterns**: Dynamic path matching support (`todos.*.completed` - watch all todos' completed fields)
+- ✅ **Performance optimized**: Only checks registered fields to avoid unnecessary overhead
+- ✅ **Async support**: Use async functions for asynchronous operations
+- ✅ **Auto cleanup**: Automatically removes watchers on component unmount
+- ✅ **Error handling**: Logs errors to console and continues execution if watch handler fails
 
 **Usage Example:**
 
@@ -1067,7 +1083,6 @@ A hook for manually cleaning up global state.
 2. **Initial Values Policy**: `initialValues` are applied only on the first call with the same `stateId`.
 
 3. **Memory Management**:
-
     - `autoCleanup: true` (default): Automatic memory cleanup (with 100ms delayed cleanup)
     - `autoCleanup: false`: Manual cleanup with `useUnregisterGlobalFormaState` required
 
@@ -1098,13 +1113,11 @@ A hook for manually cleaning up global state.
 1. **Use Default Settings**: Use `autoCleanup: true` (default) in most cases.
 
 2. **Manual Cleanup Usage Times**:
-
     - Application-wide reset
     - User logout
     - Special situations requiring memory optimization
 
 3. **Shared State Management**:
-
     - Rely on `autoCleanup` for states used by multiple components
     - Minimize manual cleanup for predictable lifecycles
 
@@ -1133,14 +1146,14 @@ function useRegisterGlobalForm<T>(formId: string, form: UseFormReturn<T>): void;
 
 #### Parameters
 
--   `formId`: Unique identifier for the global form
--   `form`: The useForm instance to register
+- `formId`: Unique identifier for the global form
+- `form`: The useForm instance to register
 
 #### Features
 
--   **Global Sharing**: Convert local form to global state
--   **Auto Synchronization**: Registered form is accessible from other components
--   **Type Safety**: Complete type inference with TypeScript
+- **Global Sharing**: Convert local form to global state
+- **Auto Synchronization**: Registered form is accessible from other components
+- **Type Safety**: Complete type inference with TypeScript
 
 #### Basic Usage
 
@@ -1166,20 +1179,20 @@ A hook for registering an existing useFormaState instance as global state.
 ```typescript
 function useRegisterGlobalFormaState<T>(
     stateId: string,
-    formaState: UseFormaStateReturn<T>
+    formaState: UseFormaStateReturn<T>,
 ): void;
 ```
 
 #### Parameters
 
--   `stateId`: Unique identifier for the global state
--   `formaState`: The useFormaState instance to register
+- `stateId`: Unique identifier for the global state
+- `formaState`: The useFormaState instance to register
 
 #### Features
 
--   **Global Sharing**: Convert local FormaState to global state
--   **Individual Field Subscriptions**: Registered state supports field-by-field subscriptions
--   **Auto Synchronization**: Immediately accessible from other components
+- **Global Sharing**: Convert local FormaState to global state
+- **Individual Field Subscriptions**: Registered state supports field-by-field subscriptions
+- **Auto Synchronization**: Immediately accessible from other components
 
 #### Example
 
@@ -1226,14 +1239,14 @@ function useUnregisterGlobalForm(): {
 
 #### Returns
 
--   `unregisterForm`: Function to remove a specific form
--   `clearForms`: Function to remove all global forms
+- `unregisterForm`: Function to remove a specific form
+- `clearForms`: Function to remove all global forms
 
 #### Features
 
--   **Memory Management**: Remove unnecessary form states
--   **Selective Removal**: Can remove specific forms selectively
--   **Batch Cleanup**: Can clean up all forms at once
+- **Memory Management**: Remove unnecessary form states
+- **Selective Removal**: Can remove specific forms selectively
+- **Batch Cleanup**: Can clean up all forms at once
 
 #### Basic Usage
 
@@ -1266,14 +1279,14 @@ function useUnregisterGlobalFormaState(): {
 
 #### Returns
 
--   `unregisterState`: Function to remove a specific state
--   `clearStates`: Function to remove all global states
+- `unregisterState`: Function to remove a specific state
+- `clearStates`: Function to remove all global states
 
 #### Features
 
--   **Memory Optimization**: Clean up unnecessary states
--   **Flexible Management**: Choose individual or batch removal
--   **Safe Removal**: Safely remove after cleaning up subscribers
+- **Memory Optimization**: Clean up unnecessary states
+- **Flexible Management**: Choose individual or batch removal
+- **Safe Removal**: Safely remove after cleaning up subscribers
 
 #### Basic Usage
 
@@ -1335,12 +1348,12 @@ interface UseModalReturn {
 
 #### Features
 
--   **Reactive State**: `modal.isOpen` is reactive and automatically triggers re-renders on state changes
--   **Modal Sharing**: Same `modalId` allows multiple components to share modal state
--   **Mobile-Friendly**: Back button closes modal, page stays
--   **Modal Stack Management**: Multiple nested modals close in correct order
--   **Auto Cleanup**: Automatically removes from modal stack on unmount
--   **Auto ID Generation**: Generates unique ID automatically if `modalId` is not provided
+- **Reactive State**: `modal.isOpen` is reactive and automatically triggers re-renders on state changes
+- **Modal Sharing**: Same `modalId` allows multiple components to share modal state
+- **Mobile-Friendly**: Back button closes modal, page stays
+- **Modal Stack Management**: Multiple nested modals close in correct order
+- **Auto Cleanup**: Automatically removes from modal stack on unmount
+- **Auto ID Generation**: Generates unique ID automatically if `modalId` is not provided
 
 #### Basic Usage
 
@@ -1500,9 +1513,9 @@ function FormModal() {
 
 #### Important Notes
 
--   Must wrap your app with `GlobalFormaProvider` for proper functionality.
--   Always use `modal.close()` to close modals (manages history internally).
--   Be cautious when using `initialOpen={true}` (consider history stack).
+- Must wrap your app with `GlobalFormaProvider` for proper functionality.
+- Always use `modal.close()` to close modals (manages history internally).
+- Be cautious when using `initialOpen={true}` (consider history stack).
 
 ---
 
@@ -1678,14 +1691,14 @@ interface UseBreakpointReturn {
 
 #### Features
 
--   **Horizontal "down" states**: `xxxxs`, `xxxs`, `xxs`, `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - Check if screen width is **below** the breakpoint
--   **Horizontal "up" states**: `xxxxsUp`, `xxxsUp`, `xxsUp`, `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - Check if screen width is **at or above** the breakpoint
--   **Vertical "down" states**: `hxxs`, `hxs`, `hsm`, `hmd`, `hlg`, `hxl`, `hxxl` - Check if screen height is **below** the breakpoint
--   **Vertical "up" states**: `hxxsUp`, `hxsUp`, `hsmUp`, `hmdUp`, `hlgUp`, `hxlUp`, `hxxlUp` - Check if screen height is **at or above** the breakpoint
--   **Screen dimensions**: `width`, `height` - Current window dimensions in pixels
--   **Screen orientation**: `landscape` (horizontal), `portrait` (vertical) - Detect screen orientation
--   **Auto-update**: State automatically updates on window resize
--   **SSR Safe**: Works safely in server-side rendering environments (initial value 0)
+- **Horizontal "down" states**: `xxxxs`, `xxxs`, `xxs`, `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - Check if screen width is **below** the breakpoint
+- **Horizontal "up" states**: `xxxxsUp`, `xxxsUp`, `xxsUp`, `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - Check if screen width is **at or above** the breakpoint
+- **Vertical "down" states**: `hxxs`, `hxs`, `hsm`, `hmd`, `hlg`, `hxl`, `hxxl` - Check if screen height is **below** the breakpoint
+- **Vertical "up" states**: `hxxsUp`, `hxsUp`, `hsmUp`, `hmdUp`, `hlgUp`, `hxlUp`, `hxxlUp` - Check if screen height is **at or above** the breakpoint
+- **Screen dimensions**: `width`, `height` - Current window dimensions in pixels
+- **Screen orientation**: `landscape` (horizontal), `portrait` (vertical) - Detect screen orientation
+- **Auto-update**: State automatically updates on window resize
+- **SSR Safe**: Works safely in server-side rendering environments (initial value 0)
 
 #### Basic Usage Example
 
@@ -1829,10 +1842,10 @@ function BreakpointInfo() {
 
 #### Important Notes
 
--   Re-renders occur on window resize.
--   Use only when necessary for performance (prefer CSS media queries when possible).
--   Initial value is 0px during server-side rendering.
--   `width` and `height` update in real-time, so destructure only the values you need.
+- Re-renders occur on window resize.
+- Use only when necessary for performance (prefer CSS media queries when possible).
+- Initial value is 0px during server-side rendering.
+- `width` and `height` update in real-time, so destructure only the values you need.
 
 📚 **[Detailed Breakpoint Examples →](./examples.md#usebreakpoint-examples)**
 
@@ -1862,7 +1875,7 @@ A hook for managing localStorage/sessionStorage data with a pattern similar to `
 function useLocalStorage<T>(
     key: string,
     defaultValue: T,
-    options?: UseLocalStorageOptions
+    options?: UseLocalStorageOptions,
 ): UseLocalStorageReturn<T>;
 ```
 
@@ -1897,7 +1910,7 @@ import { useLocalStorage } from "@ehfuse/forma";
 // Basic usage
 const { value: theme, setValue: setTheme } = useLocalStorage<string>(
     "theme",
-    "light"
+    "light",
 );
 
 // Object storage
@@ -1970,7 +1983,7 @@ setBatch(updates: Record<string, any>): void
 
 #### Parameters
 
--   `updates`: Object containing field paths as keys and new values as values. Supports dot notation.
+- `updates`: Object containing field paths as keys and new values as values. Supports dot notation.
 
 #### Description
 
@@ -1978,9 +1991,9 @@ setBatch(updates: Record<string, any>): void
 
 This method is particularly useful for:
 
--   Loading server data into forms
--   Logically updating multiple related fields together
--   Bulk checkbox/radio button select/deselect
+- Loading server data into forms
+- Logically updating multiple related fields together
+- Bulk checkbox/radio button select/deselect
 
 #### Examples
 
@@ -2002,9 +2015,9 @@ state.setBatch({
 
 **Performance Benefits:**
 
--   **Reduced Re-renders**: 1 re-render instead of N re-renders
--   **Better UX**: Smoother updates for bulk operations
--   **Memory Efficient**: Less garbage collection pressure
+- **Reduced Re-renders**: 1 re-render instead of N re-renders
+- **Better UX**: Smoother updates for bulk operations
+- **Memory Efficient**: Less garbage collection pressure
 
 📚 **[Detailed setBatch examples →](./examples.md#setbatch-examples)**  
 🔗 **[Bulk Data Optimization Guide →](./performance-warnings.md#-mass-data-batch-processing-optimization)**
@@ -2098,7 +2111,7 @@ Returns the current value of a specific field. Supports dot notation for nested 
 
 **Parameters:**
 
--   `fieldName`: Field name or dot notation path (e.g., `"user.name"`)
+- `fieldName`: Field name or dot notation path (e.g., `"user.name"`)
 
 **Returns:** The field value, or `undefined` if the field doesn't exist.
 
@@ -2119,8 +2132,8 @@ Sets the value of a specific field and notifies all subscribers. Supports dot no
 
 **Parameters:**
 
--   `fieldName`: Field name or dot notation path
--   `value`: New value to set
+- `fieldName`: Field name or dot notation path
+- `value`: New value to set
 
 **Example:**
 
@@ -2155,7 +2168,7 @@ Sets multiple field values at once and notifies subscribers.
 
 **Parameters:**
 
--   `values`: Object with field updates
+- `values`: Object with field updates
 
 **Example:**
 
@@ -2176,7 +2189,7 @@ Efficiently batch updates multiple fields in a single operation to minimize re-r
 
 **Parameters:**
 
--   `updates`: Object with field paths as keys and new values
+- `updates`: Object with field paths as keys and new values
 
 **Example:**
 
@@ -2198,8 +2211,8 @@ Subscribes to changes in a specific field. Returns an unsubscribe function.
 
 **Parameters:**
 
--   `fieldName`: Field name or dot notation path
--   `listener`: Callback function called on change
+- `fieldName`: Field name or dot notation path
+- `listener`: Callback function called on change
 
 **Returns:** Unsubscribe function
 
@@ -2222,7 +2235,7 @@ Subscribes to changes in all fields.
 
 **Parameters:**
 
--   `callback`: Callback function called on any change
+- `callback`: Callback function called on any change
 
 **Returns:** Unsubscribe function
 
@@ -2263,7 +2276,7 @@ type FormChangeEvent =
           target: { name: string; value: any };
           onChange?: (
               value: any,
-              context: PickerChangeHandlerContext<any>
+              context: PickerChangeHandlerContext<any>,
           ) => void;
       };
 ```
@@ -2302,7 +2315,7 @@ Event handler type specific to DatePicker.
 
 ```typescript
 type DatePickerChangeHandler = (
-    fieldName: string
+    fieldName: string,
 ) => (value: any, context?: PickerChangeHandlerContext<any>) => void;
 ```
 
@@ -2314,7 +2327,7 @@ Callback type called when a value at a specific path changes.
 type WatchCallback<T extends Record<string, any>> = (
     context: ActionContext<T>,
     value: any,
-    prevValue: any
+    prevValue: any,
 ) => void | Promise<void>;
 ```
 
@@ -2331,9 +2344,9 @@ type WatchOptions<T extends Record<string, any>> = Record<
 
 **Supported patterns:**
 
--   `"todos"` - Exact path matching
--   `"todos.*.completed"` - Wildcard pattern (matches todos.0.completed, todos.1.completed, etc.)
--   `"*"` - Matches all paths
+- `"todos"` - Exact path matching
+- `"todos.*.completed"` - Wildcard pattern (matches todos.0.completed, todos.1.completed, etc.)
+- `"*"` - Matches all paths
 
 ### UseFormProps
 
@@ -2390,11 +2403,11 @@ Type for the global form context.
 interface GlobalFormaContextType {
     getOrCreateStore: <T extends Record<string, any>>(
         formId: string,
-        initialValues: T
+        initialValues: T,
     ) => FieldStore<T>;
     registerStore: <T extends Record<string, any>>(
         formId: string,
-        store: FieldStore<T>
+        store: FieldStore<T>,
     ) => void;
     unregisterStore: (formId: string) => boolean;
     clearStores: () => void;
@@ -2439,9 +2452,9 @@ const { name } = form.values;
 
 **Core Principles:**
 
--   Optimize re-rendering with individual field subscriptions
--   Utilize array length subscription (`todos.length`)
--   Use batch processing + `refreshFields` for bulk data
+- Optimize re-rendering with individual field subscriptions
+- Utilize array length subscription (`todos.length`)
+- Use batch processing + `refreshFields` for bulk data
 
 📚 **[Performance Optimization Guide →](./performance-guide.md)**
 ⚠️ **[Performance Optimization Warnings →](./performance-warnings.md)**
@@ -2482,13 +2495,13 @@ This API reference covers all public APIs of the Forma library.
 
 ## Related Documents
 
--   **[API Reference](./API.md)** - Detailed explanations of all APIs
--   **[Example Collection](./examples/basic-example.md)** - Practical usage examples
--   **[Performance Optimization Guide](./performance-guide.md)** - Performance optimization methods
--   **[Performance Optimization Warnings](./performance-warnings.md)** - Anti-patterns and cautions
--   **[Migration Guide](./migration.md)** - Migrating from other libraries
--   **[useGlobalForm Guide](./useGlobalForm-guide.md)** - Global form state management
--   **[Global Hooks Comparison Guide](./global-hooks-comparison.md)** - Differences between global hooks
--   **[Library Comparison Guide](./library-comparison.md)** - Comparison with other state management libraries
+- **[API Reference](./API.md)** - Detailed explanations of all APIs
+- **[Example Collection](./examples/basic-example.md)** - Practical usage examples
+- **[Performance Optimization Guide](./performance-guide.md)** - Performance optimization methods
+- **[Performance Optimization Warnings](./performance-warnings.md)** - Anti-patterns and cautions
+- **[Migration Guide](./migration.md)** - Migrating from other libraries
+- **[useGlobalForm Guide](./useGlobalForm-guide.md)** - Global form state management
+- **[Global Hooks Comparison Guide](./global-hooks-comparison.md)** - Differences between global hooks
+- **[Library Comparison Guide](./library-comparison.md)** - Comparison with other state management libraries
 
 Please contact us anytime if you need additional questions or examples.

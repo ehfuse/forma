@@ -68,7 +68,7 @@ export type FormChangeHandler = {
  * MUI DatePicker 컴포넌트와의 통합을 위한 타입
  */
 export type DatePickerChangeHandler = (
-    fieldName: string
+    fieldName: string,
 ) => (value: any, context?: PickerChangeHandlerContext) => void;
 
 /**
@@ -97,7 +97,7 @@ export interface UseFormProps<T extends Record<string, any>> {
  * useForm 훅의 옵셔널 Props 타입 (Zero-Config용) | useForm hook optional Props type (for Zero-Config)
  */
 export interface UseFormPropsOptional<
-    T extends Record<string, any> = Record<string, any>
+    T extends Record<string, any> = Record<string, any>,
 > {
     /** 폼의 초기값 (선택사항) | Initial form values (optional) */
     initialValues?: T;
@@ -143,8 +143,6 @@ export interface UseFormReturn<T extends Record<string, any>> {
     submit: () => Promise<boolean>;
     /** 폼 검증 | Validate form */
     validateForm: () => Promise<boolean>;
-    /** 수정 여부 | Modified status */
-    isModified: boolean;
     /** 제출 중 여부 | Submitting status */
     isSubmitting: boolean;
     /** 검증 중 여부 | Validating status */
@@ -190,7 +188,7 @@ export interface FormValidationResult {
 export type WatchCallback<T extends Record<string, any>> = (
     context: ActionContext<T>,
     value: any,
-    prevValue: any
+    prevValue: any,
 ) => void | Promise<void>;
 
 /**

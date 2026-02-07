@@ -47,11 +47,14 @@ export class FieldStore<T extends Record<string, any>> {
         new Map();
     private dotNotationListeners: Map<string, Set<() => void>> = new Map(); // Dot notation 구독자 / Dot notation subscribers
     private initialValues: T;
+    private dirtyFields: Set<string> = new Set();
+    private isInitialEmpty: boolean;
     private globalListeners = new Set<() => void>();
     private watchers: Map<string, Set<WatchCallback>> = new Map(); // Watch 콜백 관리 / Watch callback management
 
     constructor(initialValues: T) {
         this.initialValues = { ...initialValues };
+        this.isInitialEmpty = Object.keys(this.initialValues).length === 0;
         // 초기값으로 필드 초기화 / Initialize fields with initial values
         Object.keys(initialValues).forEach((key) => {
             this.fields.set(key, {
@@ -59,6 +62,37 @@ export class FieldStore<T extends Record<string, any>> {
                 listeners: new Set(),
             });
         });
+    }
+
+    private areValuesEqual(a: any, b: any): boolean {
+        if (a === b) return true;
+        if (typeof a === "object" || typeof b === "object") {
+            try {
+                return JSON.stringify(a) === JSON.stringify(b);
+            } catch {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private updateDirtyForField(fieldName: string, value: any): void {
+        if (this.isInitialEmpty) {
+            const hasMeaningfulValue = this.hasMeaningfulValue(value);
+            if (hasMeaningfulValue) {
+                this.dirtyFields.add(fieldName);
+            } else {
+                this.dirtyFields.delete(fieldName);
+            }
+            return;
+        }
+
+        const initialValue = (this.initialValues as any)[fieldName];
+        if (this.areValuesEqual(initialValue, value)) {
+            this.dirtyFields.delete(fieldName);
+        } else {
+            this.dirtyFields.add(fieldName);
+        }
     }
 
     /**
@@ -76,7 +110,8 @@ export class FieldStore<T extends Record<string, any>> {
             // 빈 객체이거나 모든 값이 undefined/null인 경우 undefined 반환
             // Return undefined for empty objects or when all values are undefined/null
             const hasValidData = Object.values(allValues).some(
-                (value) => value !== undefined && value !== null && value !== ""
+                (value) =>
+                    value !== undefined && value !== null && value !== "",
             );
 
             if (!hasValidData) {
@@ -186,7 +221,7 @@ export class FieldStore<T extends Record<string, any>> {
             const rootField = fieldNameStr.split(".")[0] as keyof T;
             const rootFieldStr = String(rootField);
             const remainingPath = fieldNameStr.substring(
-                rootFieldStr.length + 1
+                rootFieldStr.length + 1,
             );
 
             let field = this.fields.get(rootField);
@@ -202,14 +237,14 @@ export class FieldStore<T extends Record<string, any>> {
             const newRootValue = setNestedValue(
                 field.value || {},
                 remainingPath,
-                value
+                value,
             );
 
             if (JSON.stringify(field.value) !== JSON.stringify(newRootValue)) {
                 // 변경 전 자식 필드의 값 (watch용)
                 const prevChildValue = getNestedValue(
                     field.value,
-                    remainingPath
+                    remainingPath,
                 );
 
                 // ⭐ 변경 전 부모 경로들의 값 저장 (부모 watch용)
@@ -220,12 +255,13 @@ export class FieldStore<T extends Record<string, any>> {
                         const parentPath = parts.slice(0, i).join(".");
                         prevParentValues.set(
                             parentPath,
-                            this.getValue(parentPath)
+                            this.getValue(parentPath),
                         );
                     }
                 }
 
                 field.value = newRootValue;
+                this.updateDirtyForField(rootFieldStr, newRootValue);
 
                 // 루트 필드 구독자들 알림 / Notify root field subscribers
                 field.listeners.forEach((listener) => {
@@ -273,7 +309,7 @@ export class FieldStore<T extends Record<string, any>> {
                                 listeners.forEach((listener) => listener());
                             }
                         }
-                    }
+                    },
                 );
 
                 // 전역 구독자들 알림 / Notify global subscribers
@@ -284,7 +320,7 @@ export class FieldStore<T extends Record<string, any>> {
                     fieldNameStr,
                     value,
                     prevChildValue,
-                    prevParentValues
+                    prevParentValues,
                 );
             }
             return;
@@ -302,8 +338,9 @@ export class FieldStore<T extends Record<string, any>> {
 
         if (field.value !== value) {
             const oldValue = field.value;
-            field.value = value;
             const fieldStr = fieldName as string;
+            field.value = value;
+            this.updateDirtyForField(fieldStr, value);
 
             // 해당 필드 구독자들 알림 / Notify field subscribers
             field.listeners.forEach((listener) => {
@@ -339,7 +376,7 @@ export class FieldStore<T extends Record<string, any>> {
                 ) {
                     // customer.name, customer.seq 등의 자식 경로
                     const childPath = subscribedPath.substring(
-                        fieldStr.length + 1
+                        fieldStr.length + 1,
                     );
                     const oldChildValue =
                         oldValue && typeof oldValue === "object"
@@ -370,11 +407,11 @@ export class FieldStore<T extends Record<string, any>> {
                             const pathAfterIndex = pathParts.slice(1).join(".");
                             const oldItemValue = getNestedValue(
                                 oldValue,
-                                pathAfterIndex
+                                pathAfterIndex,
                             );
                             const newItemValue = getNestedValue(
                                 value,
-                                pathAfterIndex
+                                pathAfterIndex,
                             );
 
                             // 실제로 값이 변경된 경우에만 알림
@@ -451,7 +488,7 @@ export class FieldStore<T extends Record<string, any>> {
 
         // 글로벌 리스너들도 추가
         this.globalListeners.forEach((listener) =>
-            affectedListeners.add(listener)
+            affectedListeners.add(listener),
         );
 
         // 배치로 모든 영향받는 리스너들 실행
@@ -475,6 +512,8 @@ export class FieldStore<T extends Record<string, any>> {
      */
     setInitialValues(newInitialValues: T) {
         this.initialValues = { ...newInitialValues };
+        this.isInitialEmpty = Object.keys(this.initialValues).length === 0;
+        this.dirtyFields.clear();
 
         // 기존 리스너를 보존하면서 값만 업데이트 / Update values while preserving existing listeners
         Object.keys(newInitialValues).forEach((key) => {
@@ -503,21 +542,7 @@ export class FieldStore<T extends Record<string, any>> {
      * @returns 초기값에서 변경되었는지 여부 / Whether changed from initial values
      */
     isModified(): boolean {
-        const currentValues = this.getValues();
-
-        // Pure Zero-Config의 경우 초기값이 빈 객체일 수 있음
-        // In Pure Zero-Config, initial values might be an empty object
-        const isInitialEmpty = Object.keys(this.initialValues).length === 0;
-
-        if (isInitialEmpty) {
-            // 초기값이 빈 객체인 경우, 현재값에 의미있는 데이터가 있는지 확인
-            // If initial values are empty, check if current values have meaningful data
-            return this.hasNonEmptyValues(currentValues);
-        }
-
-        return (
-            JSON.stringify(currentValues) !== JSON.stringify(this.initialValues)
-        );
+        return this.dirtyFields.size > 0;
     }
 
     /**
@@ -544,6 +569,26 @@ export class FieldStore<T extends Record<string, any>> {
             }
         }
         return false;
+    }
+
+    private hasMeaningfulValue(value: any): boolean {
+        if (
+            value === undefined ||
+            value === null ||
+            value === "" ||
+            value === 0
+        ) {
+            return false;
+        }
+
+        if (typeof value === "object") {
+            if (Array.isArray(value)) {
+                return value.length > 0;
+            }
+            return this.hasNonEmptyValues(value);
+        }
+
+        return true;
     }
 
     /**
@@ -691,7 +736,7 @@ export class FieldStore<T extends Record<string, any>> {
 
         // 글로벌 리스너들도 추가
         this.globalListeners.forEach((listener) =>
-            affectedListeners.add(listener)
+            affectedListeners.add(listener),
         );
 
         // 배치로 모든 영향받는 리스너들 실행
@@ -711,7 +756,7 @@ export class FieldStore<T extends Record<string, any>> {
     private setValueWithoutNotify(
         fieldName: string,
         value: any,
-        affectedListeners: Set<() => void>
+        affectedListeners: Set<() => void>,
     ) {
         // dot notation이 포함된 경우
         if (fieldName.includes(".")) {
@@ -732,11 +777,12 @@ export class FieldStore<T extends Record<string, any>> {
             const newRootValue = setNestedValue(
                 field.value || {},
                 remainingPath,
-                value
+                value,
             );
 
             if (JSON.stringify(field.value) !== JSON.stringify(newRootValue)) {
                 field.value = newRootValue;
+                this.updateDirtyForField(rootFieldStr, newRootValue);
 
                 // 루트 필드 구독자들 수집
                 field.listeners.forEach((listener) => {
@@ -748,7 +794,7 @@ export class FieldStore<T extends Record<string, any>> {
                     (listeners, subscribedPath) => {
                         if (subscribedPath === fieldName) {
                             listeners.forEach((listener) =>
-                                affectedListeners.add(listener)
+                                affectedListeners.add(listener),
                             );
                         }
                         // 배열 필드나 .length 구독자들에게 알림
@@ -762,17 +808,17 @@ export class FieldStore<T extends Record<string, any>> {
 
                             if (oldLength !== newLength) {
                                 listeners.forEach((listener) =>
-                                    affectedListeners.add(listener)
+                                    affectedListeners.add(listener),
                                 );
                             }
                         }
                         // 부모 경로가 변경된 경우 하위 구독자들도 알림
                         else if (subscribedPath.startsWith(`${fieldName}.`)) {
                             listeners.forEach((listener) =>
-                                affectedListeners.add(listener)
+                                affectedListeners.add(listener),
                             );
                         }
-                    }
+                    },
                 );
             }
         } else {
@@ -795,6 +841,7 @@ export class FieldStore<T extends Record<string, any>> {
 
             // 값이 실제로 변경된 경우에만 리스너 수집
             if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
+                this.updateDirtyForField(fieldName, value);
                 const field = this.fields.get(fieldName as keyof T);
                 if (field) {
                     // 루트 필드 구독자들 수집
@@ -811,7 +858,7 @@ export class FieldStore<T extends Record<string, any>> {
                         // 1. 정확히 일치하는 경로
                         if (subscribedPath === fieldStr) {
                             listeners.forEach((listener) =>
-                                affectedListeners.add(listener)
+                                affectedListeners.add(listener),
                             );
                         }
                         // 2. 배열 필드나 .length 구독자들에게 알림
@@ -827,7 +874,7 @@ export class FieldStore<T extends Record<string, any>> {
                                 (!oldValue && value)
                             ) {
                                 listeners.forEach((listener) =>
-                                    affectedListeners.add(listener)
+                                    affectedListeners.add(listener),
                                 );
                             }
                         }
@@ -839,7 +886,7 @@ export class FieldStore<T extends Record<string, any>> {
                             !Array.isArray(value)
                         ) {
                             const childPath = subscribedPath.substring(
-                                fieldStr.length + 1
+                                fieldStr.length + 1,
                             );
                             const oldChildValue =
                                 oldValue && typeof oldValue === "object"
@@ -847,7 +894,7 @@ export class FieldStore<T extends Record<string, any>> {
                                     : undefined;
                             const newChildValue = getNestedValue(
                                 value,
-                                childPath
+                                childPath,
                             );
 
                             if (
@@ -855,7 +902,7 @@ export class FieldStore<T extends Record<string, any>> {
                                 JSON.stringify(newChildValue)
                             ) {
                                 listeners.forEach((listener) =>
-                                    affectedListeners.add(listener)
+                                    affectedListeners.add(listener),
                                 );
                             }
                         }
@@ -877,11 +924,11 @@ export class FieldStore<T extends Record<string, any>> {
                                         .join(".");
                                     const oldItemValue = getNestedValue(
                                         oldValue,
-                                        pathAfterIndex
+                                        pathAfterIndex,
                                     );
                                     const newItemValue = getNestedValue(
                                         value,
-                                        pathAfterIndex
+                                        pathAfterIndex,
                                     );
 
                                     if (
@@ -889,7 +936,7 @@ export class FieldStore<T extends Record<string, any>> {
                                         JSON.stringify(newItemValue)
                                     ) {
                                         listeners.forEach((listener) =>
-                                            affectedListeners.add(listener)
+                                            affectedListeners.add(listener),
                                         );
                                     }
                                 }
@@ -904,10 +951,10 @@ export class FieldStore<T extends Record<string, any>> {
                                     Array.isArray(oldValue)))
                         ) {
                             listeners.forEach((listener) =>
-                                affectedListeners.add(listener)
+                                affectedListeners.add(listener),
                             );
                         }
-                    }
+                    },
                 );
             }
         }
@@ -989,6 +1036,8 @@ export class FieldStore<T extends Record<string, any>> {
             });
         }
 
+        this.dirtyFields.clear();
+
         // 모든 필드 리스너들에게 알림
         this.fields.forEach((field) => {
             field.listeners.forEach((listener) => listener());
@@ -1013,7 +1062,7 @@ export class FieldStore<T extends Record<string, any>> {
     watch(
         path: string,
         callback: WatchCallback,
-        options?: { immediate?: boolean }
+        options?: { immediate?: boolean },
     ): () => void {
         if (!this.watchers.has(path)) {
             this.watchers.set(path, new Set());
@@ -1048,7 +1097,7 @@ export class FieldStore<T extends Record<string, any>> {
         path: string,
         value: any,
         prevValue: any,
-        prevParentValues?: Map<string, any>
+        prevParentValues?: Map<string, any>,
     ): void {
         // 값이 실제로 변경되지 않았으면 알림하지 않음 / Skip notification if value hasn't actually changed
         if (JSON.stringify(value) === JSON.stringify(prevValue)) {
@@ -1064,7 +1113,7 @@ export class FieldStore<T extends Record<string, any>> {
                 } catch (error) {
                     console.error(
                         `Error in watcher for path "${path}":`,
-                        error
+                        error,
                     );
                 }
             });
@@ -1092,7 +1141,7 @@ export class FieldStore<T extends Record<string, any>> {
                         } catch (error) {
                             console.error(
                                 `Error in parent watcher for path "${parentPath}" (triggered by "${path}"):`,
-                                error
+                                error,
                             );
                         }
                     });
@@ -1111,7 +1160,7 @@ export class FieldStore<T extends Record<string, any>> {
                         } catch (error) {
                             console.error(
                                 `Error in wildcard watcher for pattern "${watcherPath}" (triggered by "${path}"):`,
-                                error
+                                error,
                             );
                         }
                     });

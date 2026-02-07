@@ -4,35 +4,35 @@ This document provides various usage examples of the Forma library. It explains 
 
 ## Table of Contents
 
--   [useFormaState Examples](#useformastate-examples)
-    -   [Basic Usage](#basic-usage)
-    -   [Array State Management](#array-state-management)
-    -   [Dynamic Field Management](#dynamic-field-management)
-    -   [Array Length Subscription](#array-length-subscription)
-    -   [Global State Subscription Utilization](#global-state-subscription-utilization)
-    -   [Field Refresh Utilization](#field-refresh-utilization)
-    -   [Batch Updates (setBatch) Utilization](#batch-updates-setbatch-utilization)
-    -   [Actions Utilization](#useformastate-actions-utilization)
--   [useForm Examples](#useform-examples)
-    -   [Basic Form Management](#basic-form-management)
-    -   [Nested Object Handling](#nested-object-handling)
-    -   [Actions Utilization](#useform-actions-utilization)
--   [useGlobalForm Examples](#useglobalform-examples)
-    -   [Complete Global Form](#complete-global-form)
-    -   [Multi-Step Form](#multi-step-form)
--   [useGlobalFormaState Examples](#useglobalformastate-examples)
-    -   [Basic Usage](#global-state-basic-usage)
-    -   [Dynamic State Management](#dynamic-state-management)
-    -   [Shopping Cart Example](#shopping-cart-example)
--   [useModal Examples](#usemodal-examples)
-    -   [Basic Modal Usage](#basic-modal-usage)
-    -   [Nested Modal Management](#nested-modal-management)
-    -   [Modal with Form](#modal-with-form)
--   [useBreakpoint Examples](#usebreakpoint-examples)
-    -   [Basic Usage](#responsive-basic-usage)
-    -   [Mobile/Desktop Branching](#mobiledesktop-branching)
-    -   [Dynamic Layout](#dynamic-layout)
--   [Register/Unregister Hook Examples](#registerunregister-hook-examples)
+- [useFormaState Examples](#useformastate-examples)
+    - [Basic Usage](#basic-usage)
+    - [Array State Management](#array-state-management)
+    - [Dynamic Field Management](#dynamic-field-management)
+    - [Array Length Subscription](#array-length-subscription)
+    - [Global State Subscription Utilization](#global-state-subscription-utilization)
+    - [Field Refresh Utilization](#field-refresh-utilization)
+    - [Batch Updates (setBatch) Utilization](#batch-updates-setbatch-utilization)
+    - [Actions Utilization](#useformastate-actions-utilization)
+- [useForm Examples](#useform-examples)
+    - [Basic Form Management](#basic-form-management)
+    - [Nested Object Handling](#nested-object-handling)
+    - [Actions Utilization](#useform-actions-utilization)
+- [useGlobalForm Examples](#useglobalform-examples)
+    - [Complete Global Form](#complete-global-form)
+    - [Multi-Step Form](#multi-step-form)
+- [useGlobalFormaState Examples](#useglobalformastate-examples)
+    - [Basic Usage](#global-state-basic-usage)
+    - [Dynamic State Management](#dynamic-state-management)
+    - [Shopping Cart Example](#shopping-cart-example)
+- [useModal Examples](#usemodal-examples)
+    - [Basic Modal Usage](#basic-modal-usage)
+    - [Nested Modal Management](#nested-modal-management)
+    - [Modal with Form](#modal-with-form)
+- [useBreakpoint Examples](#usebreakpoint-examples)
+    - [Basic Usage](#responsive-basic-usage)
+    - [Mobile/Desktop Branching](#mobiledesktop-branching)
+    - [Dynamic Layout](#dynamic-layout)
+- [Register/Unregister Hook Examples](#registerunregister-hook-examples)
 
 ---
 
@@ -340,17 +340,17 @@ const updateSelectedItems = (selectedIds: number[], newStatus: string) => {
 
 **When to use setBatch:**
 
--   ✅ When updating 10+ fields simultaneously
--   ✅ When loading server data into forms
--   ✅ Bulk checkbox/radio button select/deselect
--   ✅ Simultaneous changes to multiple settings
--   ✅ Updating multiple table rows data
+- ✅ When updating 10+ fields simultaneously
+- ✅ When loading server data into forms
+- ✅ Bulk checkbox/radio button select/deselect
+- ✅ Simultaneous changes to multiple settings
+- ✅ Updating multiple table rows data
 
 **Key Benefits:**
 
--   📝 **Code Readability**: Express multiple field changes at once
--   🔄 **Data Consistency**: All changes are applied simultaneously
--   ⏱️ **Convenience**: Single object instead of multiple setValue calls
+- 📝 **Code Readability**: Express multiple field changes at once
+- 🔄 **Data Consistency**: All changes are applied simultaneously
+- ⏱️ **Convenience**: Single object instead of multiple setValue calls
 
 ### useFormaState Actions Utilization
 
@@ -546,11 +546,11 @@ function TodoAppWithActions() {
 
 **Benefits of Actions:**
 
--   ✅ **Logic Encapsulation**: Manage business logic together with state definition
--   ✅ **Reusability**: Same action callable from multiple places
--   ✅ **Type Safety**: Type inference through ActionContext
--   ✅ **Testability**: Actions testable independently
--   ✅ **Readability**: Express complex state changes with clear names
+- ✅ **Logic Encapsulation**: Manage business logic together with state definition
+- ✅ **Reusability**: Same action callable from multiple places
+- ✅ **Type Safety**: Type inference through ActionContext
+- ✅ **Testability**: Actions testable independently
+- ✅ **Readability**: Express complex state changes with clear names
 
 ---
 
@@ -902,10 +902,10 @@ function ShoppingCartWithActions() {
 
 **useForm Actions Use Cases:**
 
--   ✅ **Complex Calculations**: Total, discounted price, tax calculation logic
--   ✅ **Item Management**: Add, remove, quantity changes
--   ✅ **Validation Logic**: Complex validation before form submission
--   ✅ **Workflows**: Multi-step submission processes
+- ✅ **Complex Calculations**: Total, discounted price, tax calculation logic
+- ✅ **Item Management**: Add, remove, quantity changes
+- ✅ **Validation Logic**: Complex validation before form submission
+- ✅ **Workflows**: Multi-step submission processes
 
 ---
 
@@ -1001,12 +1001,13 @@ function FormViewer() {
     const form = useGlobalForm({
         formId: "user-form", // Share both data and handlers with same ID
     });
+    const isModified = useFormModified(form);
 
     return (
         <div>
             <p>Current name: {form.useFormValue("name")}</p>
             <p>Current email: {form.useFormValue("email")}</p>
-            <p>Modified: {form.isModified ? "Yes" : "No"}</p>
+            <p>Modified: {isModified ? "Yes" : "No"}</p>
 
             {/* ✅ submit() works here too! */}
             {/* Automatically uses onValidate, onSubmit from Component A */}
@@ -1020,10 +1021,10 @@ function FormViewer() {
 
 **Core Concepts:**
 
--   **Automatic handler sharing**: `onValidate`, `onSubmit`, `onComplete` registered first are shared globally
--   **Intuitive behavior**: Same `formId` shares both data and handlers as expected
--   **Submit anywhere**: Can call `submit()` from any component
--   **Consistent validation**: Same validation logic applies across all components
+- **Automatic handler sharing**: `onValidate`, `onSubmit`, `onComplete` registered first are shared globally
+- **Intuitive behavior**: Same `formId` shares both data and handlers as expected
+- **Submit anywhere**: Can call `submit()` from any component
+- **Consistent validation**: Same validation logic applies across all components
 
 ### Global Form with Actions
 
@@ -1198,10 +1199,10 @@ function ProductSummary() {
 
 **Core Concepts:**
 
--   **Automatic actions sharing**: `actions` registered first are shared globally
--   **Business logic encapsulation**: Complex calculations and validation logic managed in actions
--   **Reusability**: Same actions can be used from different components
--   **Consistency**: Same logic applies across all components
+- **Automatic actions sharing**: `actions` registered first are shared globally
+- **Business logic encapsulation**: Complex calculations and validation logic managed in actions
+- **Reusability**: Same actions can be used from different components
+- **Consistency**: Same logic applies across all components
 
 ````
 
@@ -1286,9 +1287,9 @@ function QuickSubmitButton() {
 
 **Key Points:**
 
--   ✅ **initialValues only first**: Set `initialValues` only in the first component that creates the global form
--   ✅ **Omit later**: Other components accessing the same `formId` don't need `initialValues`
--   ✅ **Handlers when needed**: Register `onSubmit`, `onValidate` etc. only in components that need them
+- ✅ **initialValues only first**: Set `initialValues` only in the first component that creates the global form
+- ✅ **Omit later**: Other components accessing the same `formId` don't need `initialValues`
+- ✅ **Handlers when needed**: Register `onSubmit`, `onValidate` etc. only in components that need them
 
 ````
 
@@ -1556,9 +1557,9 @@ function UserProfileDialog() {
 
 #### Key Features
 
--   **Mobile Back Button Support**: Back button closes only the modal, not the page.
--   **Automatic Cleanup**: Modal is automatically removed from stack on component unmount.
--   **onClose Callback**: Called every time the modal closes.
+- **Mobile Back Button Support**: Back button closes only the modal, not the page.
+- **Automatic Cleanup**: Modal is automatically removed from stack on component unmount.
+- **onClose Callback**: Called every time the modal closes.
 
 ### Nested Modal Management
 
@@ -1690,9 +1691,9 @@ function EditUserModal({ userId, onSave }) {
 
 #### Form and Modal Integration
 
--   **Reset in onClose**: Form can be reset when modal closes.
--   **Close After Save**: Close modal with `modal.close()` after saving data.
--   **Back Button Safe**: On mobile, back button only closes modal without losing form data.
+- **Reset in onClose**: Form can be reset when modal closes.
+- **Close After Save**: Close modal with `modal.close()` after saving data.
+- **Back Button Safe**: On mobile, back button only closes modal without losing form data.
 
 #### Important Note
 
@@ -1937,9 +1938,9 @@ function VideoPlayer() {
 
 #### Important Notes
 
--   Re-renders occur on window resize, so use with performance in mind.
--   For simple style changes, CSS media queries are more efficient.
--   Use when you need to show/hide components or make structural changes.
+- Re-renders occur on window resize, so use with performance in mind.
+- For simple style changes, CSS media queries are more efficient.
+- Use when you need to show/hide components or make structural changes.
 
 ———
 
@@ -2107,9 +2108,9 @@ This examples guide provides practical usage patterns for all major features of 
 
 ## Related Documents
 
--   **[API Reference](./API.md)** - Detailed API documentation
--   **[Getting Started Guide](./getting-started.md)** - Basic usage
--   **[Performance Optimization Guide](./performance-guide.md)** - Performance optimization methods
--   **[Performance Warnings](./performance-warnings.md)** - Anti-patterns and precautions
--   **[Migration Guide](./migration.md)** - Migration from other libraries
--   **[useGlobalForm Guide](./useGlobalForm-guide.md)** - Global form state management
+- **[API Reference](./API.md)** - Detailed API documentation
+- **[Getting Started Guide](./getting-started.md)** - Basic usage
+- **[Performance Optimization Guide](./performance-guide.md)** - Performance optimization methods
+- **[Performance Warnings](./performance-warnings.md)** - Anti-patterns and precautions
+- **[Migration Guide](./migration.md)** - Migration from other libraries
+- **[useGlobalForm Guide](./useGlobalForm-guide.md)** - Global form state management

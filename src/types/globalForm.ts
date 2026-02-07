@@ -71,7 +71,7 @@ export interface UseGlobalFormProps<T extends Record<string, any>> {
 export type WatchHandler<T extends Record<string, any>> = (
     context: ActionContext<T>,
     value: any,
-    prevValue: any | undefined
+    prevValue: any | undefined,
 ) => void | Promise<void>;
 
 /**
@@ -104,8 +104,9 @@ export interface UseGlobalFormaStateProps<T extends Record<string, any>> {
  * useGlobalForm 훅의 반환 타입 | useGlobalForm hook return type
  * useForm의 모든 기능에 글로벌 폼 전용 기능 추가 | All useForm features plus global form specific features
  */
-export interface UseGlobalFormReturn<T extends Record<string, any>>
-    extends UseFormReturn<T> {
+export interface UseGlobalFormReturn<
+    T extends Record<string, any>,
+> extends UseFormReturn<T> {
     /** 글로벌 폼 ID | Global form ID */
     formId: string;
     /** 글로벌 스토어 직접 접근 | Direct access to global store */
@@ -116,8 +117,9 @@ export interface UseGlobalFormReturn<T extends Record<string, any>>
  * useGlobalFormaState 훅의 반환 타입 | useGlobalFormaState hook return type
  * useFormaState의 모든 기능에 글로벌 FormaState 전용 기능 추가 | All useFormaState features plus global FormaState specific features
  */
-export interface UseGlobalFormaStateReturn<T extends Record<string, any>>
-    extends UseFormaStateReturn<T> {
+export interface UseGlobalFormaStateReturn<
+    T extends Record<string, any>,
+> extends UseFormaStateReturn<T> {
     /** 글로벌 FormaState ID | Global FormaState ID */
     stateId: string;
     /** 글로벌 스토어 직접 접근 (UseFormaStateReturn에도 있지만 명시적으로 재정의) | Direct access to global store */
@@ -145,7 +147,7 @@ export interface UseRegisterGlobalFormReturn {
  * useRegisterGlobalFormaState Hook Props | useRegisterGlobalFormaState 훅 Props
  */
 export interface UseRegisterGlobalFormaStateProps<
-    T extends Record<string, any>
+    T extends Record<string, any>,
 > {
     /** 글로벌 상태 식별자 | Global state identifier */
     stateId: string;
@@ -219,7 +221,7 @@ export type GlobalFormLifecycleEvent =
 export type GlobalFormLifecycleHandler = (
     formId: string,
     event: GlobalFormLifecycleEvent,
-    metadata?: Partial<GlobalFormMetadata>
+    metadata?: Partial<GlobalFormMetadata>,
 ) => void;
 
 /**
@@ -298,7 +300,7 @@ export class GlobalFormError extends Error {
     constructor(
         message: string,
         public formId?: string,
-        public operation?: string
+        public operation?: string,
     ) {
         super(message);
         this.name = "GlobalFormError";
@@ -405,8 +407,7 @@ export interface GlobalFormMiddleware {
 /**
  * 전역 Forma Provider에 확장된 Props
  */
-export interface ExtendedGlobalFormaProviderProps
-    extends GlobalFormaProviderProps {
+export interface ExtendedGlobalFormaProviderProps extends GlobalFormaProviderProps {
     /** 전역 폼 설정 */
     config?: GlobalFormConfig;
     /** 미들웨어 목록 */
@@ -435,11 +436,11 @@ export interface GlobalFormaContextType {
 
     // ========== FieldStore 관련 ==========
     getOrCreateStore: <T extends Record<string, any>>(
-        formId: string
+        formId: string,
     ) => FieldStore<T>;
     registerStore: <T extends Record<string, any>>(
         formId: string,
-        store: FieldStore<T>
+        store: FieldStore<T>,
     ) => void;
     unregisterStore: (formId: string) => boolean;
     clearStores: () => void;
@@ -450,18 +451,18 @@ export interface GlobalFormaContextType {
     /** autoCleanup 설정의 일관성을 검증하고 설정을 저장합니다 | Validate and store autoCleanup setting consistency */
     validateAndStoreAutoCleanupSetting: (
         formId: string,
-        autoCleanup: boolean
+        autoCleanup: boolean,
     ) => void;
 
     // ========== 핸들러 관리 ==========
     /** 글로벌 폼 핸들러 등록 | Register global form handlers */
     registerHandlers: <T extends Record<string, any>>(
         formId: string,
-        handlers: GlobalFormHandlers<T>
+        handlers: GlobalFormHandlers<T>,
     ) => void;
     /** 글로벌 폼 핸들러 조회 | Get global form handlers */
     getHandlers: <T extends Record<string, any>>(
-        formId: string
+        formId: string,
     ) => GlobalFormHandlers<T> | undefined;
 
     // ========== Actions 관리 ==========

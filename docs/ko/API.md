@@ -55,13 +55,13 @@
 // 빈 객체로 시작하는 경우를 위한 오버로드
 function useFormaState<T extends Record<string, any> = Record<string, any>>(
     initialValues?: T,
-    options?: UseFormaStateOptions<T>
+    options?: UseFormaStateOptions<T>,
 ): UseFormaStateReturn<T>;
 
 // 명시적 타입을 가진 경우를 위한 오버로드
 function useFormaState<T extends Record<string, any>>(
     initialValues: T,
-    options?: UseFormaStateOptions<T>
+    options?: UseFormaStateOptions<T>,
 ): UseFormaStateReturn<T>;
 ```
 
@@ -110,7 +110,7 @@ interface UseFormaStateReturn<T> {
     handleChange: (
         event: React.ChangeEvent<
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
+        >,
     ) => void;
     /** 필드 존재 여부 확인 */
     hasField: (path: string) => boolean;
@@ -182,7 +182,7 @@ const state = useFormaState(
                 return true;
             },
         },
-    }
+    },
 );
 
 // actions 사용
@@ -269,9 +269,9 @@ const todoCount = state.useValue("todos.length"); // 2
 
 **주요 특징:**
 
--   ✅ **스마트 알림**: 배열 길이가 실제로 변경될 때만 알림
--   ✅ **성능 최적화**: 배열 내용 변경 시 불필요한 리렌더링 방지
--   ✅ **자동 감지**: 배열 변경 시 `.length` 구독자에게 자동 알림
+- ✅ **스마트 알림**: 배열 길이가 실제로 변경될 때만 알림
+- ✅ **성능 최적화**: 배열 내용 변경 시 불필요한 리렌더링 방지
+- ✅ **자동 감지**: 배열 변경 시 `.length` 구독자에게 자동 알림
 
 � **[배열 길이 구독 상세 가이드 →](./performance-warnings.md#배열-길이-구독-array-length-subscription)**
 
@@ -291,15 +291,15 @@ state.refreshFields("user");
 
 **💡 사용 용도:**
 
--   **서버 데이터 동기화**: 서버에서 받은 데이터가 현재 값과 동일하더라도 UI 새로고침
--   **강제 재검증**: 값은 같지만 유효성 검사나 포맷팅을 다시 실행
--   **외부 상태 동기화**: 외부 라이브러리나 시스템과의 동기화
+- **서버 데이터 동기화**: 서버에서 받은 데이터가 현재 값과 동일하더라도 UI 새로고침
+- **강제 재검증**: 값은 같지만 유효성 검사나 포맷팅을 다시 실행
+- **외부 상태 동기화**: 외부 라이브러리나 시스템과의 동기화
 
 **⚠️ 주의사항:**
 
--   `refreshFields`는 성능 최적화 도구가 아닙니다
--   개별 필드 구독자들은 여전히 각각 리렌더링됩니다
--   대량 데이터 업데이트 시에는 **배열 전체 교체**가 가장 효율적입니다
+- `refreshFields`는 성능 최적화 도구가 아닙니다
+- 개별 필드 구독자들은 여전히 각각 리렌더링됩니다
+- 대량 데이터 업데이트 시에는 **배열 전체 교체**가 가장 효율적입니다
 
 📚 **[필드 새로고침 활용 예제 →](./examples.md#필드-새로고침-활용)**  
 🔗 **[대량 데이터 최적화 가이드 →](./performance-warnings.md#-대량-데이터-배치-처리-최적화)**
@@ -314,7 +314,6 @@ state.refreshFields("user");
 | ----------- | -------------------------------------------------------------- | ------------------------------------- | ------------------------- |
 | **상태**    | `isSubmitting`                                                 | 폼이 현재 제출 중인지 여부            | `boolean`                 |
 |             | `isValidating`                                                 | 폼이 현재 검증 중인지 여부            | `boolean`                 |
-|             | `isModified`                                                   | 폼이 초기값에서 수정되었는지 여부     | `boolean`                 |
 | **값 조회** | `useFormValue(fieldName)`                                      | 특정 필드 값 구독 (성능 최적화, 권장) | `any`                     |
 |             | `getFormValue(fieldName)`                                      | 특정 필드 값 조회 (구독 없음)         | `any`                     |
 |             | `getFormValues()`                                              | 모든 필드 값 조회 (구독 없음)         | `T`                       |
@@ -332,7 +331,7 @@ state.refreshFields("user");
 
 ```typescript
 function useForm<T extends Record<string, any>>(
-    props: UseFormProps<T>
+    props: UseFormProps<T>,
 ): UseFormReturn<T>;
 ```
 
@@ -380,7 +379,6 @@ interface UseFormReturn<T> {
     // 상태
     isSubmitting: boolean; // 제출 중 여부
     isValidating: boolean; // 검증 중 여부
-    isModified: boolean; // 수정됨 여부
 
     // 값 조회 (구독 있음 - 권장)
     useFormValue: (fieldName: string) => any;
@@ -475,9 +473,9 @@ const handleSubmit = async () => {
 
 **💡 onSubmit 반환값 처리:**
 
--   `true` 또는 `undefined`: 제출 성공
--   `false`: 제출 실패 (더 이상 예외 던질 필요 없음)
--   예외 발생 시: 자동으로 제출 실패로 처리
+- `true` 또는 `undefined`: 제출 성공
+- `false`: 제출 실패 (더 이상 예외 던질 필요 없음)
+- 예외 발생 시: 자동으로 제출 실패로 처리
 
 #### Actions 사용법 (useForm)
 
@@ -494,7 +492,7 @@ const form = useForm({
         getTotal: (context) => {
             return context.values.items.reduce(
                 (sum, item) => sum + item.price,
-                0
+                0,
             );
         },
         getDiscountedTotal: (context) => {
@@ -549,7 +547,6 @@ await form.actions.submitOrder(); // 워크플로우 실행
 | ------------------------ | ------------------------------------------------ | ----------------------------------------------------- |
 | `isSubmitting`           | `boolean`                                        | 폼이 현재 제출 중인지 여부.                           |
 | `isValidating`           | `boolean`                                        | 폼이 현재 검증 중인지 여부.                           |
-| `isModified`             | `boolean`                                        | 폼이 초기값에서 수정되었는지 여부.                    |
 | `useFormValue`           | `(fieldName: string) => any`                     | 특정 폼 필드 값 구독 (성능을 위해 권장).              |
 | `getFormValue`           | `(fieldName: string) => any`                     | 구독 없이 특정 폼 필드 값 가져옴.                     |
 | `getFormValues`          | `() => T`                                        | 모든 현재 폼 값 가져옴.                               |
@@ -563,6 +560,25 @@ await form.actions.submitOrder(); // 워크플로우 실행
 | `validateForm`           | `() => Promise<boolean>`                         | 폼 검증, 검증 결과 반환.                              |
 | `actions`                | `any`                                            | 커스텀 액션 (computed getter 및 handler).             |
 | `values`                 | `T`                                              | 모든 폼 값 (전체 리렌더링 발생하므로 비권장).         |
+
+### useFormModified
+
+수정 여부가 필요한 컴포넌트만 구독하도록 분리된 훅입니다.
+
+#### 시그니처
+
+```typescript
+function useFormModified<T extends Record<string, any>>(
+    source: FieldStore<T> | Pick<UseFormReturn<T>, "_store">,
+): boolean;
+```
+
+#### 예시
+
+```typescript
+const form = useForm({ initialValues: { name: "" } });
+const isModified = useFormModified(form);
+```
 
 #### setInitialFormValues 메서드
 
@@ -586,9 +602,9 @@ form.resetForm(); // name: "John Doe", email: "john@example.com"
 
 **주요 특징:**
 
--   이미 생성된 폼의 초기값을 동적으로 변경 가능
--   새로운 초기값이 설정되고, 폼의 현재 상태도 업데이트됨
--   `resetForm()`을 호출하면 새로운 초기값으로 되돌아감
+- 이미 생성된 폼의 초기값을 동적으로 변경 가능
+- 새로운 초기값이 설정되고, 폼의 현재 상태도 업데이트됨
+- `resetForm()`을 호출하면 새로운 초기값으로 되돌아감
 
 ---
 
@@ -602,7 +618,7 @@ form.resetForm(); // name: "John Doe", email: "john@example.com"
 
 ```typescript
 function useGlobalForm<T extends Record<string, any>>(
-    props: UseGlobalFormProps<T>
+    props: UseGlobalFormProps<T>,
 ): UseGlobalFormReturn<T>;
 ```
 
@@ -700,11 +716,11 @@ sharedForm.actions.clearForm(); // actions도 사용 가능
 
 **핵심 포인트:**
 
--   **핸들러 자동 공유**: 첫 번째 컴포넌트가 등록한 `onValidate`, `onSubmit`, `onComplete`가 자동으로 글로벌하게 공유됨
--   **Actions 자동 공유**: 첫 번째 컴포넌트가 등록한 `actions`도 자동으로 글로벌하게 공유됨
--   **직관적인 동작**: 같은 `formId`를 사용하면 데이터, 핸들러, actions가 모두 공유되어 예상대로 동작
--   **유연한 오버라이드**: 특정 컴포넌트에서만 다른 핸들러나 actions를 사용하고 싶으면 로컬에서 재정의 가능
--   **검증 단계**: `onValidate`에서 `false` 반환 → `onSubmit` 실행 안됨 / `true` 반환 → `onSubmit` 실행됨
+- **핸들러 자동 공유**: 첫 번째 컴포넌트가 등록한 `onValidate`, `onSubmit`, `onComplete`가 자동으로 글로벌하게 공유됨
+- **Actions 자동 공유**: 첫 번째 컴포넌트가 등록한 `actions`도 자동으로 글로벌하게 공유됨
+- **직관적인 동작**: 같은 `formId`를 사용하면 데이터, 핸들러, actions가 모두 공유되어 예상대로 동작
+- **유연한 오버라이드**: 특정 컴포넌트에서만 다른 핸들러나 actions를 사용하고 싶으면 로컬에서 재정의 가능
+- **검증 단계**: `onValidate`에서 `false` 반환 → `onSubmit` 실행 안됨 / `true` 반환 → `onSubmit` 실행됨
 
 **핸들러 우선순위:**
 
@@ -799,16 +815,16 @@ const persistentForm = useGlobalForm({
 
 **자동 정리 동작:**
 
--   마지막 사용자가 언마운트되면 자동으로 폼 정리
--   `autoCleanup: false`: 수동으로 `useUnregisterGlobalForm` 필요
+- 마지막 사용자가 언마운트되면 자동으로 폼 정리
+- `autoCleanup: false`: 수동으로 `useUnregisterGlobalForm` 필요
 
 **지연 정리 메커니즘:**
 
 `autoCleanup: true`는 React의 재렌더링 시나리오를 안전하게 처리하기 위해 **100ms 지연 정리**를 사용합니다:
 
--   컴포넌트가 언마운트되면 100ms 후 실제 정리 실행
--   만약 100ms 이내에 컴포넌트가 다시 마운트되면 정리가 취소됨
--   이를 통해 React의 Strict Mode나 조건부 렌더링에서 발생하는 빠른 마운트/언마운트 사이클에서도 데이터가 안전하게 유지됨
+- 컴포넌트가 언마운트되면 100ms 후 실제 정리 실행
+- 만약 100ms 이내에 컴포넌트가 다시 마운트되면 정리가 취소됨
+- 이를 통해 React의 Strict Mode나 조건부 렌더링에서 발생하는 빠른 마운트/언마운트 사이클에서도 데이터가 안전하게 유지됨
 
 ```typescript
 // React Strict Mode에서도 안전하게 작동
@@ -827,9 +843,9 @@ function MyComponent() {
 
 ✅ **권장사항:**
 
--   대부분의 경우 `autoCleanup: true` (기본값) 사용 권장
--   수동 정리는 전체 폼 완료 후나 사용자 로그아웃 시에만 사용
--   공유 폼의 경우 자동 정리에 의존하여 안전성 확보
+- 대부분의 경우 `autoCleanup: true` (기본값) 사용 권장
+- 수동 정리는 전체 폼 완료 후나 사용자 로그아웃 시에만 사용
+- 공유 폼의 경우 자동 정리에 의존하여 안전성 확보
 
 ⚠️ **주의:** 수동 unregister 시 해당 `formId`를 사용하는 모든 컴포넌트에 즉시 영향
 
@@ -843,7 +859,7 @@ function MyComponent() {
 
 ```typescript
 function useGlobalFormaState<
-    T extends Record<string, any> = Record<string, any>
+    T extends Record<string, any> = Record<string, any>,
 >(props: UseGlobalFormaStateProps<T>): UseFormaStateReturn<T>;
 ```
 
@@ -891,10 +907,10 @@ interface UseGlobalFormaStateProps<T> {
 
 #### 특징
 
--   **전역 공유**: 같은 `stateId`를 사용하는 모든 컴포넌트가 상태 공유
--   **개별 필드 구독**: 필드별로 독립적인 리렌더링 최적화
--   **자동 생성**: 존재하지 않는 `stateId`의 경우 새로 생성
--   **타입 안전성**: TypeScript를 통한 완전한 타입 추론
+- **전역 공유**: 같은 `stateId`를 사용하는 모든 컴포넌트가 상태 공유
+- **개별 필드 구독**: 필드별로 독립적인 리렌더링 최적화
+- **자동 생성**: 존재하지 않는 `stateId`의 경우 새로 생성
+- **타입 안전성**: TypeScript를 통한 완전한 타입 추론
 
 #### 기본 사용법
 
@@ -972,9 +988,9 @@ function ProductList() {
 
 **핵심 포인트:**
 
--   `itemCount = cart.useValue("items.length")`: 배열 길이만 구독
--   `items?.length || 0` 대신 `.length` 구독 사용
--   성능 최적화: 배열 내용 변경 시 불필요한 리렌더링 방지
+- `itemCount = cart.useValue("items.length")`: 배열 길이만 구독
+- `items?.length || 0` 대신 `.length` 구독 사용
+- 성능 최적화: 배열 내용 변경 시 불필요한 리렌더링 방지
 
 � **[배열 길이 구독 상세 가이드 →](./performance-warnings.md#배열-길이-구독-array-length-subscription)**
 🔗 **[성능 최적화 모범 사례 →](./performance-guide.md#성능-최적화)**
@@ -1031,7 +1047,7 @@ const state = useGlobalFormaState({
 type WatchHandler<T> = (
     context: ActionContext<T>,
     value: any,
-    prevValue: any | undefined
+    prevValue: any | undefined,
 ) => void | Promise<void>;
 
 type WatchConfig<T> = {
@@ -1055,13 +1071,13 @@ interface ActionContext<T> {
 
 **특징:**
 
--   ✅ **dot notation 지원**: 중첩된 객체의 필드도 감시 가능 (`user.profile.name`)
--   ✅ **부모 경로 감시**: 부모 경로를 watch하면 자식 필드 변경 시에도 알림 받음 (`filters` watch → `filters.interval` 변경 감지)
--   ✅ **와일드카드 패턴**: 동적 경로 매칭 지원 (`todos.*.completed` - 모든 todo의 completed 필드 감시)
--   ✅ **성능 최적화**: watch에 등록된 필드만 체크하여 불필요한 오버헤드 없음
--   ✅ **비동기 지원**: async 함수로 비동기 작업 가능
--   ✅ **자동 정리**: 컴포넌트 언마운트 시 자동으로 watcher 제거
--   ✅ **에러 처리**: watch 핸들러 실행 중 에러 발생 시 콘솔에 출력하고 계속 진행
+- ✅ **dot notation 지원**: 중첩된 객체의 필드도 감시 가능 (`user.profile.name`)
+- ✅ **부모 경로 감시**: 부모 경로를 watch하면 자식 필드 변경 시에도 알림 받음 (`filters` watch → `filters.interval` 변경 감지)
+- ✅ **와일드카드 패턴**: 동적 경로 매칭 지원 (`todos.*.completed` - 모든 todo의 completed 필드 감시)
+- ✅ **성능 최적화**: watch에 등록된 필드만 체크하여 불필요한 오버헤드 없음
+- ✅ **비동기 지원**: async 함수로 비동기 작업 가능
+- ✅ **자동 정리**: 컴포넌트 언마운트 시 자동으로 watcher 제거
+- ✅ **에러 처리**: watch 핸들러 실행 중 에러 발생 시 콘솔에 출력하고 계속 진행
 
 **사용 예시:**
 
@@ -1143,7 +1159,6 @@ const appState = useGlobalFormaState({
 2. **초기값 정책**: 같은 `stateId`를 가진 첫 번째 호출에서만 `initialValues`가 적용됩니다.
 
 3. **메모리 관리**:
-
     - `autoCleanup: true` (기본값): 자동으로 메모리 정리 (100ms 지연 정리)
     - `autoCleanup: false`: 수동으로 `useUnregisterGlobalFormaState` 사용 필요
 
@@ -1174,13 +1189,11 @@ const appState = useGlobalFormaState({
 1. **기본 설정 사용**: 대부분의 경우 `autoCleanup: true` (기본값) 사용을 권장합니다.
 
 2. **수동 정리 사용 시점**:
-
     - 애플리케이션 전역 리셋 시
     - 사용자 로그아웃 시
     - 메모리 최적화가 중요한 특수 상황
 
 3. **공유 상태 관리**:
-
     - 여러 컴포넌트가 사용하는 상태는 `autoCleanup`에 의존
     - 예측 가능한 생명주기를 위해 수동 정리 최소화
 
@@ -1209,14 +1222,14 @@ function useRegisterGlobalForm<T>(formId: string, form: UseFormReturn<T>): void;
 
 #### Parameters
 
--   `formId`: 글로벌 폼의 고유 식별자
--   `form`: 등록할 useForm 인스턴스
+- `formId`: 글로벌 폼의 고유 식별자
+- `form`: 등록할 useForm 인스턴스
 
 #### 특징
 
--   **글로벌 공유**: 로컬 폼을 글로벌 상태로 변환
--   **자동 동기화**: 등록된 폼은 다른 컴포넌트에서 접근 가능
--   **타입 안전성**: TypeScript를 통한 완전한 타입 추론
+- **글로벌 공유**: 로컬 폼을 글로벌 상태로 변환
+- **자동 동기화**: 등록된 폼은 다른 컴포넌트에서 접근 가능
+- **타입 안전성**: TypeScript를 통한 완전한 타입 추론
 
 #### 기본 사용법
 
@@ -1242,20 +1255,20 @@ const sharedForm = useGlobalForm({ formId: "shared-form" });
 ```typescript
 function useRegisterGlobalFormaState<T>(
     stateId: string,
-    formaState: UseFormaStateReturn<T>
+    formaState: UseFormaStateReturn<T>,
 ): void;
 ```
 
 #### Parameters
 
--   `stateId`: 글로벌 상태의 고유 식별자
--   `formaState`: 등록할 useFormaState 인스턴스
+- `stateId`: 글로벌 상태의 고유 식별자
+- `formaState`: 등록할 useFormaState 인스턴스
 
 #### 특징
 
--   **글로벌 공유**: 로컬 FormaState를 글로벌 상태로 변환
--   **개별 필드 구독**: 등록된 상태는 필드별 구독 지원
--   **자동 동기화**: 다른 컴포넌트에서 즉시 접근 가능
+- **글로벌 공유**: 로컬 FormaState를 글로벌 상태로 변환
+- **개별 필드 구독**: 등록된 상태는 필드별 구독 지원
+- **자동 동기화**: 다른 컴포넌트에서 즉시 접근 가능
 
 #### Example
 
@@ -1302,14 +1315,14 @@ function useUnregisterGlobalForm(): {
 
 #### Returns
 
--   `unregisterForm`: 특정 폼을 제거하는 함수
--   `clearForms`: 모든 글로벌 폼을 제거하는 함수
+- `unregisterForm`: 특정 폼을 제거하는 함수
+- `clearForms`: 모든 글로벌 폼을 제거하는 함수
 
 #### 특징
 
--   **메모리 관리**: 불필요한 폼 상태 제거
--   **선택적 제거**: 특정 폼만 선택해서 제거 가능
--   **일괄 정리**: 모든 폼을 한번에 정리 가능
+- **메모리 관리**: 불필요한 폼 상태 제거
+- **선택적 제거**: 특정 폼만 선택해서 제거 가능
+- **일괄 정리**: 모든 폼을 한번에 정리 가능
 
 #### 기본 사용법
 
@@ -1342,14 +1355,14 @@ function useUnregisterGlobalFormaState(): {
 
 #### Returns
 
--   `unregisterState`: 특정 상태를 제거하는 함수
--   `clearStates`: 모든 글로벌 상태를 제거하는 함수
+- `unregisterState`: 특정 상태를 제거하는 함수
+- `clearStates`: 모든 글로벌 상태를 제거하는 함수
 
 #### 특징
 
--   **메모리 최적화**: 불필요한 상태 정리
--   **유연한 관리**: 개별 또는 일괄 제거 선택 가능
--   **안전한 제거**: 구독자 정리 후 안전하게 제거
+- **메모리 최적화**: 불필요한 상태 정리
+- **유연한 관리**: 개별 또는 일괄 제거 선택 가능
+- **안전한 제거**: 구독자 정리 후 안전하게 제거
 
 #### 기본 사용법
 
@@ -1411,12 +1424,12 @@ interface UseModalReturn {
 
 #### 특징
 
--   **Reactive 상태**: `modal.isOpen`이 reactive하게 동작하여 상태 변경 시 자동으로 리렌더링
--   **모달 공유**: 같은 `modalId`를 사용하면 여러 컴포넌트에서 같은 모달 상태 공유
--   **모바일 친화적**: 뒤로가기 시 모달만 닫히고 페이지는 유지
--   **모달 스택 관리**: 여러 모달이 중첩되어도 올바른 순서로 닫힘
--   **자동 정리**: 컴포넌트 언마운트 시 자동으로 모달 스택에서 제거
--   **자동 ID 생성**: `modalId`를 제공하지 않으면 자동으로 고유 ID 생성
+- **Reactive 상태**: `modal.isOpen`이 reactive하게 동작하여 상태 변경 시 자동으로 리렌더링
+- **모달 공유**: 같은 `modalId`를 사용하면 여러 컴포넌트에서 같은 모달 상태 공유
+- **모바일 친화적**: 뒤로가기 시 모달만 닫히고 페이지는 유지
+- **모달 스택 관리**: 여러 모달이 중첩되어도 올바른 순서로 닫힘
+- **자동 정리**: 컴포넌트 언마운트 시 자동으로 모달 스택에서 제거
+- **자동 ID 생성**: `modalId`를 제공하지 않으면 자동으로 고유 ID 생성
 
 #### 기본 사용법
 
@@ -1576,9 +1589,9 @@ function FormModal() {
 
 #### 주의사항
 
--   `GlobalFormaProvider`로 앱을 감싸야 정상 동작합니다.
--   모달을 닫을 때는 반드시 `modal.close()`를 사용하세요 (내부적으로 히스토리 관리).
--   `initialOpen={true}`로 시작하는 경우 주의가 필요합니다 (히스토리 스택 고려).
+- `GlobalFormaProvider`로 앱을 감싸야 정상 동작합니다.
+- 모달을 닫을 때는 반드시 `modal.close()`를 사용하세요 (내부적으로 히스토리 관리).
+- `initialOpen={true}`로 시작하는 경우 주의가 필요합니다 (히스토리 스택 고려).
 
 ---
 
@@ -1754,14 +1767,14 @@ interface UseBreakpointReturn {
 
 #### 특징
 
--   **가로 "down" 상태**: `xxxxs`, `xxxs`, `xxs`, `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - 해당 브레이크포인트 **이하**인지 판별
--   **가로 "up" 상태**: `xxxxsUp`, `xxxsUp`, `xxsUp`, `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - 해당 브레이크포인트 **이상**인지 판별
--   **세로 "down" 상태**: `hxxs`, `hxs`, `hsm`, `hmd`, `hlg`, `hxl`, `hxxl` - 해당 높이 **이하**인지 판별
--   **세로 "up" 상태**: `hxxsUp`, `hxsUp`, `hsmUp`, `hmdUp`, `hlgUp`, `hxlUp`, `hxxlUp` - 해당 높이 **이상**인지 판별
--   **화면 크기**: `width`, `height` - 현재 창의 정확한 픽셀 크기
--   **화면 방향**: `landscape` (가로), `portrait` (세로) - 화면 방향 감지
--   **자동 업데이트**: 창 크기 변경 시 자동으로 상태 갱신
--   **SSR 안전**: 서버 사이드 렌더링 환경에서도 안전하게 동작 (초기값 0)
+- **가로 "down" 상태**: `xxxxs`, `xxxs`, `xxs`, `xs`, `sm`, `md`, `lg`, `xl`, `xxl` - 해당 브레이크포인트 **이하**인지 판별
+- **가로 "up" 상태**: `xxxxsUp`, `xxxsUp`, `xxsUp`, `xsUp`, `smUp`, `mdUp`, `lgUp`, `xlUp`, `xxlUp` - 해당 브레이크포인트 **이상**인지 판별
+- **세로 "down" 상태**: `hxxs`, `hxs`, `hsm`, `hmd`, `hlg`, `hxl`, `hxxl` - 해당 높이 **이하**인지 판별
+- **세로 "up" 상태**: `hxxsUp`, `hxsUp`, `hsmUp`, `hmdUp`, `hlgUp`, `hxlUp`, `hxxlUp` - 해당 높이 **이상**인지 판별
+- **화면 크기**: `width`, `height` - 현재 창의 정확한 픽셀 크기
+- **화면 방향**: `landscape` (가로), `portrait` (세로) - 화면 방향 감지
+- **자동 업데이트**: 창 크기 변경 시 자동으로 상태 갱신
+- **SSR 안전**: 서버 사이드 렌더링 환경에서도 안전하게 동작 (초기값 0)
 
 #### 기본 사용 예제
 
@@ -1905,10 +1918,10 @@ function BreakpointInfo() {
 
 #### 주의사항
 
--   창 크기 변경 시 리렌더링이 발생합니다.
--   성능을 위해 필요한 경우에만 사용하세요 (CSS 미디어 쿼리로 처리 가능한 경우 CSS 사용 권장).
--   서버 사이드 렌더링 시 초기값은 0px로 설정됩니다.
--   `width`와 `height`는 실시간으로 업데이트되므로, 필요한 값만 구조 분해하여 사용하는 것이 좋습니다.
+- 창 크기 변경 시 리렌더링이 발생합니다.
+- 성능을 위해 필요한 경우에만 사용하세요 (CSS 미디어 쿼리로 처리 가능한 경우 CSS 사용 권장).
+- 서버 사이드 렌더링 시 초기값은 0px로 설정됩니다.
+- `width`와 `height`는 실시간으로 업데이트되므로, 필요한 값만 구조 분해하여 사용하는 것이 좋습니다.
 
 📚 **[브레이크포인트 상세 예제 →](./examples.md#usebreakpoint-예제)**
 
@@ -1938,7 +1951,7 @@ function BreakpointInfo() {
 function useLocalStorage<T>(
     key: string,
     defaultValue: T,
-    options?: UseLocalStorageOptions
+    options?: UseLocalStorageOptions,
 ): UseLocalStorageReturn<T>;
 ```
 
@@ -1973,7 +1986,7 @@ import { useLocalStorage } from "@ehfuse/forma";
 // 기본 사용
 const { value: theme, setValue: setTheme } = useLocalStorage<string>(
     "theme",
-    "light"
+    "light",
 );
 
 // 객체 저장
@@ -2046,7 +2059,7 @@ setBatch(updates: Record<string, any>): void
 
 #### Parameters
 
--   `updates`: 키로 필드 경로, 값으로 새 값을 가진 객체. dot notation 지원.
+- `updates`: 키로 필드 경로, 값으로 새 값을 가진 객체. dot notation 지원.
 
 #### Description
 
@@ -2054,9 +2067,9 @@ setBatch(updates: Record<string, any>): void
 
 다음과 같은 경우에 특히 유용합니다:
 
--   서버 데이터를 폼에 로드할 때
--   여러 관련 필드를 논리적으로 함께 업데이트할 때
--   체크박스/라디오 버튼 일괄 선택/해제
+- 서버 데이터를 폼에 로드할 때
+- 여러 관련 필드를 논리적으로 함께 업데이트할 때
+- 체크박스/라디오 버튼 일괄 선택/해제
 
 #### Examples
 
@@ -2078,9 +2091,9 @@ state.setBatch({
 
 **성능 이점:**
 
--   **리렌더링 감소**: N번 대신 1번 리렌더링
--   **더 나은 UX**: 대량 작업 시 더 부드러운 업데이트
--   **메모리 효율성**: 가비지 컬렉션 압력 감소
+- **리렌더링 감소**: N번 대신 1번 리렌더링
+- **더 나은 UX**: 대량 작업 시 더 부드러운 업데이트
+- **메모리 효율성**: 가비지 컬렉션 압력 감소
 
 📚 **[setBatch 상세 예제 →](./examples.md#배치-업데이트-setbatch-활용)**  
 🔗 **[대량 데이터 최적화 가이드 →](./performance-warnings.md#-대량-데이터-배치-처리-최적화)**
@@ -2176,7 +2189,7 @@ getValue(fieldName: string): any
 
 **매개변수:**
 
--   `fieldName`: 필드명 또는 dot notation 경로 (예: `"user.name"`)
+- `fieldName`: 필드명 또는 dot notation 경로 (예: `"user.name"`)
 
 **반환:** 필드 값, 또는 필드가 존재하지 않으면 `undefined`.
 
@@ -2197,8 +2210,8 @@ setValue(fieldName: string, value: any): void
 
 **매개변수:**
 
--   `fieldName`: 필드명 또는 dot notation 경로
--   `value`: 설정할 새 값
+- `fieldName`: 필드명 또는 dot notation 경로
+- `value`: 설정할 새 값
 
 **예제:**
 
@@ -2233,7 +2246,7 @@ setValues(values: Partial<T>): void
 
 **매개변수:**
 
--   `values`: 업데이트할 필드 객체
+- `values`: 업데이트할 필드 객체
 
 **예제:**
 
@@ -2254,7 +2267,7 @@ setBatch(updates: Record<string, any>): void
 
 **매개변수:**
 
--   `updates`: 키로 필드 경로, 값으로 새 값을 가진 객체
+- `updates`: 키로 필드 경로, 값으로 새 값을 가진 객체
 
 **예제:**
 
@@ -2276,8 +2289,8 @@ subscribe(fieldName: string, callback: () => void): () => void
 
 **매개변수:**
 
--   `fieldName`: 필드명 또는 dot notation 경로
--   `callback`: 변경 시 호출될 콜백 함수
+- `fieldName`: 필드명 또는 dot notation 경로
+- `callback`: 변경 시 호출될 콜백 함수
 
 **반환:** 구독 해제 함수
 
@@ -2335,7 +2348,7 @@ type FormChangeEvent =
           target: { name: string; value: any };
           onChange?: (
               value: any,
-              context: PickerChangeHandlerContext<any>
+              context: PickerChangeHandlerContext<any>,
           ) => void;
       };
 ```
@@ -2374,7 +2387,7 @@ DatePicker 전용 이벤트 핸들러 타입입니다.
 
 ```typescript
 type DatePickerChangeHandler = (
-    fieldName: string
+    fieldName: string,
 ) => (value: any, context?: PickerChangeHandlerContext<any>) => void;
 ```
 
@@ -2386,7 +2399,7 @@ type DatePickerChangeHandler = (
 type WatchCallback<T extends Record<string, any>> = (
     context: ActionContext<T>,
     value: any,
-    prevValue: any
+    prevValue: any,
 ) => void | Promise<void>;
 ```
 
@@ -2403,9 +2416,9 @@ type WatchOptions<T extends Record<string, any>> = Record<
 
 **지원하는 패턴:**
 
--   `"todos"` - 정확한 경로 매칭
--   `"todos.*.completed"` - 와일드카드 패턴 (todos.0.completed, todos.1.completed 등)
--   `"*"` - 모든 경로 매칭
+- `"todos"` - 정확한 경로 매칭
+- `"todos.*.completed"` - 와일드카드 패턴 (todos.0.completed, todos.1.completed 등)
+- `"*"` - 모든 경로 매칭
 
 ### UseFormProps
 
@@ -2462,11 +2475,11 @@ interface UseGlobalFormaStateProps<T extends Record<string, any>> {
 interface GlobalFormaContextType {
     getOrCreateStore: <T extends Record<string, any>>(
         formId: string,
-        initialValues: T
+        initialValues: T,
     ) => FieldStore<T>;
     registerStore: <T extends Record<string, any>>(
         formId: string,
-        store: FieldStore<T>
+        store: FieldStore<T>,
     ) => void;
     unregisterStore: (formId: string) => boolean;
     clearStores: () => void;
@@ -2511,9 +2524,9 @@ const { name } = form.values;
 
 **핵심 원칙:**
 
--   개별 필드 구독 사용으로 리렌더링 최적화
--   배열 길이 구독 (`todos.length`) 활용
--   대량 데이터는 배치 처리 + `refreshFields` 사용
+- 개별 필드 구독 사용으로 리렌더링 최적화
+- 배열 길이 구독 (`todos.length`) 활용
+- 대량 데이터는 배치 처리 + `refreshFields` 사용
 
 � **[성능 최적화 가이드 →](./performance-guide.md)**
 ⚠️ **[성능 최적화 주의사항 →](./performance-warnings.md)**
@@ -2554,14 +2567,14 @@ const name = form.useFormValue("name");
 
 ## 관련 문서
 
--   **[API 레퍼런스](./API.md)** - 모든 API 상세 설명
--   **[예제 모음](./examples/basic-example.md)** - 실용적인 사용 예제
--   **[성능 최적화 가이드](./performance-guide.md)** - 성능 최적화 방법
--   **[성능 최적화 주의사항](./performance-warnings.md)** - 안티패턴과 주의사항
--   **[마이그레이션 가이드](./migration.md)** - 다른 라이브러리에서 이전
--   **[useGlobalForm 가이드](./useGlobalForm-guide.md)** - 글로벌 폼 상태 관리
--   **[글로벌 훅 비교 가이드](./global-hooks-comparison.md)** - 글로벌 훅들의 차이점
--   **[라이브러리 비교 가이드](./library-comparison.md)** - 다른 상태 관리 라이브러리와의 비교
+- **[API 레퍼런스](./API.md)** - 모든 API 상세 설명
+- **[예제 모음](./examples/basic-example.md)** - 실용적인 사용 예제
+- **[성능 최적화 가이드](./performance-guide.md)** - 성능 최적화 방법
+- **[성능 최적화 주의사항](./performance-warnings.md)** - 안티패턴과 주의사항
+- **[마이그레이션 가이드](./migration.md)** - 다른 라이브러리에서 이전
+- **[useGlobalForm 가이드](./useGlobalForm-guide.md)** - 글로벌 폼 상태 관리
+- **[글로벌 훅 비교 가이드](./global-hooks-comparison.md)** - 글로벌 훅들의 차이점
+- **[라이브러리 비교 가이드](./library-comparison.md)** - 다른 상태 관리 라이브러리와의 비교
 
 추가 질문이나 예제가 필요하시면 언제든 문의해 주세요.
 

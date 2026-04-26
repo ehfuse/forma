@@ -26,7 +26,14 @@
  * SOFTWARE.
  */
 
-import { createContext, useRef, useState, useEffect, useCallback } from "react";
+import {
+    createContext,
+    useRef,
+    useState,
+    useEffect,
+    useCallback,
+    useMemo,
+} from "react";
 import { FieldStore } from "../core/FieldStore";
 import {
     GlobalFormaContextType,
@@ -43,80 +50,80 @@ export const GlobalFormaContext = createContext<GlobalFormaContextType>({
     // FieldStore 관련
     getOrCreateStore: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     registerStore: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     unregisterStore: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     clearStores: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     incrementRef: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     decrementRef: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     validateAndStoreAutoCleanupSetting: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     // 핸들러 관리
     registerHandlers: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     getHandlers: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     // Actions 관리
     registerActions: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     getActions: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     unregisterActions: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     // 모달 스택 관리
     appendOpenModal: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     removeOpenModal: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
     closeLastModal: () => {
         throw new Error(
-            "GlobalFormaContext must be used within GlobalFormaProvider"
+            "GlobalFormaContext must be used within GlobalFormaProvider",
         );
     },
 });
@@ -167,7 +174,7 @@ export function GlobalFormaProvider({
     const actionsRef = useRef<Map<string, any>>(new Map());
     // formId별 cleanup 타이머를 저장하는 Map | Map storing cleanup timers by formId
     const cleanupTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
-        new Map()
+        new Map(),
     );
     // formId별 영구 보존 플래그 (autoCleanup: false인 경우 true) | Persist forever flag by formId (true when autoCleanup: false)
     const persistForeverRef = useRef<Map<string, boolean>>(new Map());
@@ -186,7 +193,7 @@ export function GlobalFormaProvider({
      * @returns FieldStore 인스턴스 | FieldStore instance
      */
     const getOrCreateStore = <T extends Record<string, any>>(
-        formId: string
+        formId: string,
     ): FieldStore<T> => {
         const stores = storesRef.current;
 
@@ -217,7 +224,7 @@ export function GlobalFormaProvider({
      */
     const validateAndStoreAutoCleanupSetting = (
         formId: string,
-        autoCleanup: boolean
+        autoCleanup: boolean,
     ): void => {
         const autoCleanupSettings = autoCleanupSettingsRef.current;
         // Note: existingSetting check removed - was used for warning only
@@ -239,7 +246,7 @@ export function GlobalFormaProvider({
      */
     const registerStore = <T extends Record<string, any>>(
         formId: string,
-        store: FieldStore<T>
+        store: FieldStore<T>,
     ): void => {
         const stores = storesRef.current;
         stores.set(formId, store);
@@ -365,7 +372,7 @@ export function GlobalFormaProvider({
             // autoCleanup 참조 카운트 감소
             const newAutoCleanupCount = Math.max(
                 0,
-                currentAutoCleanupCount - 1
+                currentAutoCleanupCount - 1,
             );
             autoCleanupRefCounts.set(formId, newAutoCleanupCount);
 
@@ -430,7 +437,7 @@ export function GlobalFormaProvider({
      */
     const registerHandlers = <T extends Record<string, any>>(
         formId: string,
-        handlers: GlobalFormHandlers<T>
+        handlers: GlobalFormHandlers<T>,
     ): void => {
         const existingHandlers = handlersRef.current.get(formId);
 
@@ -452,7 +459,7 @@ export function GlobalFormaProvider({
      * @returns 핸들러들 또는 undefined | Handlers or undefined
      */
     const getHandlers = <T extends Record<string, any>>(
-        formId: string
+        formId: string,
     ): GlobalFormHandlers<T> | undefined => {
         return handlersRef.current.get(formId);
     };
@@ -505,7 +512,7 @@ export function GlobalFormaProvider({
         window.history.pushState(
             { modalOpen: modalId },
             "",
-            window.location.href
+            window.location.href,
         );
     }, []);
 
@@ -517,7 +524,7 @@ export function GlobalFormaProvider({
             if (prevIds.includes(modalId)) {
                 const newOpenIds = prevIds.filter((id) => id !== modalId);
                 modalTrackingRef.current = modalTrackingRef.current.filter(
-                    (id) => id !== modalId
+                    (id) => id !== modalId,
                 );
                 return newOpenIds;
             }
@@ -527,15 +534,17 @@ export function GlobalFormaProvider({
 
     /**
      * 마지막으로 열린 모달 닫기
+     * openModalIdsRef 를 참조해 deps 를 비워 함수 식별자를 안정화한다.
      */
     const closeLastModal = useCallback((): boolean => {
-        if (openModalIds.length === 0) return false;
+        const ids = openModalIdsRef.current;
+        if (ids.length === 0) return false;
 
-        const lastModalId = openModalIds[openModalIds.length - 1];
+        const lastModalId = ids[ids.length - 1];
         window.dispatchEvent(new CustomEvent(`modal:close:${lastModalId}`));
 
         return true;
-    }, [openModalIds]);
+    }, []);
 
     // 모달 ID 추적을 위해 ref 업데이트
     useEffect(() => {
@@ -560,29 +569,35 @@ export function GlobalFormaProvider({
         };
     }, [closeLastModal]);
 
-    const contextValue: GlobalFormaContextType = {
-        // Storage Prefix
-        storagePrefix,
-        // FieldStore 관련
-        getOrCreateStore,
-        registerStore,
-        unregisterStore,
-        clearStores,
-        incrementRef,
-        decrementRef,
-        validateAndStoreAutoCleanupSetting,
-        // 핸들러 관리
-        registerHandlers,
-        getHandlers,
-        // Actions 관리
-        registerActions,
-        getActions,
-        unregisterActions,
-        // 모달 스택 관리
-        appendOpenModal,
-        removeOpenModal,
-        closeLastModal,
-    };
+    // Provider 재렌더 시 contextValue 객체 식별자가 바뀌면 모든 forma 컨슈머가
+    // 강제 재렌더되므로, 모든 멤버가 안정 식별자(ref/useCallback 결과)인 점을
+    // 활용해 useMemo 로 contextValue 자체를 안정화한다.
+    const contextValue: GlobalFormaContextType = useMemo(
+        () => ({
+            // Storage Prefix
+            storagePrefix,
+            // FieldStore 관련
+            getOrCreateStore,
+            registerStore,
+            unregisterStore,
+            clearStores,
+            incrementRef,
+            decrementRef,
+            validateAndStoreAutoCleanupSetting,
+            // 핸들러 관리
+            registerHandlers,
+            getHandlers,
+            // Actions 관리
+            registerActions,
+            getActions,
+            unregisterActions,
+            // 모달 스택 관리
+            appendOpenModal,
+            removeOpenModal,
+            closeLastModal,
+        }),
+        [storagePrefix, appendOpenModal, removeOpenModal, closeLastModal],
+    );
 
     return (
         <GlobalFormaContext.Provider value={contextValue}>

@@ -29,7 +29,6 @@
 import {
     createContext,
     useRef,
-    useState,
     useEffect,
     useCallback,
     useMemo,
@@ -182,7 +181,9 @@ export function GlobalFormaProvider({
     const CLEANUP_DELAY_MS = 100;
 
     // ========== 모달 스택 관리 상태 ==========
-    const [openModalIds, setOpenModalIds] = useState<string[]>([]);
+    // openModalIds 는 외부 노출도 없고 내부에서도 length 만 보면 되므로 useState 가 아닌
+    // ref 로만 보관한다. 이렇게 두면 모달 open/close 가 GlobalFormaProvider 자체를
+    // 리렌더시키지 않아 children 트리 전체의 cascade 재호출을 막을 수 있다.
     const openModalIdsRef = useRef<string[]>([]);
     const modalTrackingRef = useRef<string[]>([]);
 
@@ -499,15 +500,12 @@ export function GlobalFormaProvider({
 
     /**
      * 모달 등록
+     * ref 직접 갱신으로 Provider 리렌더를 발생시키지 않는다.
      */
     const appendOpenModal = useCallback((modalId: string) => {
         if (modalTrackingRef.current.includes(modalId)) return;
         modalTrackingRef.current.push(modalId);
-
-        setOpenModalIds((prevIds) => {
-            const newOpenIds = [...prevIds, modalId];
-            return newOpenIds;
-        });
+        openModalIdsRef.current = [...openModalIdsRef.current, modalId];
 
         window.history.pushState(
             { modalOpen: modalId },
@@ -518,18 +516,16 @@ export function GlobalFormaProvider({
 
     /**
      * 모달 등록 해제
+     * ref 직접 갱신으로 Provider 리렌더를 발생시키지 않는다.
      */
     const removeOpenModal = useCallback((modalId: string) => {
-        setOpenModalIds((prevIds) => {
-            if (prevIds.includes(modalId)) {
-                const newOpenIds = prevIds.filter((id) => id !== modalId);
-                modalTrackingRef.current = modalTrackingRef.current.filter(
-                    (id) => id !== modalId,
-                );
-                return newOpenIds;
-            }
-            return prevIds;
-        });
+        if (!openModalIdsRef.current.includes(modalId)) return;
+        openModalIdsRef.current = openModalIdsRef.current.filter(
+            (id) => id !== modalId,
+        );
+        modalTrackingRef.current = modalTrackingRef.current.filter(
+            (id) => id !== modalId,
+        );
     }, []);
 
     /**
@@ -545,11 +541,6 @@ export function GlobalFormaProvider({
 
         return true;
     }, []);
-
-    // 모달 ID 추적을 위해 ref 업데이트
-    useEffect(() => {
-        openModalIdsRef.current = openModalIds;
-    }, [openModalIds]);
 
     // popstate 이벤트 핸들러 (뒤로가기 시 모달 닫기)
     useEffect(() => {

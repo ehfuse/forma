@@ -26,13 +26,7 @@
  * SOFTWARE.
  */
 
-import {
-    createContext,
-    useRef,
-    useEffect,
-    useCallback,
-    useMemo,
-} from "react";
+import { createContext, useRef, useEffect, useCallback, useMemo } from "react";
 import { FieldStore } from "../core/FieldStore";
 import {
     GlobalFormaContextType,

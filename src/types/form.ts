@@ -122,6 +122,8 @@ export interface UseFormPropsOptional<
  */
 export interface UseFormReturn<T extends Record<string, any>> {
     /** 개별 필드 값 구독 함수 | Individual field value subscription function */
+    useValue: (fieldName: keyof T | string) => any;
+    /** 개별 필드 값 구독 함수 | Individual field value subscription function */
     useFormValue: (fieldName: keyof T | string) => any;
     /** 폼 변경 핸들러 (이벤트 또는 name,value 직접 전달) | Form change handler (event or direct name,value) */
     handleFormChange: FormChangeHandler;

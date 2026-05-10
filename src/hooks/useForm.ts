@@ -326,6 +326,14 @@ export function useForm<T extends Record<string, any>>(
     };
 
     /**
+     * 개별 필드 구독 Hook / Individual field subscription hook
+     * useGlobalFormaState 와 같은 API 이름을 제공한다
+     */
+    const useValue = (fieldName: keyof T | string) => {
+        return useFormValue(fieldName);
+    };
+
+    /**
      * 폼 검증 / Form validation
      */
     const validateForm = useCallback(
@@ -438,6 +446,7 @@ export function useForm<T extends Record<string, any>>(
             isValidating,
 
             // 값 가져오기 / Get values
+            useValue, // Hook - useGlobalFormaState 호환 alias / compatible alias
             useFormValue, // Hook - 구독 있음 (성능 최적화) / with subscription (performance optimized)
             getFormValue, // 함수 - 구독 없음 (현재 값만) / function - no subscription (current value only)
             getFormValues, // 함수 - 모든 값 / function - all values
@@ -472,6 +481,7 @@ export function useForm<T extends Record<string, any>>(
         [
             isSubmitting,
             isValidating,
+            useValue,
             useFormValue,
             getFormValue,
             getFormValues,

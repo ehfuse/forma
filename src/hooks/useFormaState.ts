@@ -59,7 +59,7 @@ export interface UseFormaStateOptions<T extends Record<string, any>> {
         (
             context: ActionContext<T>,
             value: any,
-            prevValue: any
+            prevValue: any,
         ) => void | Promise<void>
     >;
 
@@ -95,6 +95,9 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
 
     /** Handle standard input change events | 표준 입력 변경 이벤트 처리 */
     handleChange: (event: FormChangeEvent) => void;
+
+    /** Handle standard form input change events | 표준 폼 입력 변경 이벤트 처리 */
+    handleFormChange: (event: FormChangeEvent) => void;
 
     /** Check if a field exists | 필드 존재 여부 확인 */
     hasField: (path: string) => boolean;
@@ -145,7 +148,7 @@ function useFieldValue<T>(store: FieldStore<any>, fieldName: string): T {
                 // 구독 등록 (동기적으로 실행됨)
                 return store.subscribe(fieldName, onStoreChange);
             },
-            [store, fieldName]
+            [store, fieldName],
         ),
         useCallback(() => {
             // 현재 값 읽기 (동기적으로 실행됨)
@@ -154,7 +157,7 @@ function useFieldValue<T>(store: FieldStore<any>, fieldName: string): T {
         useCallback(() => {
             // 서버 사이드 렌더링용 초기값
             return store.getValue(fieldName);
-        }, [store, fieldName])
+        }, [store, fieldName]),
     );
 
     return value;
@@ -169,7 +172,7 @@ function useFieldValue<T>(store: FieldStore<any>, fieldName: string): T {
  */
 export function useFieldSubscription<T = any>(
     store: FieldStore<any>,
-    path: string
+    path: string,
 ): T {
     return useFieldValue<T>(store, path);
 }
@@ -207,18 +210,18 @@ export function useFieldSubscription<T = any>(
  */
 // 빈 객체로 시작하는 경우를 위한 오버로드
 export function useFormaState<
-    T extends Record<string, any> = Record<string, any>
+    T extends Record<string, any> = Record<string, any>,
 >(initialValues?: T, options?: UseFormaStateOptions<T>): UseFormaStateReturn<T>;
 
 // 명시적 타입을 가진 경우를 위한 오버로드
 export function useFormaState<T extends Record<string, any>>(
     initialValues: T,
-    options?: UseFormaStateOptions<T>
+    options?: UseFormaStateOptions<T>,
 ): UseFormaStateReturn<T>;
 
 export function useFormaState<T extends Record<string, any>>(
     initialValues: T = {} as T,
-    options: UseFormaStateOptions<T> = {}
+    options: UseFormaStateOptions<T> = {},
 ): UseFormaStateReturn<T> {
     const {
         onChange,
@@ -246,7 +249,7 @@ export function useFormaState<T extends Record<string, any>>(
         if (persistConfig) {
             const persisted = loadPersistedData<T>(
                 persistConfig,
-                storagePrefix
+                storagePrefix,
             );
             if (persisted) {
                 mergedInitialValues = { ...initialValues, ...persisted };
@@ -310,7 +313,7 @@ export function useFormaState<T extends Record<string, any>>(
         <K extends string>(path: K, value: any) => {
             store.setValue(path, value);
         },
-        [store] // store 의존성 추가
+        [store], // store 의존성 추가
     );
 
     // Get all current values (non-reactive)
@@ -327,7 +330,7 @@ export function useFormaState<T extends Record<string, any>>(
             const newValues = { ...currentValues, ...values };
             store.setValues(newValues as T);
         },
-        [store] // store 의존성 추가
+        [store], // store 의존성 추가
     );
 
     // Reset to initial values
@@ -380,7 +383,7 @@ export function useFormaState<T extends Record<string, any>>(
             stableInitialValues.current = newInitialValues;
             store.setInitialValues(newInitialValues);
         },
-        [store]
+        [store],
     ); // store 의존성 추가
 
     // Handle standard input change events
@@ -390,7 +393,7 @@ export function useFormaState<T extends Record<string, any>>(
             const target = event.target;
             if (!target || !target.name) {
                 devWarn(
-                    'useFormaState.handleChange: input element must have a "name" attribute'
+                    'useFormaState.handleChange: input element must have a "name" attribute',
                 );
                 return;
             }
@@ -417,7 +420,7 @@ export function useFormaState<T extends Record<string, any>>(
 
             setValue(name, processedValue);
         },
-        [setValue]
+        [setValue],
     );
 
     // Bind actions to context if provided
@@ -486,7 +489,7 @@ export function useFormaState<T extends Record<string, any>>(
                     };
 
                     callback(context, value, prevValue);
-                }
+                },
             );
 
             unsubscribers.push(unsubscribe);
@@ -506,40 +509,41 @@ export function useFormaState<T extends Record<string, any>>(
             (updates: Record<string, any>) => {
                 store.setBatch(updates);
             },
-            [store] // store 의존성 추가
+            [store], // store 의존성 추가
         ),
         reset,
         setInitialValues,
         handleChange,
+        handleFormChange: handleChange,
         hasField: useCallback(
             (path: string) => {
                 return store.hasField(path);
             },
-            [store] // store 의존성 추가
+            [store], // store 의존성 추가
         ),
         removeField: useCallback(
             (path: string) => {
                 store.removeField(path);
             },
-            [store] // store 의존성 추가
+            [store], // store 의존성 추가
         ),
         getValue: useCallback(
             (path: string) => {
                 return store.getValue(path);
             },
-            [store] // store 의존성 추가
+            [store], // store 의존성 추가
         ),
         subscribe: useCallback(
             (callback: (values: T) => void) => {
                 return store.subscribeToAll(callback);
             },
-            [store] // store 의존성 추가
+            [store], // store 의존성 추가
         ),
         refreshFields: useCallback(
             (prefix: string) => {
                 store.refreshFields(prefix);
             },
-            [store] // store 의존성 추가
+            [store], // store 의존성 추가
         ),
         actions: boundActions,
         _store: store,

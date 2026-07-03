@@ -192,21 +192,65 @@ export function hasPersistedData(
 }
 
 /**
+ * flush/cancel 가능한 디바운스 함수 타입 | Debounced function with flush/cancel
+ */
+export interface DebouncedFunction<T extends (...args: any[]) => any> {
+    (...args: Parameters<T>): void;
+    /** 대기 중인 호출을 즉시 실행 | Immediately invoke the pending call (if any) */
+    flush: () => void;
+    /** 대기 중인 호출을 취소 | Cancel the pending call */
+    cancel: () => void;
+}
+
+/**
  * 디바운스 유틸리티 | Debounce utility
+ *
+ * flush(): 대기 중인 마지막 호출을 즉시 실행 (언마운트/페이지 이탈 시 저장 손실 방지용)
+ * flush(): immediately runs the pending call — used to avoid losing the last save on unmount/page unload
+ * cancel(): 대기 중인 호출을 취소 | cancel pending call
  */
 export function debounce<T extends (...args: any[]) => any>(
     fn: T,
     delay: number
-): (...args: Parameters<T>) => void {
+): DebouncedFunction<T> {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    // 대기 중인 마지막 인자 보관 (flush 시 사용) | Keep last pending args for flush
+    let pendingArgs: Parameters<T> | null = null;
 
-    return (...args: Parameters<T>) => {
+    const debounced = (...args: Parameters<T>) => {
+        pendingArgs = args;
         if (timeoutId) {
             clearTimeout(timeoutId);
         }
         timeoutId = setTimeout(() => {
-            fn(...args);
             timeoutId = null;
+            const callArgs = pendingArgs;
+            pendingArgs = null;
+            if (callArgs) {
+                fn(...callArgs);
+            }
         }, delay);
     };
+
+    debounced.flush = () => {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+        if (pendingArgs) {
+            const callArgs = pendingArgs;
+            pendingArgs = null;
+            fn(...callArgs);
+        }
+    };
+
+    debounced.cancel = () => {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+        pendingArgs = null;
+    };
+
+    return debounced;
 }

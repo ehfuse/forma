@@ -1,6 +1,6 @@
 {
     "name": "@ehfuse/forma",
-    "version": "3.2.1",
+    "version": "3.3.2",
     "description": "Advanced React state management library with individual field subscriptions - supports both forms and general state management with useFormaState",
     "main": "dist/index.js",
     "module": "dist/esm/index.js",
@@ -24,7 +24,7 @@
         "build:types": "tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --outDir dist",
         "clean": "rm -rf dist",
         "prepublishOnly": "npm run build",
-        "test": "echo \"Tests will be added\" && exit 0",
+        "test": "node --import tsx --test src/**/*.test.ts",
         "lint": "eslint . --ext .ts,.tsx",
         "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
         "dev": "cd example && npm run dev",
@@ -74,6 +74,7 @@
     "devDependencies": {
         "@types/react": "^19.1.12",
         "esbuild": "^0.23.0",
+        "tsx": "^4.22.4",
         "typescript": "^5.9.2"
     }
 }

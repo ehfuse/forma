@@ -29,6 +29,7 @@
 
 import { getNestedValue, setNestedValue } from "../utils/dotNotation";
 import { devError } from "../utils/environment";
+import { deepEqual } from "../utils/deepEqual";
 
 /**
  * 개별 필드 상태 관리 Store / Individual field state management store
@@ -65,15 +66,190 @@ export class FieldStore<T extends Record<string, any>> {
     }
 
     private areValuesEqual(a: any, b: any): boolean {
-        if (a === b) return true;
-        if (typeof a === "object" || typeof b === "object") {
-            try {
-                return JSON.stringify(a) === JSON.stringify(b);
-            } catch {
-                return false;
+        return deepEqual(a, b);
+    }
+
+    /**
+     * 특정 필드 변경에 의해 깨어나야 할 dot-notation 구독자들을 수집한다.
+     * Collect dot-notation subscribers that must be notified for a given field change.
+     *
+     * setValue(즉시 알림)와 setValueWithoutNotify(배치 수집)가 동일한 매칭 규칙을
+     * 공유하도록 단일 진실 원천(single source of truth)으로 추출한 함수.
+     * Extracted as a single source of truth so setValue (immediate) and
+     * setValueWithoutNotify (batched) share the exact same matching rules,
+     * eliminating single-vs-batch notification divergence.
+     *
+     * @param changedPath 실제로 변경된 경로 / The path that actually changed
+     *        - dot 경로 set: 전체 경로 (예: "a.b.c") / full dot path for nested set
+     *        - 일반 필드 set: 루트 필드명 (예: "user") / root field name for plain set
+     * @param rootFieldStr 루트 필드명 / Root field name (changedPath 의 첫 세그먼트)
+     * @param oldValue 변경 전 값 / Previous value
+     *        - dot 경로: 루트 필드의 이전 값 / previous root value
+     *        - 일반 필드: 필드의 이전 값 / previous field value
+     * @param newValue 변경 후 값 / New value (대응되는 범위)
+     * @returns 깨워야 할 listener 집합 / Set of listeners to notify
+     */
+    private collectAffectedDotListeners(
+        changedPath: string,
+        rootFieldStr: string,
+        oldValue: any,
+        newValue: any,
+    ): Set<() => void> {
+        const affected = new Set<() => void>();
+
+        this.dotNotationListeners.forEach((listeners, subscribedPath) => {
+            const add = () =>
+                listeners.forEach((listener) => affected.add(listener));
+
+            // 1. 정확히 일치하는 경로 / Exact path match
+            if (subscribedPath === changedPath) {
+                add();
+                return;
             }
-        }
-        return false;
+
+            // 2. 자식 경로가 변경되면 부모 경로 구독자에게 알림
+            //    Notify parent-path subscribers when a child changes
+            //    예: changedPath "a.b.c", subscribedPath "a.b"
+            if (changedPath.startsWith(subscribedPath + ".")) {
+                add();
+                return;
+            }
+
+            // 3. .length 구독자: 배열 길이가 바뀐 경우에만 / array length subscribers
+            if (subscribedPath === `${rootFieldStr}.length`) {
+                const oldLength = Array.isArray(oldValue) ? oldValue.length : 0;
+                const newLength = Array.isArray(newValue) ? newValue.length : 0;
+                if (oldLength !== newLength || (!oldValue && newValue)) {
+                    add();
+                }
+                return;
+            }
+
+            // 4. 부모(또는 changedPath) 가 바뀌어 그 하위 구독자가 영향받는 경우
+            //    Parent (or changedPath) changed → notify descendant subscribers,
+            //    단, 값이 실제로 바뀐 자식에게만 알림 / only if the child value actually changed.
+            //    rootFieldStr 와 정확히 같은 경로는 루트 필드 구독자가 이미 처리하므로 제외.
+            if (
+                subscribedPath.startsWith(changedPath + ".") &&
+                subscribedPath !== rootFieldStr
+            ) {
+                const childPath = subscribedPath.substring(
+                    changedPath.length + 1,
+                );
+                const oldChildValue = getNestedValue(oldValue, childPath);
+                const newChildValue = getNestedValue(newValue, childPath);
+                if (!deepEqual(oldChildValue, newChildValue)) {
+                    add();
+                }
+                return;
+            }
+        });
+
+        return affected;
+    }
+
+    /**
+     * 점 없는 루트 필드(fieldStr)가 통째로 교체될 때, 그 하위를 구독한
+     * dot-notation 구독자들 중 깨어나야 할 listener 들을 수집한다.
+     * Collect dot-notation subscribers to notify when a plain root field
+     * (fieldStr) is replaced as a whole.
+     *
+     * setValue(즉시) / setValueWithoutNotify(배치) 가 동일한 매칭 규칙을 공유하도록
+     * 단일 진실 원천으로 추출. 분기 규칙은 기존 구현과 byte 단위로 동일.
+     * Extracted as a single source of truth so setValue (immediate) and
+     * setValueWithoutNotify (batched) share identical matching rules.
+     * Branch logic is byte-for-byte identical to the previous inline implementations.
+     *
+     * 주의: "값이 실제로 변경되었는가" 게이트는 각 호출부에 남겨둔다.
+     *   - setValue: field.value !== value (참조 비교)
+     *   - setValueWithoutNotify: deepEqual 깊은 비교
+     * Note: the "did the value actually change" gate stays at each call site
+     * (reference compare for setValue, deep compare for setValueWithoutNotify).
+     *
+     * @param fieldStr 교체된 루트 필드명 / Replaced root field name
+     * @param oldValue 필드의 이전 값 / Previous field value
+     * @param value 필드의 새 값 / New field value
+     * @returns 깨워야 할 listener 집합 / Set of listeners to notify
+     */
+    private collectAffectedPlainFieldListeners(
+        fieldStr: string,
+        oldValue: any,
+        value: any,
+    ): Set<() => void> {
+        const affected = new Set<() => void>();
+
+        this.dotNotationListeners.forEach((listeners, subscribedPath) => {
+            const add = () =>
+                listeners.forEach((listener) => affected.add(listener));
+
+            // 1. 정확히 일치하는 경로 / Exact path match
+            if (subscribedPath === fieldStr) {
+                add();
+            }
+            // 2. 배열 필드나 .length 구독자들에게 알림 / array .length subscribers
+            else if (subscribedPath === `${fieldStr}.length`) {
+                const oldLength = Array.isArray(oldValue) ? oldValue.length : 0;
+                const newLength = Array.isArray(value) ? value.length : 0;
+                // 길이가 변경되었거나 undefined에서 배열로 변경된 경우 알림
+                if (oldLength !== newLength || (!oldValue && value)) {
+                    add();
+                }
+            }
+            // 3. 객체 필드 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
+            else if (
+                subscribedPath.startsWith(fieldStr + ".") &&
+                typeof value === "object" &&
+                value !== null &&
+                !Array.isArray(value)
+            ) {
+                const childPath = subscribedPath.substring(fieldStr.length + 1);
+                const oldChildValue =
+                    oldValue && typeof oldValue === "object"
+                        ? getNestedValue(oldValue, childPath)
+                        : undefined;
+                const newChildValue = getNestedValue(value, childPath);
+
+                if (!deepEqual(oldChildValue, newChildValue)) {
+                    add();
+                }
+            }
+            // 4. 배열 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
+            else if (
+                Array.isArray(value) &&
+                Array.isArray(oldValue) &&
+                subscribedPath.startsWith(`${fieldStr}.`)
+            ) {
+                const pathParts = subscribedPath.split(".");
+                if (pathParts.length >= 2 && pathParts[0] === fieldStr) {
+                    const index = parseInt(pathParts[1]);
+                    if (!isNaN(index) && index >= 0) {
+                        const pathAfterIndex = pathParts.slice(1).join(".");
+                        const oldItemValue = getNestedValue(
+                            oldValue,
+                            pathAfterIndex,
+                        );
+                        const newItemValue = getNestedValue(
+                            value,
+                            pathAfterIndex,
+                        );
+
+                        if (!deepEqual(oldItemValue, newItemValue)) {
+                            add();
+                        }
+                    }
+                }
+            }
+            // 5. 배열이 새로 생성되거나 삭제된 경우 (undefined → array 또는 array → undefined)
+            else if (
+                subscribedPath.startsWith(`${fieldStr}.`) &&
+                ((Array.isArray(value) && !Array.isArray(oldValue)) ||
+                    (!Array.isArray(value) && Array.isArray(oldValue)))
+            ) {
+                add();
+            }
+        });
+
+        return affected;
     }
 
     private updateDirtyForField(fieldName: string, value: any): void {
@@ -240,7 +416,7 @@ export class FieldStore<T extends Record<string, any>> {
                 value,
             );
 
-            if (JSON.stringify(field.value) !== JSON.stringify(newRootValue)) {
+            if (!deepEqual(field.value, newRootValue)) {
                 // 변경 전 자식 필드의 값 (watch용)
                 const prevChildValue = getNestedValue(
                     field.value,
@@ -269,48 +445,14 @@ export class FieldStore<T extends Record<string, any>> {
                 });
 
                 // Dot notation 구독자들 알림 / Notify dot notation subscribers
-                this.dotNotationListeners.forEach(
-                    (listeners, subscribedPath) => {
-                        // 1. 정확히 일치하는 경로
-                        if (subscribedPath === fieldNameStr) {
-                            listeners.forEach((listener) => listener());
-                        }
-                        // 2. 자식 경로가 변경되면 부모 경로 구독자에게 알림
-                        // 예: fieldNameStr이 "checkboxes.0.checked", subscribedPath가 "checkboxes"
-                        else if (
-                            fieldNameStr.startsWith(subscribedPath + ".")
-                        ) {
-                            listeners.forEach((listener) => listener());
-                        }
-                        // 3. 부모 경로가 변경되면 자식 경로 구독자에게 알림 (중복 제거 필요)
-                        // 예: fieldNameStr이 "checkboxes", subscribedPath가 "checkboxes.0"
-                        // 단, rootFieldStr와 정확히 같은 경로는 루트 필드 구독자가 이미 처리
-                        else if (
-                            subscribedPath.startsWith(fieldNameStr + ".") &&
-                            subscribedPath !== rootFieldStr
-                        ) {
-                            listeners.forEach((listener) => listener());
-                        }
-                        // 배열 필드나 .length 구독자들에게 알림
-                        // Notify array field or .length subscribers
-                        else if (subscribedPath === `${rootFieldStr}.length`) {
-                            // 이전 길이와 새 길이 계산
-                            const oldLength = Array.isArray(oldRootValue)
-                                ? oldRootValue.length
-                                : 0;
-                            const newLength = Array.isArray(newRootValue)
-                                ? newRootValue.length
-                                : 0;
-                            // 길이가 변경되었거나 undefined에서 배열로 변경된 경우 알림
-                            if (
-                                oldLength !== newLength ||
-                                (!oldRootValue && newRootValue)
-                            ) {
-                                listeners.forEach((listener) => listener());
-                            }
-                        }
-                    },
-                );
+                // 매칭 규칙은 collectAffectedDotListeners 에 일원화 (배치 경로와 공유)
+                // Matching rules unified in collectAffectedDotListeners (shared with batch path)
+                this.collectAffectedDotListeners(
+                    fieldNameStr,
+                    rootFieldStr,
+                    oldRootValue,
+                    newRootValue,
+                ).forEach((listener) => listener());
 
                 // 전역 구독자들 알림 / Notify global subscribers
                 this.globalListeners.forEach((listener) => listener());
@@ -336,6 +478,12 @@ export class FieldStore<T extends Record<string, any>> {
             this.fields.set(fieldName as keyof T, field);
         }
 
+        // 변경 게이트: setValue 는 의도적으로 빠른 참조비교를 사용한다.
+        // (배치 경로 setValueWithoutNotify 는 deepEqual 깊은 비교를 사용 — 의도된 차이)
+        // 참조가 같으면 값도 같으므로 안전하게 skip. 새 참조면 진행하여
+        // "외부에서 새 참조로 갱신했음"을 구독자에게 그대로 전달한다(참조 동일성 기대 보존).
+        // Change gate: setValue intentionally uses a fast reference compare.
+        // (the batch path setValueWithoutNotify uses deepEqual — an intentional difference)
         if (field.value !== value) {
             const oldValue = field.value;
             const fieldStr = fieldName as string;
@@ -348,91 +496,13 @@ export class FieldStore<T extends Record<string, any>> {
             });
 
             // Dot notation 구독자들 알림 / Notify dot notation subscribers
-            this.dotNotationListeners.forEach((listeners, subscribedPath) => {
-                // 1. 정확히 일치하는 경로
-                if (subscribedPath === fieldStr) {
-                    listeners.forEach((listener) => listener());
-                }
-                // 2. 배열 필드나 .length 구독자들에게 알림
-                // Notify array field or .length subscribers
-                else if (subscribedPath === `${fieldStr}.length`) {
-                    // 이전 길이와 새 길이 계산
-                    const oldLength = Array.isArray(oldValue)
-                        ? oldValue.length
-                        : 0;
-                    const newLength = Array.isArray(value) ? value.length : 0;
-                    // 길이가 변경되었거나 undefined에서 배열로 변경된 경우 알림
-                    if (oldLength !== newLength || (!oldValue && value)) {
-                        listeners.forEach((listener) => listener());
-                    }
-                }
-                // 3. 객체 필드 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
-                // Notify individual field subscribers only if their actual values changed when entire object is replaced
-                else if (
-                    subscribedPath.startsWith(fieldStr + ".") &&
-                    typeof value === "object" &&
-                    value !== null &&
-                    !Array.isArray(value)
-                ) {
-                    // customer.name, customer.seq 등의 자식 경로
-                    const childPath = subscribedPath.substring(
-                        fieldStr.length + 1,
-                    );
-                    const oldChildValue =
-                        oldValue && typeof oldValue === "object"
-                            ? getNestedValue(oldValue, childPath)
-                            : undefined;
-                    const newChildValue = getNestedValue(value, childPath);
-
-                    // 실제로 값이 변경된 경우에만 알림
-                    if (
-                        JSON.stringify(oldChildValue) !==
-                        JSON.stringify(newChildValue)
-                    ) {
-                        listeners.forEach((listener) => listener());
-                    }
-                }
-                // 🔥 배열 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
-                // Notify individual field subscribers only if their actual values changed when entire array is replaced
-                else if (
-                    Array.isArray(value) &&
-                    Array.isArray(oldValue) &&
-                    subscribedPath.startsWith(`${fieldStr}.`)
-                ) {
-                    const pathParts = subscribedPath.split(".");
-                    if (pathParts.length >= 2 && pathParts[0] === fieldStr) {
-                        const index = parseInt(pathParts[1]);
-                        if (!isNaN(index) && index >= 0) {
-                            // 해당 인덱스의 값을 비교 (전체 객체 또는 특정 속성)
-                            const pathAfterIndex = pathParts.slice(1).join(".");
-                            const oldItemValue = getNestedValue(
-                                oldValue,
-                                pathAfterIndex,
-                            );
-                            const newItemValue = getNestedValue(
-                                value,
-                                pathAfterIndex,
-                            );
-
-                            // 실제로 값이 변경된 경우에만 알림
-                            if (
-                                JSON.stringify(oldItemValue) !==
-                                JSON.stringify(newItemValue)
-                            ) {
-                                listeners.forEach((listener) => listener());
-                            }
-                        }
-                    }
-                }
-                // 배열이 새로 생성되거나 삭제된 경우 (undefined → array 또는 array → undefined)
-                else if (
-                    subscribedPath.startsWith(`${fieldStr}.`) &&
-                    ((Array.isArray(value) && !Array.isArray(oldValue)) ||
-                        (!Array.isArray(value) && Array.isArray(oldValue)))
-                ) {
-                    listeners.forEach((listener) => listener());
-                }
-            });
+            // 매칭 규칙은 collectAffectedPlainFieldListeners 에 일원화 (배치 경로와 공유)
+            // Matching rules unified in collectAffectedPlainFieldListeners (shared with batch path)
+            this.collectAffectedPlainFieldListeners(
+                fieldStr,
+                oldValue,
+                value,
+            ).forEach((listener) => listener());
 
             // 전역 구독자들 알림 / Notify global subscribers
             if (this.globalListeners.size > 0) {
@@ -780,7 +850,7 @@ export class FieldStore<T extends Record<string, any>> {
                 value,
             );
 
-            if (JSON.stringify(field.value) !== JSON.stringify(newRootValue)) {
+            if (!deepEqual(field.value, newRootValue)) {
                 field.value = newRootValue;
                 this.updateDirtyForField(rootFieldStr, newRootValue);
 
@@ -790,36 +860,14 @@ export class FieldStore<T extends Record<string, any>> {
                 });
 
                 // Dot notation 구독자들 수집
-                this.dotNotationListeners.forEach(
-                    (listeners, subscribedPath) => {
-                        if (subscribedPath === fieldName) {
-                            listeners.forEach((listener) =>
-                                affectedListeners.add(listener),
-                            );
-                        }
-                        // 배열 필드나 .length 구독자들에게 알림
-                        else if (subscribedPath === `${rootFieldStr}.length`) {
-                            const oldLength = Array.isArray(oldRootValue)
-                                ? oldRootValue.length
-                                : 0;
-                            const newLength = Array.isArray(newRootValue)
-                                ? newRootValue.length
-                                : 0;
-
-                            if (oldLength !== newLength) {
-                                listeners.forEach((listener) =>
-                                    affectedListeners.add(listener),
-                                );
-                            }
-                        }
-                        // 부모 경로가 변경된 경우 하위 구독자들도 알림
-                        else if (subscribedPath.startsWith(`${fieldName}.`)) {
-                            listeners.forEach((listener) =>
-                                affectedListeners.add(listener),
-                            );
-                        }
-                    },
-                );
+                // setValue 와 동일한 매칭 규칙을 공유하여 단건/배치 동작 불일치를 제거
+                // Shares the exact matching rules with setValue to remove single/batch divergence
+                this.collectAffectedDotListeners(
+                    fieldName,
+                    rootFieldStr,
+                    oldRootValue,
+                    newRootValue,
+                ).forEach((listener) => affectedListeners.add(listener));
             }
         } else {
             // 일반 필드 처리
@@ -840,7 +888,7 @@ export class FieldStore<T extends Record<string, any>> {
             }
 
             // 값이 실제로 변경된 경우에만 리스너 수집
-            if (JSON.stringify(oldValue) !== JSON.stringify(value)) {
+            if (!deepEqual(oldValue, value)) {
                 this.updateDirtyForField(fieldName, value);
                 const field = this.fields.get(fieldName as keyof T);
                 if (field) {
@@ -852,110 +900,14 @@ export class FieldStore<T extends Record<string, any>> {
 
                 const fieldStr = fieldName as string;
 
-                // Dot notation 구독자들 수집 (setValue와 동일한 로직)
-                this.dotNotationListeners.forEach(
-                    (listeners, subscribedPath) => {
-                        // 1. 정확히 일치하는 경로
-                        if (subscribedPath === fieldStr) {
-                            listeners.forEach((listener) =>
-                                affectedListeners.add(listener),
-                            );
-                        }
-                        // 2. 배열 필드나 .length 구독자들에게 알림
-                        else if (subscribedPath === `${fieldStr}.length`) {
-                            const oldLength = Array.isArray(oldValue)
-                                ? oldValue.length
-                                : 0;
-                            const newLength = Array.isArray(value)
-                                ? value.length
-                                : 0;
-                            if (
-                                oldLength !== newLength ||
-                                (!oldValue && value)
-                            ) {
-                                listeners.forEach((listener) =>
-                                    affectedListeners.add(listener),
-                                );
-                            }
-                        }
-                        // 3. 객체 필드 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
-                        else if (
-                            subscribedPath.startsWith(fieldStr + ".") &&
-                            typeof value === "object" &&
-                            value !== null &&
-                            !Array.isArray(value)
-                        ) {
-                            const childPath = subscribedPath.substring(
-                                fieldStr.length + 1,
-                            );
-                            const oldChildValue =
-                                oldValue && typeof oldValue === "object"
-                                    ? getNestedValue(oldValue, childPath)
-                                    : undefined;
-                            const newChildValue = getNestedValue(
-                                value,
-                                childPath,
-                            );
-
-                            if (
-                                JSON.stringify(oldChildValue) !==
-                                JSON.stringify(newChildValue)
-                            ) {
-                                listeners.forEach((listener) =>
-                                    affectedListeners.add(listener),
-                                );
-                            }
-                        }
-                        // 4. 배열 전체 교체 시 실제로 값이 변경된 개별 필드 구독자들에게만 알림
-                        else if (
-                            Array.isArray(value) &&
-                            Array.isArray(oldValue) &&
-                            subscribedPath.startsWith(`${fieldStr}.`)
-                        ) {
-                            const pathParts = subscribedPath.split(".");
-                            if (
-                                pathParts.length >= 2 &&
-                                pathParts[0] === fieldStr
-                            ) {
-                                const index = parseInt(pathParts[1]);
-                                if (!isNaN(index) && index >= 0) {
-                                    const pathAfterIndex = pathParts
-                                        .slice(1)
-                                        .join(".");
-                                    const oldItemValue = getNestedValue(
-                                        oldValue,
-                                        pathAfterIndex,
-                                    );
-                                    const newItemValue = getNestedValue(
-                                        value,
-                                        pathAfterIndex,
-                                    );
-
-                                    if (
-                                        JSON.stringify(oldItemValue) !==
-                                        JSON.stringify(newItemValue)
-                                    ) {
-                                        listeners.forEach((listener) =>
-                                            affectedListeners.add(listener),
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                        // 5. 배열이 새로 생성되거나 삭제된 경우
-                        else if (
-                            subscribedPath.startsWith(`${fieldStr}.`) &&
-                            ((Array.isArray(value) &&
-                                !Array.isArray(oldValue)) ||
-                                (!Array.isArray(value) &&
-                                    Array.isArray(oldValue)))
-                        ) {
-                            listeners.forEach((listener) =>
-                                affectedListeners.add(listener),
-                            );
-                        }
-                    },
-                );
+                // Dot notation 구독자들 수집
+                // setValue 와 동일한 매칭 규칙을 공유하여 단건/배치 동작 불일치를 제거
+                // Shares the exact matching rules with setValue to remove single/batch divergence
+                this.collectAffectedPlainFieldListeners(
+                    fieldStr,
+                    oldValue,
+                    value,
+                ).forEach((listener) => affectedListeners.add(listener));
             }
         }
     }
@@ -1100,7 +1052,7 @@ export class FieldStore<T extends Record<string, any>> {
         prevParentValues?: Map<string, any>,
     ): void {
         // 값이 실제로 변경되지 않았으면 알림하지 않음 / Skip notification if value hasn't actually changed
-        if (JSON.stringify(value) === JSON.stringify(prevValue)) {
+        if (deepEqual(value, prevValue)) {
             return;
         }
 

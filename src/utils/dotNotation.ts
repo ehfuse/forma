@@ -28,6 +28,12 @@
  */
 
 /**
+ * 프로토타입 오염을 유발할 수 있는 위험 키 | Dangerous keys that can cause prototype pollution
+ * (CWE-1321) setNestedValue/getNestedValue 경로에서 차단 | Blocked in setNestedValue/getNestedValue paths
+ */
+const FORBIDDEN_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+
+/**
  * dot notation으로 중첩 객체의 값을 가져오는 함수 | Function to get nested object values using dot notation
  * @param obj 대상 객체 | Target object
  * @param path dot notation 경로 (예: "user.profile.name") | Dot notation path (e.g., "user.profile.name")
@@ -40,11 +46,25 @@
  * ```
  */
 export function getNestedValue(obj: any, path: string): any {
+    if (obj === null || obj === undefined) {
+        return undefined;
+    }
+
     if (!path.includes(".")) {
+        if (FORBIDDEN_KEYS.has(path)) {
+            return undefined;
+        }
         return obj[path];
     }
 
     const keys = path.split(".");
+
+    // 프로토타입 오염 방지: 위험 키가 포함된 경로는 접근 차단
+    // Prevent prototype pollution: block paths containing dangerous keys
+    if (keys.some((k) => FORBIDDEN_KEYS.has(k))) {
+        return undefined;
+    }
+
     let current = obj;
 
     for (let i = 0; i < keys.length; i++) {
@@ -81,11 +101,21 @@ export function getNestedValue(obj: any, path: string): any {
  */
 export function setNestedValue(obj: any, path: string, value: any): any {
     if (!path.includes(".")) {
+        if (FORBIDDEN_KEYS.has(path)) {
+            return obj;
+        }
         const result = { ...obj, [path]: value };
         return result;
     }
 
     const keys = path.split(".");
+
+    // 프로토타입 오염 방지: 위험 키가 포함된 경로는 변경 없이 원본 반환
+    // Prevent prototype pollution: return original unchanged if path contains dangerous keys
+    if (keys.some((k) => FORBIDDEN_KEYS.has(k))) {
+        return obj;
+    }
+
     const result = Array.isArray(obj) ? [...obj] : { ...obj }; // 배열 타입 보존 | Preserve array type
     let current = result;
 
@@ -99,9 +129,6 @@ export function setNestedValue(obj: any, path: string, value: any): any {
             typeof current[key] !== "object"
         ) {
             current[key] = {};
-            console.log(
-                `📝 새 객체 생성: ${key} | Creating new object: ${key}`
-            );
         } else {
             // 배열 타입 보존하면서 복사 | Copy while preserving array type
             current[key] = Array.isArray(current[key])

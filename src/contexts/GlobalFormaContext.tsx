@@ -152,6 +152,7 @@ export const GlobalFormaContext = createContext<GlobalFormaContextType>({
 export function GlobalFormaProvider({
     children,
     storagePrefix,
+    cleanupDelay,
 }: GlobalFormaProviderProps) {
     // formId별 FieldStore 인스턴스들을 관리하는 Map | Map managing FieldStore instances by formId
     const storesRef = useRef<Map<string, FieldStore<any>>>(new Map());
@@ -171,8 +172,20 @@ export function GlobalFormaProvider({
     );
     // formId별 영구 보존 플래그 (autoCleanup: false인 경우 true) | Persist forever flag by formId (true when autoCleanup: false)
     const persistForeverRef = useRef<Map<string, boolean>>(new Map());
-    // cleanup 지연 시간 (밀리초) - 리렌더링 대기 시간 | Cleanup delay time (milliseconds) - wait for re-rendering
-    const CLEANUP_DELAY_MS = 100;
+    // cleanup 지연 시간 (밀리초) - 언마운트→재마운트 흡수 시간 | Cleanup delay (ms) - absorbs unmount→remount gaps
+    // 기본 3000ms: 라우팅 전환·Suspense·네트워크 지연으로 참조가 잠시 끊겼다가
+    // 다시 연결되는 경우에도 store(폼 값)가 보존되도록 보수적으로 큰 마진을 둔다.
+    // 메모리 회수가 약간 늦어지더라도 폼 값 손실을 막는 것을 우선한다.
+    // Default 3000ms: conservatively keeps the store (form values) alive across brief ref gaps
+    // from routing transitions, Suspense, or network latency; prioritizes not losing
+    // form values over reclaiming memory promptly.
+    // cleanupDelay prop 으로 앱별 조정 가능 | Adjustable per app via cleanupDelay prop.
+    // ref 로 보관해 decrementRef 클로저가 항상 최신 값을 읽도록 한다 | Keep in a ref so decrementRef reads the latest value.
+    const DEFAULT_CLEANUP_DELAY_MS = 3000;
+    const cleanupDelayRef = useRef<number>(
+        cleanupDelay ?? DEFAULT_CLEANUP_DELAY_MS,
+    );
+    cleanupDelayRef.current = cleanupDelay ?? DEFAULT_CLEANUP_DELAY_MS;
 
     // ========== 모달 스택 관리 상태 ==========
     // openModalIds 는 외부 노출도 없고 내부에서도 length 만 보면 되므로 useState 가 아닌
@@ -409,7 +422,7 @@ export function GlobalFormaProvider({
                     } else {
                         cleanupTimers.delete(formId);
                     }
-                }, CLEANUP_DELAY_MS);
+                }, cleanupDelayRef.current);
 
                 cleanupTimers.set(formId, timer);
             }

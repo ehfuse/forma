@@ -38,6 +38,16 @@ export interface GlobalFormaProviderProps {
     children: ReactNode;
     /** localStorage 키 prefix (앱별 구분용) | localStorage key prefix (for app separation) */
     storagePrefix?: string;
+    /**
+     * autoCleanup 참조가 0이 된 후 store 를 실제로 정리하기까지의 지연 시간 (ms, 기본값: 3000)
+     * Delay (ms) before actually destroying a store after its autoCleanup refs reach 0 (default: 3000)
+     *
+     * 라우팅 전환·Suspense·네트워크 지연 등으로 컴포넌트가 잠시 언마운트되었다가
+     * 다시 마운트되는 동안 store 가 삭제되지 않도록 흡수 시간을 제공한다.
+     * Gives a grace window so the store survives brief unmount→remount gaps
+     * caused by routing transitions, Suspense, or network latency.
+     */
+    cleanupDelay?: number;
 }
 
 /**

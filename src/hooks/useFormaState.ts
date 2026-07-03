@@ -18,6 +18,7 @@ import {
 } from "react";
 import { FieldStore } from "../core/FieldStore";
 import { devWarn, mergeActions } from "../utils";
+import { isBrowser } from "../utils/environment";
 import { FormChangeEvent, ActionContext, Actions } from "../types/form";
 import {
     PersistConfig,
@@ -27,6 +28,7 @@ import {
     hasPersistedData,
     normalizePersistConfig,
     debounce,
+    type DebouncedFunction,
 } from "../utils/persist";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 
@@ -340,28 +342,59 @@ export function useFormaState<T extends Record<string, any>>(
     }, [store]); // store 의존성 추가
 
     // Persist: 디바운스된 저장 함수 생성 | Create debounced save function
-    const debouncedSaveRef = useRef<((values: T) => void) | null>(null);
+    const debouncedSaveRef = useRef<DebouncedFunction<
+        (values: T) => void
+    > | null>(null);
 
+    // Persist: 디바운스 저장 + 구독 + 이탈/언마운트 시 flush
+    // Persist: debounced save + subscription + flush on unmount/page-hide
+    // 하나의 effect 로 묶어 debounce 함수 생성과 flush 시점을 동일한 라이프사이클에 둔다.
+    // 이렇게 하면 언마운트나 탭 종료 직전의 마지막 변경이 debounce 대기 중에 유실되지 않는다.
+    // Keeping creation and flush in one effect ensures the last change isn't lost
+    // while still pending in the debounce window on unmount or tab close.
     useEffect(() => {
-        if (!persistConfig) return;
+        if (!persistConfig) {
+            debouncedSaveRef.current = null;
+            return;
+        }
 
         const debounceTime = persistConfig.debounce ?? 300;
-        debouncedSaveRef.current = debounce((values: T) => {
+        const debouncedSave = debounce((values: T) => {
             savePersistedData(persistConfig, values, storagePrefix);
         }, debounceTime);
-    }, [persistConfig, storagePrefix]);
-
-    // Persist: 값 변경 시 저장 | Save on value change
-    useEffect(() => {
-        if (!persistConfig || !debouncedSaveRef.current) return;
+        debouncedSaveRef.current = debouncedSave;
 
         const unsubscribe = store.subscribeGlobal(() => {
-            const currentValues = store.getValues();
-            debouncedSaveRef.current?.(currentValues);
+            debouncedSave(store.getValues());
         });
 
-        return unsubscribe;
-    }, [store, persistConfig]);
+        // 페이지 이탈/백그라운드 전환 시 대기 중인 저장을 즉시 실행
+        // Flush pending save when the page is hidden or being unloaded.
+        // visibilitychange(hidden) + pagehide 가 beforeunload 보다 신뢰도가 높다(특히 모바일).
+        const flush = () => debouncedSave.flush();
+        const handleVisibility = () => {
+            if (document.visibilityState === "hidden") flush();
+        };
+
+        if (isBrowser()) {
+            document.addEventListener("visibilitychange", handleVisibility);
+            window.addEventListener("pagehide", flush);
+        }
+
+        return () => {
+            unsubscribe();
+            if (isBrowser()) {
+                document.removeEventListener(
+                    "visibilitychange",
+                    handleVisibility,
+                );
+                window.removeEventListener("pagehide", flush);
+            }
+            // 언마운트 시 대기 중인 마지막 저장을 즉시 반영 (손실 방지)
+            // Flush the pending save on unmount so the last change is persisted.
+            debouncedSave.flush();
+        };
+    }, [store, persistConfig, storagePrefix]);
 
     // Persist: clearPersisted 함수 | clearPersisted function
     const clearPersisted = useCallback(() => {

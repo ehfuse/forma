@@ -29,7 +29,7 @@
 import { useEffect, useCallback, useRef, useMemo, useContext } from "react";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 import { UseModalProps, UseModalReturn } from "../types/modal";
-import { useGlobalFormaState } from "./useGlobalFormaState";
+import { useFieldSubscription } from "./useFormaState";
 
 /**
  * 모달 고유 ID 생성 함수
@@ -102,15 +102,72 @@ export function useModal({
         [providedModalId]
     );
 
-    // 전역 상태로 모달 열림 상태 관리 (reactive!)
-    const state = useGlobalFormaState<{ isOpen: boolean }>({
-        stateId: `__modal_${modalId}__`,
-        initialValues: { isOpen: initialOpen },
-    });
+    const context = useContext(GlobalFormaContext);
 
-    const isOpen = state.useValue("isOpen");
+    // Context가 제대로 설정되지 않았을 때 명확한 에러 표시 (기존 useGlobalFormaState 경유와 동일한 안내)
+    // Show clear error when Context is not properly configured
+    if (!context || !context.getOrCreateStore) {
+        throw new Error(
+            `
+🚨 GlobalFormaProvider 설정 오류 | Configuration Error
 
-    const { appendOpenModal, removeOpenModal } = useContext(GlobalFormaContext);
+GlobalFormaProvider가 App.tsx에 설정되지 않았습니다!
+GlobalFormaProvider is not configured in App.tsx!
+
+해결 방법 | Solution:
+1. App.tsx 파일에서 GlobalFormaProvider로 컴포넌트를 감싸주세요.
+2. import { GlobalFormaProvider } from '@/forma';
+3. <GlobalFormaProvider><YourApp /></GlobalFormaProvider>
+
+Details: GlobalFormaContext must be used within GlobalFormaProvider (modalId: ${modalId})
+        `.trim()
+        );
+    }
+
+    const {
+        appendOpenModal,
+        removeOpenModal,
+        getOrCreateStore,
+        incrementRef,
+        decrementRef,
+        validateAndStoreAutoCleanupSetting,
+    } = context;
+
+    // 모달 상태용 글로벌 스토어 ID (같은 modalId 는 같은 스토어 공유) / global store id for the modal state
+    const stateId = `__modal_${modalId}__`;
+
+    // autoCleanup 설정 일관성 검증 (기존과 동일하게 항상 true) / autoCleanup consistency (always true, as before)
+    validateAndStoreAutoCleanupSetting(stateId, true);
+
+    // 모달 열림 상태 전용 글로벌 스토어 — 전체 useGlobalFormaState 표면 대신
+    // 경량 개별 필드 구독만 사용한다 (모달당 렌더 비용 대폭 절감)
+    // Global store for the open state — a lightweight single-field subscription
+    // instead of the full useGlobalFormaState surface
+    const store = getOrCreateStore<{ isOpen: boolean }>(stateId);
+
+    // 초기 열림 상태 시딩 — 컴포넌트당 1회, 스토어가 비어있을 때만 (공유 시 첫 컴포넌트만 수행)
+    // Seed the initial open state — once per component, only when the store is empty
+    const seededRef = useRef(false);
+    if (!seededRef.current) {
+        seededRef.current = true;
+        if (Object.keys(store.getValues()).length === 0) {
+            store.setInitialValues({ isOpen: initialOpen });
+            store.setValue("isOpen", initialOpen);
+        }
+    }
+
+    // isOpen 경량 구독 (isOpen 변경 시에만 리렌더) / lightweight isOpen subscription
+    const isOpen = useFieldSubscription<boolean>(store, "isOpen");
+
+    // 참조 카운팅을 통한 자동 정리 관리 (마운트 시 한 번만 실행)
+    // Auto cleanup management through reference counting (once on mount)
+    useEffect(() => {
+        incrementRef(stateId, true);
+        return () => {
+            decrementRef(stateId, true);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // 마운트 시 한 번만 실행 (기존 useGlobalFormaState 와 동일한 시맨틱)
 
     // 이미 등록된 모달인지 추적
     const isRegisteredRef = useRef(false);
@@ -124,13 +181,13 @@ export function useModal({
     // 모달 열기
     const open = useCallback(() => {
         if (!isOpen) {
-            state.setValue("isOpen", true);
+            store.setValue("isOpen", true);
             if (!isRegisteredRef.current) {
                 appendOpenModal(modalId);
                 isRegisteredRef.current = true;
             }
         }
-    }, [isOpen, modalId, appendOpenModal, state]);
+    }, [isOpen, modalId, appendOpenModal, store]);
 
     // 모달 닫기
     const close = useCallback(() => {
@@ -142,13 +199,13 @@ export function useModal({
                 // closeLastModal -> modal:close 이벤트 발생 -> handleCloseEvent 에서 state.setValue("isOpen", false) 호출
             } else {
                 // 등록되지 않은 경우 (open()이 호출되지 않고 직접 닫히는 경우) 직접 닫기
-                state.setValue("isOpen", false);
+                store.setValue("isOpen", false);
                 if (onCloseRef.current) {
                     onCloseRef.current();
                 }
             }
         }
-    }, [isOpen, state]);
+    }, [isOpen, store]);
 
     // 모달 토글
     const toggle = useCallback(() => {
@@ -174,7 +231,7 @@ export function useModal({
         // 외부에서 모달 닫기 요청을 처리하는 이벤트 리스너
         const handleCloseEvent = () => {
             // 이벤트가 수신될때는 popstate가 발생한 것이므로 히스토리는 이미 삭제된 상태라서 닫기만 실행
-            state.setValue("isOpen", false);
+            store.setValue("isOpen", false);
 
             // 모달 제거
             if (isRegisteredRef.current) {
@@ -197,7 +254,7 @@ export function useModal({
                 handleCloseEvent
             );
         };
-    }, [modalId, removeOpenModal, state]);
+    }, [modalId, removeOpenModal, store]);
 
     return {
         isOpen,

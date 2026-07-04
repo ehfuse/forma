@@ -102,3 +102,21 @@ describe("deepEqual — improvements over stringify", () => {
         assert.equal(deepEqual(a, b), true);
     });
 });
+
+// ── F5: meaningfulKeys 이중 배열 할당 제거 후 카운트 방식 엣지 고정 ──
+// Pins edge cases of the allocation-free key-count comparison (F5)
+describe("deepEqual — key-count edges (allocation-free implementation)", () => {
+    test("b has extra non-meaningful key → still equal", () => {
+        assert.equal(deepEqual({ x: 1 }, { x: 1, y: undefined }), true);
+        assert.equal(deepEqual({ x: 1 }, { x: 1, f: () => {} }), true);
+    });
+    test("a has extra meaningful key missing in b → not equal", () => {
+        assert.equal(deepEqual({ x: 1, y: 2 }, { x: 1 }), false);
+    });
+    test("b has extra meaningful key missing in a → not equal", () => {
+        assert.equal(deepEqual({ x: 1 }, { x: 1, y: 2 }), false);
+    });
+    test("a meaningful vs b non-meaningful on same key → not equal", () => {
+        assert.equal(deepEqual({ x: 1 }, { x: undefined }), false);
+    });
+});

@@ -27,6 +27,8 @@
  */
 
 export { FieldStore } from "./FieldStore";
+// hooks 가 사용하는 안정 API 묶음 타입 / stable imperative API type used by hooks
+export type { FieldStoreApi } from "./FieldStore";
 
 // 향후 추가될 핵심 클래스들
 // export { FormValidator } from './FormValidator';

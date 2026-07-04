@@ -33,7 +33,11 @@ export { useFormModified } from "./src/hooks/useFormModified";
 export { useGlobalForm } from "./src/hooks/useGlobalForm";
 export { useRegisterGlobalForm } from "./src/hooks/useRegisterGlobalForm";
 export { useUnregisterGlobalForm } from "./src/hooks/useUnregisterGlobalForm";
-export { useFormaState, useFieldSubscription } from "./src/hooks/useFormaState";
+export {
+    useFormaState,
+    useFieldSubscription,
+    useStoreValue,
+} from "./src/hooks/useFormaState";
 export { useGlobalFormaState } from "./src/hooks/useGlobalFormaState";
 export { useRegisterGlobalFormaState } from "./src/hooks/useRegisterGlobalFormaState";
 export { useUnregisterGlobalFormaState } from "./src/hooks/useUnregisterGlobalFormaState";
@@ -53,6 +57,7 @@ export {
 
 // ===== Core Classes =====
 export { FieldStore } from "./src/core/FieldStore";
+export type { FieldStoreApi } from "./src/core/FieldStore";
 
 // ===== Utility Functions =====
 export { getNestedValue, setNestedValue } from "./src/utils/dotNotation";

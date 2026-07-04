@@ -27,7 +27,7 @@
  * SOFTWARE.
  */
 
-import { getNestedValue, setNestedValue } from "../utils/dotNotation";
+import { getNestedValue, setNestedValue, parsePath } from "../utils/dotNotation";
 import { devError } from "../utils/environment";
 import { deepEqual } from "../utils/deepEqual";
 
@@ -43,15 +43,46 @@ import { deepEqual } from "../utils/deepEqual";
  */
 type WatchCallback = (value: any, prevValue: any) => void;
 
+/**
+ * hooks 가 사용하는 store 의 명령형 API 묶음 / Imperative store API surface used by hooks
+ * 모든 메서드는 pre-bound 이며 store 수명 동안 식별자가 안정적이다.
+ * All methods are pre-bound; identities are stable for the store's lifetime.
+ */
+export interface FieldStoreApi<T extends Record<string, any>> {
+    setValue: (fieldName: keyof T | string, value: any) => void; // 필드 값 설정
+    setValues: (newValues: Partial<T>) => void; // 여러 값 일괄 설정 (watch 알림 포함)
+    getValue: (fieldName: keyof T | string) => any; // 필드 값 조회
+    getValues: () => T; // 전체 값 스냅샷 조회 (캐시 공유 객체 — 변형 금지)
+    setBatch: (updates: Record<string, any>) => void; // 여러 값 일괄 설정 (배치)
+    reset: () => void; // 초기값으로 리셋
+    hasField: (path: string) => boolean; // 필드 존재 여부
+    removeField: (path: string) => void; // 필드 제거
+    subscribe: (
+        fieldName: keyof T | string,
+        listener: () => void,
+    ) => () => void; // 필드 구독 (해제 함수 반환)
+    setInitialValues: (newInitialValues: T) => void; // 초기값 재설정
+    refreshFields: (prefix: string) => void; // prefix 하위 구독자 강제 새로고침
+}
+
 export class FieldStore<T extends Record<string, any>> {
     private fields: Map<keyof T, { value: any; listeners: Set<() => void> }> =
         new Map();
     private dotNotationListeners: Map<string, Set<() => void>> = new Map(); // Dot notation 구독자 / Dot notation subscribers
+    private dotPathIndex: Map<string, Set<string>> = new Map(); // 루트필드 → 구독 dot 경로 역인덱스 / root field → subscribed dot paths reverse index
     private initialValues: T;
     private dirtyFields: Set<string> = new Set();
     private isInitialEmpty: boolean;
     private globalListeners = new Set<() => void>();
     private watchers: Map<string, Set<WatchCallback>> = new Map(); // Watch 콜백 관리 / Watch callback management
+    private wildcardWatcherPaths: Set<string> = new Set(); // 와일드카드(*) watcher 경로 별도 목록 / separate list of wildcard watcher paths
+    private valuesVersion = 0; // 값 변경 세대 카운터 (단조 증가) / monotonically increasing mutation version
+    private cachedValues: T | null = null; // getValues() 스냅샷 캐시 / cached getValues() snapshot
+    private cachedValuesVersion = -1; // 캐시가 만들어진 세대 / version the cache was built at
+    private api: FieldStoreApi<T> | null = null; // getApi() 지연 생성 캐시 / lazily created stable API object
+
+    /** @internal 테스트 전용: collect 함수가 검사한 구독 경로 수 누적 / test-only counter of scanned subscribed paths */
+    public __debugDotScanCount = 0;
 
     constructor(initialValues: T) {
         this.initialValues = { ...initialValues };
@@ -67,6 +98,47 @@ export class FieldStore<T extends Record<string, any>> {
 
     private areValuesEqual(a: any, b: any): boolean {
         return deepEqual(a, b);
+    }
+
+    /**
+     * 값 변경 세대를 올리고 getValues() 스냅샷 캐시를 무효화한다.
+     * Bump the mutation version and invalidate the getValues() snapshot cache.
+     * 모든 쓰기 지점(setValue/setValueWithoutNotify/reset/setInitialValues/
+     * removeField/refreshFields/subscribe 필드 생성/destroy)에서 호출해야 한다.
+     * Must be called from every write site.
+     */
+    private bumpValuesVersion(): void {
+        this.valuesVersion++;
+        this.cachedValues = null;
+    }
+
+    /**
+     * dot 구독 경로를 루트필드 역인덱스에 등록한다.
+     * Register a subscribed dot path in the root-field reverse index.
+     */
+    private indexDotPath(subscribedPath: string): void {
+        const root = parsePath(subscribedPath).root;
+        let bucket = this.dotPathIndex.get(root);
+        if (!bucket) {
+            bucket = new Set();
+            this.dotPathIndex.set(root, bucket);
+        }
+        bucket.add(subscribedPath);
+    }
+
+    /**
+     * dot 구독 경로를 루트필드 역인덱스에서 제거한다 (빈 버킷은 정리).
+     * Remove a subscribed dot path from the reverse index (cleaning empty buckets).
+     */
+    private unindexDotPath(subscribedPath: string): void {
+        const root = parsePath(subscribedPath).root;
+        const bucket = this.dotPathIndex.get(root);
+        if (bucket) {
+            bucket.delete(subscribedPath);
+            if (bucket.size === 0) {
+                this.dotPathIndex.delete(root);
+            }
+        }
     }
 
     /**
@@ -97,7 +169,20 @@ export class FieldStore<T extends Record<string, any>> {
     ): Set<() => void> {
         const affected = new Set<() => void>();
 
-        this.dotNotationListeners.forEach((listeners, subscribedPath) => {
+        // 역인덱스: 매칭 규칙 1~4 는 모두 subscribedPath 의 루트가 rootFieldStr 와
+        // 같아야만 성립하므로, 해당 루트 버킷만 검사하면 전체 스캔과 결과가 동일하다.
+        // Reverse index: every matching rule (1-4) requires the subscribed path to
+        // share rootFieldStr as its root, so scanning only that bucket is equivalent
+        // to scanning the whole map.
+        const bucket = this.dotPathIndex.get(rootFieldStr);
+        if (!bucket) {
+            return affected;
+        }
+
+        bucket.forEach((subscribedPath) => {
+            this.__debugDotScanCount++;
+            const listeners = this.dotNotationListeners.get(subscribedPath);
+            if (!listeners) return;
             const add = () =>
                 listeners.forEach((listener) => affected.add(listener));
 
@@ -178,7 +263,22 @@ export class FieldStore<T extends Record<string, any>> {
     ): Set<() => void> {
         const affected = new Set<() => void>();
 
-        this.dotNotationListeners.forEach((listeners, subscribedPath) => {
+        // 역인덱스: 매칭 규칙 1~5 는 모두 subscribedPath 가 fieldStr 자체이거나
+        // "fieldStr." 로 시작해야만 성립 → 루트가 fieldStr 인 버킷만 검사하면 된다.
+        // (일반 필드 "a" 변경이 "a." 하위 dot 구독자에게 닿는 엣지 포함 —
+        //  "a.b" 는 루트 "a" 버킷에 들어있다)
+        // Reverse index: rules 1-5 all require subscribedPath === fieldStr or a
+        // "fieldStr." prefix, so the bucket keyed by fieldStr covers every match,
+        // including dot subscribers under "a." for a plain-field "a" change.
+        const bucket = this.dotPathIndex.get(fieldStr);
+        if (!bucket) {
+            return affected;
+        }
+
+        bucket.forEach((subscribedPath) => {
+            this.__debugDotScanCount++;
+            const listeners = this.dotNotationListeners.get(subscribedPath);
+            if (!listeners) return;
             const add = () =>
                 listeners.forEach((listener) => affected.add(listener));
 
@@ -219,7 +319,8 @@ export class FieldStore<T extends Record<string, any>> {
                 Array.isArray(oldValue) &&
                 subscribedPath.startsWith(`${fieldStr}.`)
             ) {
-                const pathParts = subscribedPath.split(".");
+                // 캐시 파서 사용 (공유 객체 — 변형 금지) / memoized parse (shared, read-only)
+                const pathParts = parsePath(subscribedPath).segments;
                 if (pathParts.length >= 2 && pathParts[0] === fieldStr) {
                     const index = parseInt(pathParts[1]);
                     if (!isNaN(index) && index >= 0) {
@@ -298,9 +399,22 @@ export class FieldStore<T extends Record<string, any>> {
         }
 
         // dot notation이 포함된 경우 중첩 객체 접근 / Access nested object for dot notation
+        // 전체 스냅샷(getValues, O(전체필드)) 대신 루트 필드 값만 꺼내 하강한다.
+        // 루트만 얕은 래퍼로 감싸 기존 getNestedValue 의미(금지키 차단, "a.length"
+        // 미존재 시 0 반환 엣지)를 byte 단위로 보존한다. 반환 참조는 저장된 루트 값
+        // 내부를 그대로 가리키므로 기존과 동일하다 (getSnapshot 참조 안정성).
+        // Instead of building a full O(F) snapshot, descend from the root field value.
+        // A shallow one-key wrapper preserves getNestedValue semantics byte-for-byte
+        // (forbidden-key block, "a.length" → 0 edge). Returned references point into
+        // the stored root value exactly as before (getSnapshot reference stability).
         if (fieldNameStr.includes(".")) {
-            const values = this.getValues();
-            return getNestedValue(values, fieldNameStr);
+            const parsed = parsePath(fieldNameStr);
+            const field = this.fields.get(parsed.root as keyof T);
+            return getNestedValue(
+                { [parsed.root]: field?.value },
+                fieldNameStr,
+                parsed.segments,
+            );
         }
 
         // 일반 필드 접근 / Regular field access
@@ -332,6 +446,8 @@ export class FieldStore<T extends Record<string, any>> {
             if (!listeners) {
                 listeners = new Set();
                 this.dotNotationListeners.set(fieldNameStr, listeners);
+                // 루트필드 역인덱스 등록 / register in the root-field reverse index
+                this.indexDotPath(fieldNameStr);
             }
             listeners.add(listener);
 
@@ -349,6 +465,8 @@ export class FieldStore<T extends Record<string, any>> {
                     listeners.delete(listener);
                     if (listeners.size === 0) {
                         this.dotNotationListeners.delete(fieldNameStr);
+                        // 빈 Set 정리 시 역인덱스에서도 제거 / drop from reverse index on empty-Set cleanup
+                        this.unindexDotPath(fieldNameStr);
                     }
                 }
             };
@@ -363,6 +481,8 @@ export class FieldStore<T extends Record<string, any>> {
                 listeners: new Set(),
             };
             this.fields.set(fieldName as keyof T, field);
+            // 필드 생성도 스냅샷 키 집합을 바꾸는 쓰기다 / field creation changes the snapshot key set
+            this.bumpValuesVersion();
         }
         field.listeners.add(listener);
         return () => {
@@ -394,11 +514,15 @@ export class FieldStore<T extends Record<string, any>> {
 
         // dot notation이 포함된 경우 / For dot notation
         if (fieldNameStr.includes(".")) {
-            const rootField = fieldNameStr.split(".")[0] as keyof T;
-            const rootFieldStr = String(rootField);
+            // 캐시 파서로 세그먼트/루트/부모체인 재사용 / reuse memoized segments/root/parentChain
+            const parsed = parsePath(fieldNameStr);
+            const rootFieldStr = parsed.root;
+            const rootField = rootFieldStr as keyof T;
             const remainingPath = fieldNameStr.substring(
                 rootFieldStr.length + 1,
             );
+            // 루트 이하 경로 세그먼트 (캐시 파서 재사용) / segments below the root (memoized)
+            const remainingSegments = parsePath(remainingPath).segments;
 
             let field = this.fields.get(rootField);
             if (!field) {
@@ -407,6 +531,8 @@ export class FieldStore<T extends Record<string, any>> {
                     listeners: new Set(),
                 };
                 this.fields.set(rootField, field);
+                // 필드 생성 = 쓰기 → 스냅샷 캐시 무효화 / field creation invalidates snapshot cache
+                this.bumpValuesVersion();
             }
 
             const oldRootValue = field.value;
@@ -414,6 +540,7 @@ export class FieldStore<T extends Record<string, any>> {
                 field.value || {},
                 remainingPath,
                 value,
+                remainingSegments,
             );
 
             if (!deepEqual(field.value, newRootValue)) {
@@ -421,14 +548,25 @@ export class FieldStore<T extends Record<string, any>> {
                 const prevChildValue = getNestedValue(
                     field.value,
                     remainingPath,
+                    remainingSegments,
                 );
 
                 // ⭐ 변경 전 부모 경로들의 값 저장 (부모 watch용)
-                const prevParentValues = new Map<string, any>();
-                if (fieldNameStr.includes(".")) {
-                    const parts = fieldNameStr.split(".");
-                    for (let i = 1; i < parts.length; i++) {
-                        const parentPath = parts.slice(0, i).join(".");
+                // F3: 부모 체인에 watcher 가 실제로 있을 때만 수집한다.
+                // 와일드카드 watcher 가 하나라도 있으면 보수적으로 전부 수집.
+                // F3: collect only when a watcher exists for a parent path
+                // (conservatively collect all if any wildcard watcher exists).
+                let prevParentValues: Map<string, any> | undefined;
+                const hasWildcardWatcher =
+                    this.wildcardWatcherPaths.size > 0;
+                for (const parentPath of parsed.parentChain) {
+                    if (
+                        hasWildcardWatcher ||
+                        this.watchers.has(parentPath)
+                    ) {
+                        if (!prevParentValues) {
+                            prevParentValues = new Map();
+                        }
                         prevParentValues.set(
                             parentPath,
                             this.getValue(parentPath),
@@ -437,6 +575,8 @@ export class FieldStore<T extends Record<string, any>> {
                 }
 
                 field.value = newRootValue;
+                // 값 변경 = 쓰기 → 스냅샷 캐시 무효화 / value write invalidates snapshot cache
+                this.bumpValuesVersion();
                 this.updateDirtyForField(rootFieldStr, newRootValue);
 
                 // 루트 필드 구독자들 알림 / Notify root field subscribers
@@ -476,6 +616,8 @@ export class FieldStore<T extends Record<string, any>> {
                 listeners: new Set(),
             };
             this.fields.set(fieldName as keyof T, field);
+            // 필드 생성 = 쓰기 → 스냅샷 캐시 무효화 / field creation invalidates snapshot cache
+            this.bumpValuesVersion();
         }
 
         // 변경 게이트: setValue 는 의도적으로 빠른 참조비교를 사용한다.
@@ -488,6 +630,8 @@ export class FieldStore<T extends Record<string, any>> {
             const oldValue = field.value;
             const fieldStr = fieldName as string;
             field.value = value;
+            // 값 변경 = 쓰기 → 스냅샷 캐시 무효화 / value write invalidates snapshot cache
+            this.bumpValuesVersion();
             this.updateDirtyForField(fieldStr, value);
 
             // 해당 필드 구독자들 알림 / Notify field subscribers
@@ -516,15 +660,29 @@ export class FieldStore<T extends Record<string, any>> {
 
     /**
      * 모든 값 가져오기 / Get all values
+     * ⚠ 변경 없으면 같은 캐시 객체를 반환한다 — 호출부는 결과를 읽기 전용으로 다뤄야 한다.
+     *   (같은 세대 안에서 참조가 안정적이므로 getSnapshot 용도로 사용 가능)
+     * ⚠ Returns the SAME cached object until the next mutation — callers must treat
+     *   the result as read-only. Reference is stable within a version (getSnapshot-safe).
      * @returns 모든 필드 값을 포함한 객체 / Object containing all field values
      */
     getValues(): T {
+        // 세대가 그대로면 캐시 재사용 / reuse cache while the version is unchanged
+        if (
+            this.cachedValues !== null &&
+            this.cachedValuesVersion === this.valuesVersion
+        ) {
+            return this.cachedValues;
+        }
+
         const values: any = {};
         this.fields.forEach((field, key) => {
             // 와일드카드 구독을 위해 undefined 값을 그대로 유지
             // Keep undefined values as-is for wildcard subscriptions
             values[key] = field.value;
         });
+        this.cachedValues = values as T;
+        this.cachedValuesVersion = this.valuesVersion;
         return values as T;
     }
 
@@ -584,6 +742,8 @@ export class FieldStore<T extends Record<string, any>> {
         this.initialValues = { ...newInitialValues };
         this.isInitialEmpty = Object.keys(this.initialValues).length === 0;
         this.dirtyFields.clear();
+        // 필드 값 일괄 갱신 = 쓰기 → 스냅샷 캐시 무효화 / bulk write invalidates snapshot cache
+        this.bumpValuesVersion();
 
         // 기존 리스너를 보존하면서 값만 업데이트 / Update values while preserving existing listeners
         Object.keys(newInitialValues).forEach((key) => {
@@ -681,8 +841,15 @@ export class FieldStore<T extends Record<string, any>> {
      * @param path 필드 경로 (dot notation 지원) / Field path (supports dot notation)
      */
     removeField(path: string): void {
-        const currentValues = this.getValues();
-        const pathParts = path.split(".");
+        // getValues() 는 이제 공유 캐시 객체를 반환하므로, 최상위 컨테이너는
+        // 얕은 복사로 분리한 뒤 조작한다 (캐시 오염 방지).
+        // getValues() now returns a shared cached object; shallow-copy the top-level
+        // container before mutating so the cache is never corrupted.
+        const currentValues: any = { ...this.getValues() };
+        // 캐시 파서 사용 (공유 객체 — 변형 금지) / memoized parse (shared, read-only)
+        const pathParts = parsePath(path).segments;
+        // 필드 제거 = 쓰기 → 스냅샷 캐시 무효화 / removal invalidates snapshot cache
+        this.bumpValuesVersion();
 
         if (pathParts.length === 1) {
             // 루트 레벨 필드 제거 / Remove root level field
@@ -708,12 +875,12 @@ export class FieldStore<T extends Record<string, any>> {
 
         this.setValues(currentValues);
 
-        // 해당 필드의 구독자들에게 알림 / Notify subscribers of this field
-        this.dotNotationListeners.forEach((listeners, subscribedPath) => {
-            if (subscribedPath === path) {
-                listeners.forEach((listener) => listener());
-            }
-        });
+        // 해당 필드의 구독자들에게 알림 (정확 일치는 직접 조회로 충분)
+        // Notify subscribers of this exact path (direct lookup, no full scan)
+        const exactListeners = this.dotNotationListeners.get(path);
+        if (exactListeners) {
+            exactListeners.forEach((listener) => listener());
+        }
 
         // 전역 구독자들 알림 / Notify global subscribers
         if (this.globalListeners.size > 0) {
@@ -744,6 +911,11 @@ export class FieldStore<T extends Record<string, any>> {
      * @param prefix 새로고침할 필드 prefix (예: "address")
      */
     refreshFields(prefix: string): void {
+        // refreshFields 는 setValue 를 우회한 외부 in-place 변형 후 호출되는 API 이므로
+        // 스냅샷 캐시도 함께 무효화한다 (신선한 스냅샷 보장).
+        // refreshFields is called after external in-place mutations that bypass
+        // setValue, so invalidate the snapshot cache to guarantee freshness.
+        this.bumpValuesVersion();
         const prefixWithDot = prefix + ".";
 
         // 성능 최적화: 리스너들을 먼저 수집한 후 배치 실행
@@ -830,9 +1002,13 @@ export class FieldStore<T extends Record<string, any>> {
     ) {
         // dot notation이 포함된 경우
         if (fieldName.includes(".")) {
-            const rootField = fieldName.split(".")[0] as keyof T;
-            const rootFieldStr = String(rootField);
+            // 캐시 파서로 세그먼트/루트 재사용 / reuse memoized segments/root
+            const parsed = parsePath(fieldName);
+            const rootFieldStr = parsed.root;
+            const rootField = rootFieldStr as keyof T;
             const remainingPath = fieldName.substring(rootFieldStr.length + 1);
+            // 루트 이하 경로 세그먼트 (캐시 파서 재사용) / segments below the root (memoized)
+            const remainingSegments = parsePath(remainingPath).segments;
 
             let field = this.fields.get(rootField);
             if (!field) {
@@ -841,6 +1017,8 @@ export class FieldStore<T extends Record<string, any>> {
                     listeners: new Set(),
                 };
                 this.fields.set(rootField, field);
+                // 필드 생성 = 쓰기 → 스냅샷 캐시 무효화 / field creation invalidates snapshot cache
+                this.bumpValuesVersion();
             }
 
             const oldRootValue = field.value;
@@ -848,10 +1026,13 @@ export class FieldStore<T extends Record<string, any>> {
                 field.value || {},
                 remainingPath,
                 value,
+                remainingSegments,
             );
 
             if (!deepEqual(field.value, newRootValue)) {
                 field.value = newRootValue;
+                // 값 변경 = 쓰기 → 스냅샷 캐시 무효화 / value write invalidates snapshot cache
+                this.bumpValuesVersion();
                 this.updateDirtyForField(rootFieldStr, newRootValue);
 
                 // 루트 필드 구독자들 수집
@@ -886,6 +1067,9 @@ export class FieldStore<T extends Record<string, any>> {
                     field.value = value;
                 }
             }
+            // 참조 저장은 deepEqual 게이트와 무관하게 일어나므로 항상 무효화
+            // The (new) reference is stored regardless of the deepEqual gate → always invalidate
+            this.bumpValuesVersion();
 
             // 값이 실제로 변경된 경우에만 리스너 수집
             if (!deepEqual(oldValue, value)) {
@@ -916,6 +1100,8 @@ export class FieldStore<T extends Record<string, any>> {
      * 초기값으로 리셋 / Reset to initial values
      */
     reset() {
+        // 리셋은 다수 필드 쓰기 → 스냅샷 캐시 무효화 / reset writes many fields → invalidate snapshot cache
+        this.bumpValuesVersion();
         // Pure Zero-Config 모드인지 확인 (초기값이 빈 객체)
         const isPureZeroConfig = Object.keys(this.initialValues).length === 0;
 
@@ -990,6 +1176,12 @@ export class FieldStore<T extends Record<string, any>> {
 
         this.dirtyFields.clear();
 
+        // 직접 field.value 를 쓴 뒤이므로 알림 직전에 한 번 더 무효화
+        // (중간에 리스너가 캐시를 재구축했을 수 있음)
+        // Invalidate again right before notifying — a listener may have rebuilt
+        // the cache mid-reset while direct field.value writes were still pending.
+        this.bumpValuesVersion();
+
         // 모든 필드 리스너들에게 알림
         this.fields.forEach((field) => {
             field.listeners.forEach((listener) => listener());
@@ -1020,6 +1212,14 @@ export class FieldStore<T extends Record<string, any>> {
             this.watchers.set(path, new Set());
         }
 
+        // 와일드카드 패턴은 별도 목록에도 등록해 비-와일드카드 알림이
+        // watchers 전체 스캔을 하지 않게 한다 (F8).
+        // Track wildcard patterns separately so non-wildcard notifications
+        // never scan the whole watchers map (F8).
+        if (path.includes("*")) {
+            this.wildcardWatcherPaths.add(path);
+        }
+
         const watcherSet = this.watchers.get(path)!;
         watcherSet.add(callback);
 
@@ -1034,6 +1234,8 @@ export class FieldStore<T extends Record<string, any>> {
             watcherSet.delete(callback);
             if (watcherSet.size === 0) {
                 this.watchers.delete(path);
+                // 와일드카드 목록에서도 함께 정리 / drop from the wildcard list as well
+                this.wildcardWatcherPaths.delete(path);
             }
         };
     }
@@ -1051,6 +1253,12 @@ export class FieldStore<T extends Record<string, any>> {
         prevValue: any,
         prevParentValues?: Map<string, any>,
     ): void {
+        // watcher 가 하나도 없으면 즉시 종료 (deepEqual 비용도 절약)
+        // Fast exit when no watchers exist at all (also skips the deepEqual below)
+        if (this.watchers.size === 0) {
+            return;
+        }
+
         // 값이 실제로 변경되지 않았으면 알림하지 않음 / Skip notification if value hasn't actually changed
         if (deepEqual(value, prevValue)) {
             return;
@@ -1074,9 +1282,10 @@ export class FieldStore<T extends Record<string, any>> {
         // 2. 부모 경로들에게도 알림 / Notify parent paths
         // 예: filters.interval 변경 시 filters watcher도 트리거
         if (path.includes(".")) {
-            const parts = path.split(".");
-            for (let i = parts.length - 1; i > 0; i--) {
-                const parentPath = parts.slice(0, i).join(".");
+            // 캐시 파서의 부모체인 재사용 (직전 부모 → 루트 순회) / reuse memoized parent chain (nearest parent → root)
+            const parentChain = parsePath(path).parentChain;
+            for (let i = parentChain.length - 1; i >= 0; i--) {
+                const parentPath = parentChain[i];
                 const parentWatchers = this.watchers.get(parentPath);
 
                 if (parentWatchers && parentWatchers.size > 0) {
@@ -1103,20 +1312,22 @@ export class FieldStore<T extends Record<string, any>> {
 
         // 3. 와일드카드 패턴 매칭 / Wildcard pattern matching
         // todos.0.completed 변경 시 "todos.*.completed" 패턴도 트리거
-        this.watchers.forEach((watcherSet, watcherPath) => {
-            if (watcherPath.includes("*")) {
-                if (this.matchesWildcard(path, watcherPath)) {
-                    watcherSet.forEach((callback) => {
-                        try {
-                            callback(value, prevValue);
-                        } catch (error) {
-                            console.error(
-                                `Error in wildcard watcher for pattern "${watcherPath}" (triggered by "${path}"):`,
-                                error,
-                            );
-                        }
-                    });
-                }
+        // 별도 목록만 순회하므로 와일드카드가 없으면 비용 0 (F8)
+        // Iterates only the separate wildcard list — zero cost when none exist (F8)
+        this.wildcardWatcherPaths.forEach((watcherPath) => {
+            if (this.matchesWildcard(path, watcherPath)) {
+                const watcherSet = this.watchers.get(watcherPath);
+                if (!watcherSet) return;
+                watcherSet.forEach((callback) => {
+                    try {
+                        callback(value, prevValue);
+                    } catch (error) {
+                        console.error(
+                            `Error in wildcard watcher for pattern "${watcherPath}" (triggered by "${path}"):`,
+                            error,
+                        );
+                    }
+                });
             }
         });
     }
@@ -1128,8 +1339,9 @@ export class FieldStore<T extends Record<string, any>> {
      * @returns 매칭 여부 / Whether path matches pattern
      */
     private matchesWildcard(path: string, pattern: string): boolean {
-        const pathParts = path.split(".");
-        const patternParts = pattern.split(".");
+        // 캐시 파서 사용 (공유 객체 — 변형 금지) / memoized parse (shared, read-only)
+        const pathParts = parsePath(path).segments;
+        const patternParts = parsePath(pattern).segments;
 
         if (pathParts.length !== patternParts.length) {
             return false;
@@ -1165,12 +1377,44 @@ export class FieldStore<T extends Record<string, any>> {
     }
 
     /**
+     * store 의 명령형 API 묶음을 반환한다 (지연 생성 후 재사용).
+     * Return the store's imperative API surface (lazily created, then reused).
+     * 모든 메서드는 화살표 래퍼로 pre-bound 되어 store 수명 동안 식별자가 안정적이다
+     * — hooks 의 useCallback/useMemo deps 에 그대로 사용할 수 있다.
+     * Every method is pre-bound via arrow wrappers; identities are stable for the
+     * store's lifetime, safe for hooks' useCallback/useMemo deps.
+     */
+    getApi(): FieldStoreApi<T> {
+        if (this.api === null) {
+            this.api = {
+                setValue: (fieldName, value) => this.setValue(fieldName, value), // 필드 값 설정
+                setValues: (newValues) => this.setValues(newValues), // 여러 값 일괄 설정
+                getValue: (fieldName) => this.getValue(fieldName), // 필드 값 조회
+                getValues: () => this.getValues(), // 전체 값 스냅샷 (캐시 공유 — 읽기 전용)
+                setBatch: (updates) => this.setBatch(updates), // 배치 설정
+                reset: () => this.reset(), // 초기값으로 리셋
+                hasField: (path) => this.hasField(path), // 필드 존재 여부
+                removeField: (path) => this.removeField(path), // 필드 제거
+                subscribe: (fieldName, listener) =>
+                    this.subscribe(fieldName, listener), // 필드 구독
+                setInitialValues: (newInitialValues) =>
+                    this.setInitialValues(newInitialValues), // 초기값 재설정
+                refreshFields: (prefix) => this.refreshFields(prefix), // prefix 새로고침
+            };
+        }
+        return this.api;
+    }
+
+    /**
      * 리소스 정리 / Clean up resources
      */
     destroy() {
         this.fields.clear();
         this.globalListeners.clear();
         this.dotNotationListeners.clear();
+        this.dotPathIndex.clear(); // dot 경로 역인덱스 정리 / clear the dot-path reverse index
         this.watchers.clear();
+        this.wildcardWatcherPaths.clear(); // 와일드카드 watcher 목록 정리 / clear the wildcard watcher list
+        this.bumpValuesVersion(); // 스냅샷 캐시 무효화 / invalidate the snapshot cache
     }
 }

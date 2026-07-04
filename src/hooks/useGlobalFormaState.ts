@@ -250,21 +250,29 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // 완전히 빈 의존성 배열로 마운트 시 한 번만 실행
 
-    // actions를 동적으로 가져오는 getter 생성 / Create getter to dynamically fetch actions
+    // 최신 로컬 actions 를 ref 로 추적 — 인라인 객체가 렌더마다 새 참조로 와도
+    // Proxy 를 재생성하지 않는다 (P1: actions Proxy 는 store 당 1회 생성, 식별자 안정)
+    // Track the latest local actions via ref — inline objects no longer recreate the Proxy
+    const localActionsRef = useRef(actions);
+    localActionsRef.current = actions;
+
+    // actions를 동적으로 가져오는 getter 생성 (deps 가 모두 안정적이라 1회만 생성됨)
+    // Create getter to dynamically fetch actions (all deps stable — created once)
     const actionsGetter = useMemo(() => {
+        // 호출 시점의 유효 actions 집합 조회 (로컬 우선, 없으면 글로벌 최신)
+        // Resolve the effective actions at call time (local first, else latest global)
+        const resolveActions = () =>
+            localActionsRef.current || getActions(stateId) || {};
+
         return new Proxy({} as any, {
             get: (_target, prop) => {
-                // 항상 최신 글로벌 actions를 가져옴 / Always get the latest global actions
-                const currentGlobalActions = getActions(stateId);
-                const currentEffectiveActions =
-                    actions || currentGlobalActions || {};
-
-                const action = currentEffectiveActions[prop];
+                const action = resolveActions()[prop as any];
                 if (typeof action === "function") {
                     // context를 바인딩하여 반환 / Return with context binding
                     return (...args: any[]) => {
                         const context = {
-                            values: store.getValues(),
+                            // 공유 캐시 보호를 위해 얕은 복사 / shallow copy protects the shared cache
+                            values: { ...store.getValues() },
                             getValue: (field: string | keyof T) =>
                                 store.getValue(field as string),
                             setValue: (field: string | keyof T, value: any) =>
@@ -287,22 +295,13 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
                 return action;
             },
             has: (_target, prop) => {
-                const currentGlobalActions = getActions(stateId);
-                const currentEffectiveActions =
-                    actions || currentGlobalActions || {};
-                return prop in currentEffectiveActions;
+                return prop in resolveActions();
             },
             ownKeys: (_target) => {
-                const currentGlobalActions = getActions(stateId);
-                const currentEffectiveActions =
-                    actions || currentGlobalActions || {};
-                return Reflect.ownKeys(currentEffectiveActions);
+                return Reflect.ownKeys(resolveActions());
             },
             getOwnPropertyDescriptor: (_target, prop) => {
-                const currentGlobalActions = getActions(stateId);
-                const currentEffectiveActions =
-                    actions || currentGlobalActions || {};
-                if (prop in currentEffectiveActions) {
+                if (prop in resolveActions()) {
                     return {
                         enumerable: true,
                         configurable: true,
@@ -311,12 +310,18 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (stateId: ${
                 return undefined;
             },
         });
-    }, [stateId, actions, getActions, store]);
+    }, [stateId, getActions, store]);
 
-    return {
-        ...formaState,
-        actions: actionsGetter, // 동적 actions getter로 교체 / Replace with dynamic actions getter
-        stateId, // 글로벌 FormaState ID 추가 제공 / Provide additional global FormaState ID
-        _store: store, // 글로벌 스토어 직접 접근용 (이미 formaState에 있지만 명시적으로 재정의) / Direct access to global store
-    } as UseGlobalFormaStateReturn<T>;
+    // 반환 객체 — formaState/actionsGetter/store 가 모두 안정적이라 재렌더 간 동일 참조 유지
+    // Return object — formaState/actionsGetter/store are stable, identical reference across re-renders
+    return useMemo(
+        () =>
+            ({
+                ...formaState,
+                actions: actionsGetter, // 동적 actions getter로 교체 / Replace with dynamic actions getter
+                stateId, // 글로벌 FormaState ID 추가 제공 / Provide additional global FormaState ID
+                _store: store, // 글로벌 스토어 직접 접근용 (이미 formaState에 있지만 명시적으로 재정의) / Direct access to global store
+            }) as UseGlobalFormaStateReturn<T>,
+        [formaState, actionsGetter, stateId, store],
+    );
 }

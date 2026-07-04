@@ -28,7 +28,7 @@
  * SOFTWARE.
  */
 
-import { useContext, useEffect, useMemo } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import { useForm } from "./useForm";
 import { UseGlobalFormProps, UseGlobalFormReturn } from "../types/globalForm";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
@@ -192,57 +192,72 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
         return undefined;
     }, [formId, autoCleanup, incrementRef, decrementRef]);
 
-    // Watch 등록 / Register watchers
+    // 최신 watch 맵을 ref 로 추적 — 인라인 객체가 렌더마다 새 참조로 와도 재구독하지 않는다
+    // Track the latest watch map via ref — inline objects no longer unsubscribe/resubscribe per render
+    const watchRef = useRef(watch);
+    watchRef.current = watch;
+
+    // Watch 등록 — 마운트(스토어) 기준 1회. watch 키 집합은 마운트 시 고정
+    // (기존에도 동적 키 변경은 미지원), 핸들러 본문은 ref 로 최신 반영.
+    // Register watchers once per store; the key set is fixed at mount while
+    // the latest handler body is read through the ref.
     useEffect(() => {
-        if (!watch) return;
+        const watchMap = watchRef.current;
+        if (!watchMap) return;
 
-        const unsubscribers: Array<() => void> = [];
+        const unsubscribers = Object.keys(watchMap).map((path) =>
+            store.watch(path, (value, prevValue) => {
+                const handler = watchRef.current?.[path];
+                if (!handler) return;
 
-        Object.entries(watch).forEach(([path, handler]) => {
-            const actionContext = {
-                getValue: (p: keyof T | string) => store.getValue(p as string),
-                setValue: (p: keyof T | string, value: any) =>
-                    store.setValue(p as string, value),
-                getValues: () => store.getValues(),
-                setValues: (values: Partial<T>) => store.setValues(values),
-                reset: () => store.reset(),
-                submit: form.submit,
-                values: store.getValues(),
-                actions: globalActions || {},
-            };
-
-            const unsubscribe = store.watch(path, (value, prevValue) => {
-                // context 업데이트 (최신 값) / Update context with latest values
-                actionContext.values = store.getValues();
-                actionContext.actions = getActions(formId) || {};
+                // 이벤트 시점에 컨텍스트 구성 (values 는 공유 캐시 보호를 위해 얕은 복사)
+                // Build the context per event (values shallow-copied to protect the shared cache)
+                const actionContext = {
+                    getValue: (p: keyof T | string) =>
+                        store.getValue(p as string),
+                    setValue: (p: keyof T | string, value: any) =>
+                        store.setValue(p as string, value),
+                    getValues: () => store.getValues(),
+                    setValues: (values: Partial<T>) => store.setValues(values),
+                    reset: () => store.reset(),
+                    submit: form.submit,
+                    values: { ...store.getValues() },
+                    actions: getActions(formId) || {},
+                };
 
                 handler(actionContext, value, prevValue);
-            });
-
-            unsubscribers.push(unsubscribe);
-        });
+            }),
+        );
 
         // cleanup
         return () => {
             unsubscribers.forEach((unsub) => unsub());
         };
-    }, [formId, watch, store, globalActions, getActions, form.submit]);
+    }, [formId, store, getActions, form.submit]);
 
-    // actions를 동적으로 가져오는 getter 생성 / Create getter to dynamically fetch actions
+    // 최신 로컬 actions 를 ref 로 추적 — 인라인 객체가 렌더마다 새 참조로 와도
+    // Proxy 를 재생성하지 않는다 (P1: actions Proxy 는 store 당 1회 생성, 식별자 안정)
+    // Track the latest local actions via ref — inline objects no longer recreate the Proxy
+    const localActionsRef = useRef(actions);
+    localActionsRef.current = actions;
+
+    // actions를 동적으로 가져오는 getter 생성 (deps 가 모두 안정적이라 1회만 생성됨)
+    // Create getter to dynamically fetch actions (all deps stable — created once)
     const actionsGetter = useMemo(() => {
+        // 호출 시점의 유효 actions 집합 조회 (로컬 우선, 없으면 글로벌 최신)
+        // Resolve the effective actions at call time (local first, else latest global)
+        const resolveActions = () =>
+            localActionsRef.current || getActions(formId) || {};
+
         return new Proxy({} as any, {
             get: (_target, prop) => {
-                // 항상 최신 글로벌 actions를 가져옴 / Always get the latest global actions
-                const currentGlobalActions = getActions(formId);
-                const currentEffectiveActions =
-                    actions || currentGlobalActions || {};
-
-                const action = currentEffectiveActions[prop];
+                const action = resolveActions()[prop as any];
                 if (typeof action === "function") {
                     // context를 바인딩하여 반환 / Return with context binding
                     return (...args: any[]) => {
                         const context = {
-                            values: store.getValues(),
+                            // 공유 캐시 보호를 위해 얕은 복사 / shallow copy protects the shared cache
+                            values: { ...store.getValues() },
                             getValue: (field: string | keyof T) =>
                                 store.getValue(field as string),
                             setValue: (field: string | keyof T, value: any) =>
@@ -266,22 +281,13 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
                 return action;
             },
             has: (_target, prop) => {
-                const currentGlobalActions = getActions(formId);
-                const currentEffectiveActions =
-                    actions || currentGlobalActions || {};
-                return prop in currentEffectiveActions;
+                return prop in resolveActions();
             },
             ownKeys: (_target) => {
-                const currentGlobalActions = getActions(formId);
-                const currentEffectiveActions =
-                    actions || currentGlobalActions || {};
-                return Reflect.ownKeys(currentEffectiveActions);
+                return Reflect.ownKeys(resolveActions());
             },
             getOwnPropertyDescriptor: (_target, prop) => {
-                const currentGlobalActions = getActions(formId);
-                const currentEffectiveActions =
-                    actions || currentGlobalActions || {};
-                if (prop in currentEffectiveActions) {
+                if (prop in resolveActions()) {
                     return {
                         enumerable: true,
                         configurable: true,
@@ -290,12 +296,24 @@ Details: GlobalFormaContext must be used within GlobalFormaProvider (formId: ${f
                 return undefined;
             },
         });
-    }, [formId, actions, getActions, store, form.submit]);
+    }, [formId, getActions, store, form.submit]);
 
-    return {
-        ...form,
-        actions: actionsGetter, // 동적 actions getter로 교체 / Replace with dynamic actions getter
-        formId, // 글로벌 폼 ID 추가 제공 / Provide additional global form ID
-        _store: store, // 글로벌 스토어 직접 접근용 / Direct access to global store
-    } as UseGlobalFormReturn<T>;
+    // 반환 객체 — form 이 안정적이므로 제출/검증 상태 변화 때만 새 참조가 된다.
+    // values 는 spread 로 고정되지 않도록 최신 스냅샷 getter 로 재정의한다.
+    // Return object — stable while form is stable; `values` is redefined as a getter
+    // so the spread doesn't freeze it to a stale snapshot.
+    return useMemo(
+        () =>
+            ({
+                ...form,
+                // 접근 시점 최신 스냅샷 / fresh snapshot at access time
+                get values() {
+                    return form.values;
+                },
+                actions: actionsGetter, // 동적 actions getter로 교체 / Replace with dynamic actions getter
+                formId, // 글로벌 폼 ID 추가 제공 / Provide additional global form ID
+                _store: store, // 글로벌 스토어 직접 접근용 / Direct access to global store
+            }) as UseGlobalFormReturn<T>,
+        [form, actionsGetter, formId, store],
+    );
 }

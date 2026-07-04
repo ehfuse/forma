@@ -28,7 +28,14 @@
  * SOFTWARE.
  */
 
-import { useState, useCallback, useEffect, useContext, useMemo } from "react";
+import {
+    useState,
+    useCallback,
+    useEffect,
+    useContext,
+    useMemo,
+    useRef,
+} from "react";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
 import { isBrowser } from "../utils/environment";
 
@@ -208,6 +215,13 @@ Please set storagePrefix in GlobalFormaProvider.`
         [key, storagePrefix]
     );
 
+    // defaultValue 식별자 안정화 — 인라인 객체/배열이 렌더마다 새 참조로 와도
+    // storage 이벤트 리스너를 재등록하지 않는다 (항상 최신 값을 ref 로 참조)
+    // Stabilize defaultValue identity — inline objects no longer re-register
+    // the storage-event listener every render (latest value read via ref)
+    const defaultValueRef = useRef(defaultValue);
+    defaultValueRef.current = defaultValue;
+
     // 초기값 읽기 | Read initial value
     const [storedValue, setStoredValue] = useState<T>(() =>
         readFromStorage(fullKey, defaultValue, useSession)
@@ -235,9 +249,9 @@ Please set storagePrefix in GlobalFormaProvider.`
     // 값 삭제 | Remove value
     const remove = useCallback(() => {
         removeFromStorage(fullKey, useSession);
-        setStoredValue(defaultValue);
+        setStoredValue(defaultValueRef.current);
         setHas(false);
-    }, [fullKey, useSession, defaultValue]);
+    }, [fullKey, useSession]);
 
     // 다른 탭/창에서의 변경 감지 | Listen for changes from other tabs/windows
     useEffect(() => {
@@ -249,7 +263,7 @@ Please set storagePrefix in GlobalFormaProvider.`
 
             if (e.key === fullKey) {
                 if (e.newValue === null) {
-                    setStoredValue(defaultValue);
+                    setStoredValue(defaultValueRef.current);
                     setHas(false);
                 } else {
                     try {
@@ -267,7 +281,7 @@ Please set storagePrefix in GlobalFormaProvider.`
         return () => {
             window.removeEventListener("storage", handleStorageChange);
         };
-    }, [fullKey, defaultValue, useSession]);
+    }, [fullKey, useSession]);
 
     return {
         value: storedValue,

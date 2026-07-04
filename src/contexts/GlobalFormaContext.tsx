@@ -200,7 +200,7 @@ export function GlobalFormaProvider({
      * @param formId 폼 식별자 | Form identifier
      * @returns FieldStore 인스턴스 | FieldStore instance
      */
-    const getOrCreateStore = <T extends Record<string, any>>(
+    const getOrCreateStore = useCallback(<T extends Record<string, any>>(
         formId: string,
     ): FieldStore<T> => {
         const stores = storesRef.current;
@@ -222,7 +222,7 @@ export function GlobalFormaProvider({
         //     stores.get(formId)?.getValues()
         // );
         return stores.get(formId) as FieldStore<T>;
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     /**
      * autoCleanup 설정의 일관성을 검증하고 설정을 저장합니다. | Validate and store autoCleanup setting consistency.
@@ -230,7 +230,7 @@ export function GlobalFormaProvider({
      * @param formId 폼 식별자 | Form identifier
      * @param autoCleanup 현재 autoCleanup 설정 | Current autoCleanup setting
      */
-    const validateAndStoreAutoCleanupSetting = (
+    const validateAndStoreAutoCleanupSetting = useCallback((
         formId: string,
         autoCleanup: boolean,
     ): void => {
@@ -244,7 +244,7 @@ export function GlobalFormaProvider({
         if (!autoCleanup) {
             persistForeverRef.current.set(formId, true);
         }
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     /**
      * 기존 FieldStore를 글로벌 폼에 등록합니다. | Register existing FieldStore to global form.
@@ -252,13 +252,13 @@ export function GlobalFormaProvider({
      * @param formId 폼 식별자 | Form identifier
      * @param store 등록할 FieldStore 인스턴스 | FieldStore instance to register
      */
-    const registerStore = <T extends Record<string, any>>(
+    const registerStore = useCallback(<T extends Record<string, any>>(
         formId: string,
         store: FieldStore<T>,
     ): void => {
         const stores = storesRef.current;
         stores.set(formId, store);
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     /**
      * 글로벌 스토어에서 특정 formId의 FieldStore를 제거합니다. | Remove specific FieldStore from global store.
@@ -267,7 +267,7 @@ export function GlobalFormaProvider({
      * @param formId 제거할 폼 식별자 | Form identifier to remove
      * @returns 제거 성공 여부 | Whether removal was successful
      */
-    const unregisterStore = (formId: string): boolean => {
+    const unregisterStore = useCallback((formId: string): boolean => {
         const stores = storesRef.current;
         const refCounts = refCountsRef.current;
         const autoCleanupRefCounts = autoCleanupRefCountsRef.current;
@@ -291,13 +291,13 @@ export function GlobalFormaProvider({
         }
 
         return false;
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     /**
      * 모든 글로벌 스토어를 제거합니다. | Clear all global stores.
      * 메모리 정리나 애플리케이션 리셋 시 사용합니다. | Use for memory cleanup or application reset.
      */
-    const clearStores = (): void => {
+    const clearStores = useCallback((): void => {
         const stores = storesRef.current;
         const refCounts = refCountsRef.current;
         const autoCleanupRefCounts = autoCleanupRefCountsRef.current;
@@ -317,7 +317,7 @@ export function GlobalFormaProvider({
         // 모든 핸들러와 actions도 함께 정리 | Clear all handlers and actions as well
         handlersRef.current.clear();
         actionsRef.current.clear();
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     /**
      * 스토어 사용 참조를 증가시킵니다 | Increment store usage reference
@@ -325,7 +325,10 @@ export function GlobalFormaProvider({
      * @param formId 폼 식별자 | Form identifier
      * @param autoCleanup autoCleanup 설정 | autoCleanup setting
      */
-    const incrementRef = (formId: string, autoCleanup: boolean): void => {
+    const incrementRef = useCallback((
+        formId: string,
+        autoCleanup: boolean,
+    ): void => {
         const refCounts = refCountsRef.current;
         const autoCleanupRefCounts = autoCleanupRefCountsRef.current;
         const cleanupTimers = cleanupTimersRef.current;
@@ -350,7 +353,7 @@ export function GlobalFormaProvider({
             const newAutoCleanupCount = currentAutoCleanupCount + 1;
             autoCleanupRefCounts.set(formId, newAutoCleanupCount);
         }
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     /**
      * 스토어 사용 참조를 감소시키고, autoCleanup 참조가 0이 되면 자동 정리합니다 | Decrement store usage reference and auto cleanup when autoCleanup refs reach 0
@@ -358,7 +361,10 @@ export function GlobalFormaProvider({
      * @param formId 폼 식별자 | Form identifier
      * @param autoCleanup autoCleanup 설정 | autoCleanup setting
      */
-    const decrementRef = (formId: string, autoCleanup: boolean): void => {
+    const decrementRef = useCallback((
+        formId: string,
+        autoCleanup: boolean,
+    ): void => {
         const refCounts = refCountsRef.current;
         const autoCleanupRefCounts = autoCleanupRefCountsRef.current;
         const stores = storesRef.current;
@@ -435,7 +441,7 @@ export function GlobalFormaProvider({
                 autoCleanupRefCounts.delete(formId);
             }
         }
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     /**
      * 글로벌 폼 핸들러 등록 | Register global form handlers
@@ -443,7 +449,7 @@ export function GlobalFormaProvider({
      * @param formId 폼 식별자 | Form identifier
      * @param handlers 핸들러들 | Handlers
      */
-    const registerHandlers = <T extends Record<string, any>>(
+    const registerHandlers = useCallback(<T extends Record<string, any>>(
         formId: string,
         handlers: GlobalFormHandlers<T>,
     ): void => {
@@ -458,7 +464,7 @@ export function GlobalFormaProvider({
         } else {
             handlersRef.current.set(formId, handlers);
         }
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     /**
      * 글로벌 폼 핸들러 조회 | Get global form handlers
@@ -466,11 +472,11 @@ export function GlobalFormaProvider({
      * @param formId 폼 식별자 | Form identifier
      * @returns 핸들러들 또는 undefined | Handlers or undefined
      */
-    const getHandlers = <T extends Record<string, any>>(
+    const getHandlers = useCallback(<T extends Record<string, any>>(
         formId: string,
     ): GlobalFormHandlers<T> | undefined => {
         return handlersRef.current.get(formId);
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     // ========== Actions 관련 함수 ==========
 
@@ -480,9 +486,12 @@ export function GlobalFormaProvider({
      * @param formId 폼/상태 식별자 | Form/state identifier
      * @param actions 등록할 actions | Actions to register
      */
-    const registerActions = (formId: string, actions: any): void => {
-        actionsRef.current.set(formId, actions);
-    };
+    const registerActions = useCallback(
+        (formId: string, actions: any): void => {
+            actionsRef.current.set(formId, actions);
+        },
+        [], // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
+    );
 
     /**
      * 글로벌 actions 조회 | Get global actions
@@ -490,18 +499,18 @@ export function GlobalFormaProvider({
      * @param formId 폼/상태 식별자 | Form/state identifier
      * @returns actions 또는 undefined | Actions or undefined
      */
-    const getActions = (formId: string): any | undefined => {
+    const getActions = useCallback((formId: string): any | undefined => {
         return actionsRef.current.get(formId);
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     /**
      * 글로벌 actions 제거 | Remove global actions
      *
      * @param formId 폼/상태 식별자 | Form/state identifier
      */
-    const unregisterActions = (formId: string): void => {
+    const unregisterActions = useCallback((formId: string): void => {
         actionsRef.current.delete(formId);
-    };
+    }, []); // ref 만 사용하므로 deps 없음 — 식별자 안정 | uses refs only, stable identity
 
     // ========== 모달 및 네비게이션 관련 함수 ==========
 
@@ -568,8 +577,11 @@ export function GlobalFormaProvider({
     }, [closeLastModal]);
 
     // Provider 재렌더 시 contextValue 객체 식별자가 바뀌면 모든 forma 컨슈머가
-    // 강제 재렌더되므로, 모든 멤버가 안정 식별자(ref/useCallback 결과)인 점을
+    // 강제 재렌더되므로, 모든 멤버가 안정 식별자(useCallback([]) 결과)인 점을
     // 활용해 useMemo 로 contextValue 자체를 안정화한다.
+    // deps 는 실제 사용 멤버 전부를 나열한다 (모두 안정 식별자라 동작 변화 없음).
+    // All members are stable identities from useCallback([]), so listing every
+    // member keeps the deps honest without changing behavior.
     const contextValue: GlobalFormaContextType = useMemo(
         () => ({
             // Storage Prefix
@@ -594,7 +606,24 @@ export function GlobalFormaProvider({
             removeOpenModal,
             closeLastModal,
         }),
-        [storagePrefix, appendOpenModal, removeOpenModal, closeLastModal],
+        [
+            storagePrefix,
+            getOrCreateStore,
+            registerStore,
+            unregisterStore,
+            clearStores,
+            incrementRef,
+            decrementRef,
+            validateAndStoreAutoCleanupSetting,
+            registerHandlers,
+            getHandlers,
+            registerActions,
+            getActions,
+            unregisterActions,
+            appendOpenModal,
+            removeOpenModal,
+            closeLastModal,
+        ],
     );
 
     return (

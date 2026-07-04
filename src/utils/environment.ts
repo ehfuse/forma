@@ -23,12 +23,30 @@ export function isBrowser(): boolean {
 }
 
 /**
- * Check if the current environment is development
- * 현재 환경이 개발 환경인지 확인
+ * isDevelopment 판정 결과 메모 (환경은 런타임 중 바뀌지 않으므로 1회 계산)
+ * Memoized isDevelopment result (environment never changes at runtime, compute once)
+ */
+let cachedIsDevelopment: boolean | null = null;
+
+/**
+ * Check if the current environment is development (module-level memoized)
+ * 현재 환경이 개발 환경인지 확인 (모듈 레벨 메모)
  *
  * @returns {boolean} true if development environment, false otherwise
  */
 export function isDevelopment(): boolean {
+    if (cachedIsDevelopment !== null) {
+        return cachedIsDevelopment;
+    }
+    cachedIsDevelopment = computeIsDevelopment();
+    return cachedIsDevelopment;
+}
+
+/**
+ * 실제 환경 판정 로직 (isDevelopment 내부 전용)
+ * Actual environment detection logic (internal to isDevelopment)
+ */
+function computeIsDevelopment(): boolean {
     try {
         // Node.js environment check
         if (

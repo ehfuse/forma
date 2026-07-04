@@ -29,26 +29,16 @@
  */
 
 import {
-    FormChangeEvent,
-    FormChangeHandler,
-    DatePickerChangeHandler,
     UseFormProps,
     UseFormPropsOptional,
     UseFormReturn,
 } from "../types/form";
-import { useFormaState } from "./useFormaState";
+import { useFormaState, useFieldSubscription } from "./useFormaState";
+import { getFormSurface } from "./storeSurface";
 import { devError, mergeActions } from "../utils";
-import {
-    loadPersistedData,
-    savePersistedData,
-    clearPersistedData,
-    hasPersistedData,
-    normalizePersistConfig,
-    debounce,
-} from "../utils/persist";
+import { loadPersistedData, normalizePersistConfig } from "../utils/persist";
 
 import React, {
-    useEffect,
     useState,
     useCallback,
     useRef,
@@ -56,9 +46,6 @@ import React, {
     useContext,
 } from "react";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
-
-// MUI DatePicker 타입 (선택적 import) / MUI DatePicker type (optional import)
-type PickerChangeHandlerContext = any;
 
 /**
  * Forma 핵심 폼 관리 훅 / Forma core form management hook
@@ -111,20 +98,17 @@ export function useForm<T extends Record<string, any>>(
     const context = useContext(GlobalFormaContext);
     const storagePrefix = context?.storagePrefix;
 
-    // Persist 설정 정규화 | Normalize persist config
-    const persistConfig = persist ? normalizePersistConfig(persist) : null;
-
     // 초기값 안정화: 첫 번째 렌더링에서만 초기값을 고정
     // Stabilize initial values: fix initial values only on first render
-    // persist가 있으면 localStorage에서 복원 시도
+    // persist가 있으면 localStorage에서 복원 시도 (외부 스토어 시딩에도 병합값이 쓰이도록 여기서 병합)
     const stableInitialValues = useRef<T | null>(null);
     if (!stableInitialValues.current) {
         let mergedInitialValues = initialValues;
 
         // persist 설정이 있으면 저장된 데이터 복원 시도
-        if (persistConfig) {
+        if (persist) {
             const persisted = loadPersistedData<T>(
-                persistConfig,
+                normalizePersistConfig(persist),
                 storagePrefix,
             );
             if (persisted) {
@@ -135,215 +119,53 @@ export function useForm<T extends Record<string, any>>(
         stableInitialValues.current = mergedInitialValues;
     }
 
-    // useFormaState를 기반으로 사용 / Use useFormaState as foundation
+    // useFormaState를 기반으로 사용 — persist 저장/flush(언마운트·pagehide·visibilitychange)와
+    // clearPersisted/hasPersisted 도 useFormaState 의 통합 persist 기계를 그대로 재사용한다.
+    // Built on useFormaState — the persist save/flush (unmount/pagehide/visibilitychange)
+    // and clearPersisted/hasPersisted reuse useFormaState's integrated persist machinery.
     const fieldState = useFormaState<T>(stableInitialValues.current, {
         _externalStore,
         watch,
+        persist,
     });
+
+    // 내부 스토어 (수명 동안 안정) / internal store (stable for lifetime)
+    const store = fieldState._store;
+
+    // store 수준 폼 표면 — store 당 1회 생성되어 렌더 간 동일 참조 유지
+    // Store-level form surface — created once per store, identical reference across renders
+    const formSurface = getFormSurface<T>(store, useFieldSubscription);
 
     // 폼 특정 상태 관리 / Form-specific state management
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isValidating, setIsValidating] = useState(false);
 
-    // Persist: 디바운스된 저장 함수 생성 | Create debounced save function
-    const debouncedSaveRef = useRef<((values: T) => void) | null>(null);
-
-    useEffect(() => {
-        if (!persistConfig) return;
-
-        const debounceTime = persistConfig.debounce ?? 300;
-        debouncedSaveRef.current = debounce((values: T) => {
-            savePersistedData(persistConfig, values, storagePrefix);
-        }, debounceTime);
-    }, [persistConfig, storagePrefix]);
-
-    // Persist: 값 변경 시 저장 | Save on value change
-    useEffect(() => {
-        if (!persistConfig || !debouncedSaveRef.current) return;
-
-        const unsubscribe = fieldState._store.subscribeGlobal(() => {
-            const currentValues = fieldState._store.getValues();
-            debouncedSaveRef.current?.(currentValues);
-        });
-
-        return unsubscribe;
-    }, [fieldState._store, persistConfig]);
-
-    // Persist: clearPersisted 함수 | clearPersisted function
-    const clearPersisted = useCallback(() => {
-        if (persistConfig) {
-            clearPersistedData(persistConfig, storagePrefix);
-        }
-    }, [persistConfig, storagePrefix]);
-
-    // Persist: hasPersisted 상태 | hasPersisted state
-    const hasPersisted = useMemo(() => {
-        if (!persistConfig) return false;
-        return hasPersistedData(persistConfig, storagePrefix);
-    }, [persistConfig, storagePrefix]);
-
-    /**
-     * 통합 폼 변경 핸들러 / Unified form change handler
-     * MUI Select, TextField, DatePicker 등 모든 컴포넌트 지원
-     * Supports all components: MUI Select, TextField, DatePicker, etc.
-     *
-     * 두 가지 호출 방식 지원 / Supports two calling patterns:
-     * 1. handleFormChange(event) - 이벤트 객체 전달
-     * 2. handleFormChange(name, value) - 직접 name, value 전달
-     */
-    const handleFormChange: FormChangeHandler = useCallback(
-        (eventOrName: FormChangeEvent | string, directValue?: any) => {
-            let name: string;
-            let value: any;
-
-            // (name, value) 형태로 직접 호출된 경우
-            if (typeof eventOrName === "string") {
-                name = eventOrName;
-                value = directValue;
-            } else {
-                // 이벤트 객체로 호출된 경우
-                const target = eventOrName.target;
-                if (!target || !target.name) return;
-
-                const { type, checked } = target as any;
-                name = target.name;
-                value = target.value;
-
-                // 체크박스 처리 / Checkbox handling
-                if (type === "checkbox") {
-                    value = checked;
-                }
-                // 숫자 타입 처리 / Number type handling
-                else if (type === "number") {
-                    value = Number(value);
-                }
-            }
-
-            // DatePicker 처리 (Dayjs 객체) / DatePicker handling (Dayjs object)
-            if (value && typeof value === "object" && value.format) {
-                value = value.format("YYYY-MM-DD");
-            }
-            // null 값 처리 / Null value handling
-            else if (value === null) {
-                value = undefined;
-            }
-
-            fieldState.setValue(name, value);
-        },
-        [fieldState.setValue],
-    ) as FormChangeHandler;
-
-    /**
-     * DatePicker 전용 변경 핸들러 / DatePicker-specific change handler
-     * 간편한 사용을 위한 커링 함수 / Curried function for convenient usage
-     */
-    const handleDatePickerChange: DatePickerChangeHandler = useCallback(
-        (fieldName: string) => {
-            return (value: any, _context?: PickerChangeHandlerContext) => {
-                let newValue = value;
-
-                // DatePicker 처리 (Dayjs 객체) / DatePicker handling (Dayjs object)
-                if (value && typeof value === "object" && value.format) {
-                    newValue = value.format("YYYY-MM-DD");
-                } else if (value === null) {
-                    newValue = undefined;
-                }
-
-                fieldState.setValue(fieldName, newValue);
-            };
-        },
-        [fieldState.setValue],
-    );
-
-    /**
-     * 개별 필드 값 설정 / Set individual field value
-     */
-    const setFormValue = useCallback(
-        (name: keyof T | string, value: any) => {
-            let processedValue = value;
-
-            // DatePicker에서 오는 Dayjs 객체 처리 / Handle Dayjs object from DatePicker
-            if (value && typeof value === "object" && value.format) {
-                processedValue = value.format("YYYY-MM-DD");
-            } else if (value === null) {
-                processedValue = undefined;
-            }
-
-            fieldState.setValue(name as string, processedValue);
-        },
-        [fieldState.setValue],
-    );
-
-    /**
-     * 전체 폼 값 설정 / Set all form values
-     */
-    const setFormValues = useCallback(
-        (newValues: Partial<T>) => {
-            fieldState.setValues(newValues);
-        },
-        [fieldState.setValues],
-    );
-
-    /**
-     * 초기값 재설정 / Reset initial values
-     */
-    const setInitialFormValues = useCallback(
-        (newInitialValues: T) => {
-            stableInitialValues.current = newInitialValues;
-            fieldState._store.setInitialValues(newInitialValues);
-        },
-        [fieldState._store],
-    );
-
-    /**
-     * 구독 없이 현재 값만 가져오기 / Get current value without subscription
-     */
-    const getFormValue = useCallback(
-        (fieldName: keyof T | string): any => {
-            return fieldState._store.getValue(fieldName as string);
-        },
-        [fieldState._store],
-    );
-
-    /**
-     * 모든 폼 값 가져오기 / Get all form values
-     */
-    const getFormValues = useCallback((): T => {
-        return fieldState.getValues();
-    }, [fieldState.getValues]);
-
-    /**
-     * 개별 필드 구독 Hook / Individual field subscription hook
-     * 해당 필드가 변경될 때만 컴포넌트가 리렌더링됩니다
-     * Component re-renders only when the specific field changes
-     *
-     * NOTE: This is NOT a useCallback - it directly delegates to fieldState.useValue
-     */
-    const useFormValue = (fieldName: keyof T | string) => {
-        const value = fieldState.useValue(fieldName as string);
-        // undefined를 빈 문자열로 변환하여 MUI TextField와 호환성 확보
-        return value === undefined ? "" : value;
-    };
-
-    /**
-     * 개별 필드 구독 Hook / Individual field subscription hook
-     * useGlobalFormaState 와 같은 API 이름을 제공한다
-     */
-    const useValue = (fieldName: keyof T | string) => {
-        return useFormValue(fieldName);
-    };
+    // 최신 제출/검증/완료 핸들러를 ref 로 추적 — 인라인 함수가 렌더마다 새 참조로 와도
+    // submit/validateForm 의 식별자가 안정적으로 유지된다 (호출 시점에 최신 핸들러 반영)
+    // Track the latest handlers via refs — inline handler props no longer churn
+    // submit/validateForm identities; the latest handler is resolved at call time
+    const onSubmitRef = useRef(onSubmit);
+    onSubmitRef.current = onSubmit;
+    const onValidateRef = useRef(onValidate);
+    onValidateRef.current = onValidate;
+    const onCompleteRef = useRef(onComplete);
+    onCompleteRef.current = onComplete;
 
     /**
      * 폼 검증 / Form validation
      */
     const validateForm = useCallback(
         async (valuesToValidate?: T) => {
-            if (!onValidate) return true;
+            const validate = onValidateRef.current;
+            if (!validate) return true;
             setIsValidating(true);
-            const currentValues = valuesToValidate || fieldState.getValues();
+            // getValues() 는 공유 캐시 객체라 사용자 콜백에는 얕은 복사본을 전달
+            // getValues() returns the shared cached object; hand a shallow copy to user callbacks
+            const currentValues =
+                valuesToValidate || ({ ...store.getValues() } as T);
 
             try {
-                return await onValidate(currentValues);
+                return await validate(currentValues);
             } catch (error) {
                 devError("Validation error:", error);
                 return false;
@@ -351,7 +173,7 @@ export function useForm<T extends Record<string, any>>(
                 setIsValidating(false);
             }
         },
-        [onValidate, fieldState.getValues],
+        [store],
     );
 
     /**
@@ -370,7 +192,9 @@ export function useForm<T extends Record<string, any>>(
         async (e?: React.FormEvent): Promise<boolean> => {
             if (e) e.preventDefault();
 
-            const currentValues = fieldState.getValues();
+            // 사용자 콜백(onValidate/onSubmit/onComplete)에는 얕은 복사 스냅샷을 전달 (공유 캐시 보호)
+            // Hand user callbacks a shallow-copied snapshot (protects the shared cache)
+            const currentValues = { ...store.getValues() } as T;
             if (!(await validateForm(currentValues))) {
                 return false;
             }
@@ -378,16 +202,18 @@ export function useForm<T extends Record<string, any>>(
             setIsSubmitting(true);
 
             try {
-                if (onSubmit) {
-                    const result = await onSubmit(currentValues);
+                const submitHandler = onSubmitRef.current;
+                if (submitHandler) {
+                    const result = await submitHandler(currentValues);
                     // onSubmit이 boolean을 반환하면 해당 값 사용, 아니면 true로 간주
                     if (result === false) {
                         return false;
                     }
                 }
 
-                if (onComplete) {
-                    onComplete(currentValues);
+                const completeHandler = onCompleteRef.current;
+                if (completeHandler) {
+                    completeHandler(currentValues);
                 }
 
                 return true;
@@ -398,67 +224,78 @@ export function useForm<T extends Record<string, any>>(
                 setIsSubmitting(false);
             }
         },
-        [onSubmit, onComplete, validateForm, fieldState.getValues],
+        [store, validateForm],
     );
 
-    // Actions 바인딩 - context와 함께 사용할 수 있도록 / Actions binding - to use with context
+    // 최신 actions 정의를 ref 로 추적 — 인라인 객체가 와도 재바인딩하지 않는다
+    // Track the latest user actions via ref — inline objects no longer cause re-binding
+    const userActionsRef = useRef(userActions);
+    userActionsRef.current = userActions;
+
+    // Actions 바인딩 - context와 함께 사용할 수 있도록. store 당 1회 생성되는 동적 Proxy 로
+    // 식별자는 안정적이면서 접근 시점에 항상 최신 actions 정의(키 집합 포함)를 실행한다.
+    // Actions binding — a dynamic Proxy created once: stable identity while always
+    // executing the latest actions definition (including its key set) at access time
     const boundActions = useMemo(() => {
-        if (!userActions) return {} as any;
+        // 접근 시점의 병합된 actions 정의 조회 / resolve the merged actions definition at access time
+        const resolveMerged = (): Record<string, any> =>
+            (userActionsRef.current
+                ? mergeActions(userActionsRef.current)
+                : null) || {};
 
-        // 배열이면 병합, 객체면 그대로 사용
-        const mergedActions = mergeActions(userActions);
-        if (!mergedActions) return {} as any;
+        const bound: any = new Proxy({} as any, {
+            get: (_target, prop) => {
+                const action = resolveMerged()[prop as any];
+                if (typeof action !== "function") return action;
 
-        const bound: any = {};
-        const context = {
-            get values() {
-                return fieldState.getValues();
+                // 호출 시점에 컨텍스트를 구성해 실행하는 래퍼 / wrapper building a per-call context
+                return (...args: any[]) => {
+                    // action 호출용 컨텍스트 / per-call action context
+                    const context = {
+                        // values 는 접근 시점 최신 스냅샷 (공유 캐시 보호를 위한 얕은 복사)
+                        // values: latest snapshot at access time (shallow copy protects shared cache)
+                        get values() {
+                            return { ...store.getValues() } as T;
+                        },
+                        getValue: (fieldName: keyof T | string) =>
+                            store.getValue(fieldName as string),
+                        setValue: (fieldName: keyof T | string, value: any) =>
+                            store.setValue(fieldName as string, value),
+                        setValues: formSurface.setFormValues,
+                        reset: resetForm,
+                        submit,
+                        validate: validateForm,
+                        actions: bound, // 순환 참조 / circular reference
+                    };
+
+                    return action(context, ...args);
+                };
             },
-            getValue: (fieldName: keyof T | string) =>
-                fieldState._store.getValue(fieldName as string),
-            setValue: (fieldName: keyof T | string, value: any) =>
-                fieldState._store.setValue(fieldName as string, value),
-            setValues: (values: Partial<T>) => {
-                const currentValues = fieldState._store.getValues();
-                const newValues = { ...currentValues, ...values };
-                fieldState._store.setValues(newValues as T);
+            has: (_target, prop) => prop in resolveMerged(),
+            ownKeys: () => Reflect.ownKeys(resolveMerged()),
+            getOwnPropertyDescriptor: (_target, prop) => {
+                if (prop in resolveMerged()) {
+                    return { enumerable: true, configurable: true };
+                }
+                return undefined;
             },
-            reset: resetForm,
-            submit,
-            validate: validateForm,
-            actions: bound, // 순환 참조 / circular reference
-        };
-
-        // 모든 action 함수들을 context와 바인딩 / Bind all action functions with context
-        Object.keys(mergedActions).forEach((key) => {
-            const action = mergedActions[key];
-            if (typeof action === "function") {
-                bound[key] = (...args: any[]) => action(context, ...args);
-            }
         });
 
         return bound;
-    }, [userActions, fieldState, resetForm, submit, validateForm]);
+    }, [store, formSurface, resetForm, submit, validateForm]);
+
+    // 반환 객체 — store 수준 표면 + 컴포넌트 수준 조각의 합성.
+    // deps 가 안정적이라 제출/검증 상태가 바뀔 때만 새 참조가 된다 (P2: memo 가 실제로 유지됨).
+    // Return object — store-level surface + per-component pieces.
+    // Deps are stable, so a new reference appears only when submit/validate state changes.
     return useMemo(
         () => ({
             // 상태 / State
             isSubmitting,
             isValidating,
 
-            // 값 가져오기 / Get values
-            useValue, // Hook - useGlobalFormaState 호환 alias / compatible alias
-            useFormValue, // Hook - 구독 있음 (성능 최적화) / with subscription (performance optimized)
-            getFormValue, // 함수 - 구독 없음 (현재 값만) / function - no subscription (current value only)
-            getFormValues, // 함수 - 모든 값 / function - all values
-
-            // 값 설정 / Set values
-            setFormValue, // 개별 필드 설정 / set individual field
-            setFormValues, // 전체 값 설정 / set all values
-            setInitialFormValues, // 초기값 재설정 / reset initial values
-
-            // 이벤트 핸들러 / Event handlers
-            handleFormChange, // 폼 요소 onChange (MUI 완전 호환) / form element onChange (fully MUI compatible)
-            handleDatePickerChange, // DatePicker 전용 onChange / DatePicker-specific onChange
+            // store 수준 표면 (값 구독/조회/설정 + 이벤트 핸들러) / store-level surface
+            ...formSurface,
 
             // 폼 액션 / Form actions
             submit, // 폼 제출 / submit form
@@ -468,35 +305,30 @@ export function useForm<T extends Record<string, any>>(
             // Actions
             actions: boundActions, // 사용자 정의 actions / user-defined actions
 
-            // Persist
-            clearPersisted, // 저장된 데이터 삭제 / clear persisted data
-            hasPersisted, // 저장된 데이터 있는지 / has persisted data
+            // Persist (useFormaState 의 통합 persist 재사용) / reuse useFormaState's persist
+            clearPersisted: fieldState.clearPersisted, // 저장된 데이터 삭제 / clear persisted data
+            hasPersisted: fieldState.hasPersisted, // 저장된 데이터 있는지 / has persisted data
 
-            // 호환성 / Compatibility
-            values: fieldState.getValues(), // 호환성을 위한 values 객체 (비권장) / Values object for compatibility (not recommended)
+            // 호환성 / Compatibility — 항상 최신 스냅샷을 반환하는 getter (얕은 복사, 비권장)
+            // getter returning a fresh shallow-copied snapshot on access (not recommended)
+            get values() {
+                return { ...store.getValues() } as T;
+            },
 
             // 고급 사용 / Advanced usage
-            _store: fieldState._store, // 직접 store 접근용 / direct store access
+            _store: store, // 직접 store 접근용 / direct store access
         }),
         [
             isSubmitting,
             isValidating,
-            useValue,
-            useFormValue,
-            getFormValue,
-            getFormValues,
-            setFormValue,
-            setFormValues,
-            setInitialFormValues,
-            handleFormChange,
-            handleDatePickerChange,
+            formSurface,
             submit,
             resetForm,
             validateForm,
-            boundActions, // actions 의존성 추가
-            clearPersisted,
-            hasPersisted,
-            fieldState._store, // Store 의존성으로 대체
+            boundActions,
+            fieldState.clearPersisted,
+            fieldState.hasPersisted,
+            store,
         ],
     );
 }

@@ -23,20 +23,26 @@
  */
 
 /**
- * 객체에서 "실재하는" 키만 추린다. | Collect keys whose value is meaningful.
- * stringify 가 직렬화에서 제외하는 값(undefined/function/symbol)을 가진 키는 제외.
- * Excludes keys whose value would be dropped by JSON.stringify.
+ * 값이 "실재하는" 값인지 확인한다. | Check whether a value is meaningful.
+ * stringify 가 직렬화에서 제외하는 값(undefined/function/symbol)은 "없는 값"으로 취급.
+ * Values that JSON.stringify would drop (undefined/function/symbol) are treated as absent.
  */
-function meaningfulKeys(obj: Record<string, any>): string[] {
-    const keys: string[] = [];
+function isMeaningfulValue(v: any): boolean {
+    const t = typeof v;
+    return v !== undefined && t !== "function" && t !== "symbol";
+}
+
+/**
+ * 객체의 "실재하는" own key 개수를 센다 (배열 할당 없이). | Count meaningful own keys without allocating arrays.
+ */
+function countMeaningfulKeys(obj: Record<string, any>): number {
+    let count = 0;
     for (const key in obj) {
         if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-        const v = obj[key];
-        const t = typeof v;
-        if (v === undefined || t === "function" || t === "symbol") continue;
-        keys.push(key);
+        if (!isMeaningfulValue(obj[key])) continue;
+        count++;
     }
-    return keys;
+    return count;
 }
 
 /**
@@ -90,14 +96,23 @@ function deepEqualInner(a: any, b: any, seen: WeakMap<object, any>): boolean {
         return true;
     }
 
-    // 6. plain object — stringify 의미를 보존하기 위해 meaningfulKeys 사용
-    const aKeys = meaningfulKeys(a);
-    const bKeys = meaningfulKeys(b);
-    if (aKeys.length !== bKeys.length) return false;
+    // 6. plain object — stringify 의미 보존: "실재하는" own key 만 비교 대상
+    //    키 배열을 두 번 만들지 않고, b 쪽은 개수만 세고 a 쪽은 순회하며 즉시 비교한다.
+    //    (기존 meaningfulKeys 이중 배열 할당 제거 — 결과는 동일)
+    //    Compare only meaningful own keys without materializing both key arrays:
+    //    count b's keys, then walk a's keys comparing as we go. Same result, fewer allocations.
+    const bCount = countMeaningfulKeys(b);
 
-    for (const key of aKeys) {
+    let aCount = 0;
+    for (const key in a) {
+        if (!Object.prototype.hasOwnProperty.call(a, key)) continue;
+        const av = a[key];
+        if (!isMeaningfulValue(av)) continue;
+        aCount++;
+        // a 의 실재 키가 b 에 없으면 다름 (기존과 동일: own 존재만 확인)
         if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
-        if (!deepEqualInner(a[key], b[key], seen)) return false;
+        if (!deepEqualInner(av, b[key], seen)) return false;
     }
-    return true;
+    // 실재 키 개수가 다르면 다름 | key counts must match
+    return aCount === bCount;
 }

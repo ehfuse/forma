@@ -17,20 +17,21 @@ import {
     useContext,
 } from "react";
 import { FieldStore } from "../core/FieldStore";
-import { devWarn, mergeActions } from "../utils";
+import { mergeActions } from "../utils";
 import { isBrowser } from "../utils/environment";
 import { FormChangeEvent, ActionContext, Actions } from "../types/form";
 import {
     PersistConfig,
+    PersistOptions,
     loadPersistedData,
     savePersistedData,
     clearPersistedData,
     hasPersistedData,
     normalizePersistConfig,
     debounce,
-    type DebouncedFunction,
 } from "../utils/persist";
 import { GlobalFormaContext } from "../contexts/GlobalFormaContext";
+import { getStateSurface } from "./storeSurface";
 
 /**
  * Options for configuring useFormaState hook
@@ -49,13 +50,13 @@ export interface UseFormaStateOptions<T extends Record<string, any>> {
     /** Error handler for state operations | 상태 작업을 위한 에러 핸들러 */
     onError?: (error: Error) => void;
 
-    /** Enable validation on every change | 모든 변경에 대한 유효성 검사 활성화 */
+    /** Enable validation on every change (예약됨 — 현재 미구현, 하위호환을 위해 유지) | Enable validation on every change (reserved — currently unused, kept for backward compat) */
     validateOnChange?: boolean;
 
     /** Custom actions (computed getters and handlers) - can be object or array | 커스텀 액션 (computed getter 및 handler) - 객체 또는 배열 */
     actions?: Actions<T> | Actions<T>[];
 
-    /** Watch callbacks - detect specific path changes (wildcard supported) | Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원) */
+    /** Watch callbacks - detect specific path changes (wildcard supported) | Watch 콜백 - 특정 경로 변경 감지 (와일드카드 지원). watch 키 집합은 마운트 시 고정되며, 핸들러 본문은 렌더마다 최신 함수가 반영됩니다. */
     watch?: Record<
         string,
         (
@@ -65,7 +66,7 @@ export interface UseFormaStateOptions<T extends Record<string, any>> {
         ) => void | Promise<void>
     >;
 
-    /** localStorage 영속성 설정 | localStorage persistence config */
+    /** localStorage 영속성 설정 (마운트 시 고정) | localStorage persistence config (fixed at mount) */
     persist?: PersistConfig;
 }
 
@@ -80,7 +81,7 @@ export interface UseFormaStateReturn<T extends Record<string, any>> {
     /** Set a specific field value with dot notation | dot notation으로 특정 필드 값 설정 */
     setValue: <K extends string>(path: K, value: any) => void;
 
-    /** Get all current values (non-reactive) | 모든 현재 값 가져오기 (반응형 아님) */
+    /** Get all current values (non-reactive, shared cached object — do not mutate) | 모든 현재 값 가져오기 (반응형 아님, 공유 캐시 객체 — 변형 금지) */
     getValues: () => T;
 
     /** Set all values at once | 모든 값을 한 번에 설정 */
@@ -180,6 +181,42 @@ export function useFieldSubscription<T = any>(
 }
 
 /**
+ * 초경량 개별 필드 구독 훅 — 가상목록 셀 전용 경량 구독의 공식 API
+ * Ultra-light single-field subscription hook — the official API for
+ * lightweight per-cell subscriptions (e.g. virtualized list cells)
+ *
+ * `useFormaState`/`useGlobalFormaState` 인스턴스를 셀마다 만들지 말고,
+ * 부모에서 `state._store` 를 내려받아 이 훅으로 해당 경로만 구독하세요.
+ * 기존에 쓰던 비공식 `_store` + useSyncExternalStore 워크어라운드를 대체합니다.
+ * Instead of calling the heavy state hooks per cell, pass `state._store`
+ * down from the parent and subscribe to just one path with this hook.
+ * Replaces the unofficial `_store` + useSyncExternalStore workaround.
+ *
+ * @example
+ * ```tsx
+ * // 부모 / parent
+ * const state = useFormaState({ rows: [...] });
+ * <Cell store={state._store} path={`rows.${index}.name`} />
+ *
+ * // 셀 / cell — 해당 경로가 변경될 때만 리렌더
+ * function Cell({ store, path }: { store: FieldStore<any>; path: string }) {
+ *     const value = useStoreValue<string>(store, path);
+ *     return <span>{value}</span>;
+ * }
+ * ```
+ *
+ * @param store FieldStore 인스턴스 (`state._store`)
+ * @param path 구독할 필드 경로 (dot notation)
+ * @returns 필드의 현재 값
+ */
+export function useStoreValue<T = any>(
+    store: FieldStore<any>,
+    path: string,
+): T {
+    return useFieldValue<T>(store, path);
+}
+
+/**
  * Advanced state management hook with individual field subscriptions
  * 개별 필드 구독을 통한 고급 상태 관리 훅
  *
@@ -230,6 +267,7 @@ export function useFormaState<T extends Record<string, any>>(
         deepEquals: _deepEquals = false,
         _externalStore,
         actions: actionsDefinition,
+        watch,
         persist,
     } = options;
 
@@ -237,8 +275,18 @@ export function useFormaState<T extends Record<string, any>>(
     const context = useContext(GlobalFormaContext);
     const storagePrefix = context?.storagePrefix;
 
-    // Persist 설정 정규화 | Normalize persist config
-    const persistConfig = persist ? normalizePersistConfig(persist) : null;
+    // Persist 설정 정규화 — 마운트 시 1회 고정 (인라인 객체가 렌더마다 새 참조로 와도
+    // 저장 구독을 재등록하지 않도록 안정화) | Normalize persist config — fixed at mount so
+    // inline config objects don't churn the save subscription every render
+    const persistConfigRef = useRef<PersistOptions | null | undefined>(
+        undefined,
+    );
+    if (persistConfigRef.current === undefined) {
+        persistConfigRef.current = persist
+            ? normalizePersistConfig(persist)
+            : null;
+    }
+    const persistConfig = persistConfigRef.current;
 
     // 초기값 안정화: 첫 번째 렌더링에서만 초기값을 고정
     // Stabilize initial values: fix initial values only on first render
@@ -293,58 +341,20 @@ export function useFormaState<T extends Record<string, any>>(
 
         // Set up global change listener if provided
         // 글로벌 변경 리스너 설정 (제공된 경우)
+        // getValues() 는 공유 캐시 객체이므로 사용자 콜백에는 얕은 복사본을 전달 (기존 시맨틱 유지)
+        // getValues() returns the shared cache; hand user callbacks a shallow copy (old semantics)
         if (onChange) {
             storeRef.current.subscribeGlobal(() => {
-                onChange(storeRef.current!.getValues());
+                onChange({ ...storeRef.current!.getValues() });
             });
         }
     }
 
     const store = storeRef.current;
 
-    // Subscribe to a specific field value with dot notation
-    // dot notation으로 특정 필드 값 구독
-    // NOTE: This is NOT a useCallback - hooks cannot be wrapped in useCallback
-    const useValue = <K extends string>(path: K) => {
-        return useFieldValue(store, path);
-    };
-
-    // Set a specific field value with dot notation
-    // dot notation으로 특정 필드 값 설정
-    const setValue = useCallback(
-        <K extends string>(path: K, value: any) => {
-            store.setValue(path, value);
-        },
-        [store], // store 의존성 추가
-    );
-
-    // Get all current values (non-reactive)
-    // 모든 현재 값 가져오기 (반응형 아님)
-    const getValues = useCallback(() => {
-        return store.getValues();
-    }, [store]); // store 의존성 추가
-
-    // Set all values at once
-    // 모든 값을 한 번에 설정
-    const setValues = useCallback(
-        (values: Partial<T>) => {
-            const currentValues = store.getValues();
-            const newValues = { ...currentValues, ...values };
-            store.setValues(newValues as T);
-        },
-        [store], // store 의존성 추가
-    );
-
-    // Reset to initial values
-    // 초기값으로 재설정
-    const reset = useCallback(() => {
-        store.reset();
-    }, [store]); // store 의존성 추가
-
-    // Persist: 디바운스된 저장 함수 생성 | Create debounced save function
-    const debouncedSaveRef = useRef<DebouncedFunction<
-        (values: T) => void
-    > | null>(null);
+    // store 수준 훅 표면 — store 당 1회 생성되어 렌더 간 동일 참조 유지
+    // Store-level hook surface — created once per store, identical reference across renders
+    const surface = getStateSurface<T>(store, useFieldValue);
 
     // Persist: 디바운스 저장 + 구독 + 이탈/언마운트 시 flush
     // Persist: debounced save + subscription + flush on unmount/page-hide
@@ -352,17 +362,15 @@ export function useFormaState<T extends Record<string, any>>(
     // 이렇게 하면 언마운트나 탭 종료 직전의 마지막 변경이 debounce 대기 중에 유실되지 않는다.
     // Keeping creation and flush in one effect ensures the last change isn't lost
     // while still pending in the debounce window on unmount or tab close.
+    // persistConfig 가 마운트 시 고정되므로 이 effect 는 1회만 등록된다 (persist 미사용 시 즉시 no-op).
+    // persistConfig is fixed at mount, so this effect registers once (cheap no-op without persist).
     useEffect(() => {
-        if (!persistConfig) {
-            debouncedSaveRef.current = null;
-            return;
-        }
+        if (!persistConfig) return;
 
         const debounceTime = persistConfig.debounce ?? 300;
         const debouncedSave = debounce((values: T) => {
             savePersistedData(persistConfig, values, storagePrefix);
         }, debounceTime);
-        debouncedSaveRef.current = debouncedSave;
 
         const unsubscribe = store.subscribeGlobal(() => {
             debouncedSave(store.getValues());
@@ -396,191 +404,121 @@ export function useFormaState<T extends Record<string, any>>(
         };
     }, [store, persistConfig, storagePrefix]);
 
-    // Persist: clearPersisted 함수 | clearPersisted function
-    const clearPersisted = useCallback(() => {
-        if (persistConfig) {
-            clearPersistedData(persistConfig, storagePrefix);
-        }
-    }, [persistConfig, storagePrefix]);
+    // Persist: hasPersisted 상태 — 기존과 동일하게 렌더마다 재확인 (persist 미사용 시 비용 없음)
+    // Persist: hasPersisted — re-checked per render as before (free when persist is unset)
+    const hasPersisted = persistConfig
+        ? hasPersistedData(persistConfig, storagePrefix)
+        : false;
 
-    // Persist: hasPersisted 상태 | hasPersisted state
-    const hasPersisted = useMemo(() => {
-        if (!persistConfig) return false;
-        return hasPersistedData(persistConfig, storagePrefix);
-    }, [persistConfig, storagePrefix]);
-
-    // Set new initial values (for dynamic initialization)
-    // 새 초기값 설정 (동적 초기화용)
-    const setInitialValues = useCallback(
-        (newInitialValues: T) => {
-            stableInitialValues.current = newInitialValues;
-            store.setInitialValues(newInitialValues);
-        },
-        [store],
-    ); // store 의존성 추가
-
-    // Handle standard input change events
-    // 표준 입력 변경 이벤트 처리
-    const handleChange = useCallback(
-        (event: FormChangeEvent) => {
-            const target = event.target;
-            if (!target || !target.name) {
-                devWarn(
-                    'useFormaState.handleChange: input element must have a "name" attribute',
-                );
-                return;
-            }
-
-            const { name, type, value, checked } = target as any;
-            let processedValue = value;
-
-            // DatePicker 처리 (Dayjs 객체) / DatePicker handling (Dayjs object)
-            if (value && typeof value === "object" && value.format) {
-                processedValue = value.format("YYYY-MM-DD");
-            }
-            // 체크박스 처리 / Checkbox handling
-            else if (type === "checkbox") {
-                processedValue = checked;
-            }
-            // 숫자 타입 처리 / Number type handling
-            else if (type === "number") {
-                processedValue = Number(value);
-            }
-            // null 값 처리 / Null value handling
-            else if (value === null) {
-                processedValue = undefined;
-            }
-
-            setValue(name, processedValue);
-        },
-        [setValue],
-    );
+    // 최신 actions 정의를 ref 로 추적 — 인라인 객체가 렌더마다 새 참조로 와도 재바인딩하지 않고,
+    // 접근 시점에 최신 정의(키 집합 포함)를 반영한다
+    // Track the latest actions definition via ref — inline objects don't cause re-binding;
+    // the latest definition (including its key set) is resolved at access time
+    const actionsRef = useRef(actionsDefinition);
+    actionsRef.current = actionsDefinition;
 
     // Bind actions to context if provided
-    // actions가 제공된 경우 context에 바인딩
+    // actions가 제공된 경우 context에 바인딩 — store 당 1회 생성되는 동적 Proxy 로
+    // 식별자는 안정적이면서 항상 최신 actions 정의를 실행한다 (글로벌 훅과 동일 패턴)
+    // Bound as a dynamic Proxy created once per store — stable identity while always
+    // executing the latest actions definition (same pattern as the global hooks)
     const boundActions = useMemo(() => {
-        if (!actionsDefinition) return {};
+        // 접근 시점의 병합된 actions 정의 조회 / resolve the merged actions definition at access time
+        const resolveMerged = (): Record<string, any> =>
+            (actionsRef.current ? mergeActions(actionsRef.current) : null) ||
+            {};
 
-        // 배열이면 병합, 객체면 그대로 사용
-        const mergedActions = mergeActions(actionsDefinition);
-        if (!mergedActions) return {};
+        const bound: any = new Proxy({} as any, {
+            get: (_target, prop) => {
+                const action = resolveMerged()[prop as any];
+                if (typeof action !== "function") return action;
 
-        const context: ActionContext<T> = {
-            values: store.getValues(),
-            getValue: (field: string | keyof T) =>
-                store.getValue(field as string),
-            setValue: (field: string | keyof T, value: any) =>
-                store.setValue(field as string, value),
-            setValues: (values: Partial<T>) => {
-                const currentValues = store.getValues();
-                const newValues = { ...currentValues, ...values };
-                store.setValues(newValues as T);
-            },
-            reset: () => store.reset(),
-            actions: {} as any, // Will be filled after binding
-        };
-
-        const bound: any = {};
-        for (const [key, action] of Object.entries(mergedActions)) {
-            bound[key] = (...args: any[]) => {
-                // Update context.values with latest state
-                context.values = store.getValues();
-                return action(context, ...args);
-            };
-        }
-
-        // Fill context.actions with bound actions
-        context.actions = bound;
-
-        return bound;
-    }, [actionsDefinition, store]);
-
-    // Register watch callbacks
-    // watch 콜백 등록
-    useEffect(() => {
-        if (!options.watch) return;
-
-        const unsubscribers: Array<() => void> = [];
-
-        for (const [path, callback] of Object.entries(options.watch)) {
-            const unsubscribe = store.watch(
-                path,
-                (value: any, prevValue: any) => {
+                // 호출 시점에 컨텍스트를 구성해 실행하는 래퍼 / wrapper building a per-call context
+                return (...args: any[]) => {
+                    // values 는 공유 캐시 보호를 위해 얕은 복사 / values shallow-copied to protect the shared cache
                     const context: ActionContext<T> = {
-                        values: store.getValues(),
+                        values: { ...store.getValues() },
                         getValue: (field: string | keyof T) =>
                             store.getValue(field as string),
                         setValue: (field: string | keyof T, value: any) =>
                             store.setValue(field as string, value),
-                        setValues: (values: Partial<T>) => {
-                            const currentValues = store.getValues();
-                            const newValues = { ...currentValues, ...values };
-                            store.setValues(newValues as T);
-                        },
+                        setValues: surface.setValues,
                         reset: () => store.reset(),
-                        actions: boundActions,
+                        actions: bound,
                     };
 
-                    callback(context, value, prevValue);
-                },
-            );
+                    return action(context, ...args);
+                };
+            },
+            has: (_target, prop) => prop in resolveMerged(),
+            ownKeys: () => Reflect.ownKeys(resolveMerged()),
+            getOwnPropertyDescriptor: (_target, prop) => {
+                if (prop in resolveMerged()) {
+                    return { enumerable: true, configurable: true };
+                }
+                return undefined;
+            },
+        });
 
-            unsubscribers.push(unsubscribe);
-        }
+        return bound;
+    }, [store, surface]);
+
+    // 최신 watch 맵을 ref 로 추적 — 인라인 객체가 렌더마다 새 참조로 와도 재구독하지 않는다
+    // Track the latest watch map via ref — inline objects no longer unsubscribe/resubscribe per render
+    const watchRef = useRef(watch);
+    watchRef.current = watch;
+
+    // Register watch callbacks — 마운트(스토어) 기준 1회 등록.
+    // watch 키 집합은 마운트 시 고정 (기존에도 동적 키 변경은 미지원), 핸들러 본문은 ref 로 최신 반영.
+    // Registered once per store; the watch key set is fixed at mount (dynamic keys were never
+    // supported), while the latest handler body is read through the ref.
+    useEffect(() => {
+        const watchMap = watchRef.current;
+        if (!watchMap) return;
+
+        const unsubscribers = Object.keys(watchMap).map((path) =>
+            store.watch(path, (value: any, prevValue: any) => {
+                const callback = watchRef.current?.[path];
+                if (!callback) return;
+
+                // watch 콜백용 컨텍스트 — values 는 공유 캐시 보호를 위해 얕은 복사
+                // per-event context — values shallow-copied to protect the shared cache
+                const context: ActionContext<T> = {
+                    values: { ...store.getValues() },
+                    getValue: (field: string | keyof T) =>
+                        store.getValue(field as string),
+                    setValue: (field: string | keyof T, value: any) =>
+                        store.setValue(field as string, value),
+                    setValues: surface.setValues,
+                    reset: () => store.reset(),
+                    actions: boundActions,
+                };
+
+                callback(context, value, prevValue);
+            }),
+        );
 
         return () => {
             unsubscribers.forEach((unsub) => unsub());
         };
-    }, [options.watch, store, boundActions]);
+    }, [store, surface, boundActions]);
 
-    return {
-        useValue,
-        setValue,
-        getValues,
-        setValues,
-        setBatch: useCallback(
-            (updates: Record<string, any>) => {
-                store.setBatch(updates);
+    // 반환 객체 — store 수준 표면 + 컴포넌트 수준 조각(actions/persist)의 합성.
+    // deps 가 모두 안정적이므로 재렌더 간 동일 참조를 유지한다 (공개 형태는 기존과 100% 동일).
+    // Return object — store-level surface + per-component pieces (actions/persist).
+    // All deps are stable, so the reference stays identical across re-renders (public shape unchanged).
+    return useMemo(
+        () => ({
+            ...surface,
+            actions: boundActions,
+            // 저장된 데이터 삭제 / clear persisted data
+            clearPersisted: () => {
+                if (persistConfig) {
+                    clearPersistedData(persistConfig, storagePrefix);
+                }
             },
-            [store], // store 의존성 추가
-        ),
-        reset,
-        setInitialValues,
-        handleChange,
-        handleFormChange: handleChange,
-        hasField: useCallback(
-            (path: string) => {
-                return store.hasField(path);
-            },
-            [store], // store 의존성 추가
-        ),
-        removeField: useCallback(
-            (path: string) => {
-                store.removeField(path);
-            },
-            [store], // store 의존성 추가
-        ),
-        getValue: useCallback(
-            (path: string) => {
-                return store.getValue(path);
-            },
-            [store], // store 의존성 추가
-        ),
-        subscribe: useCallback(
-            (callback: (values: T) => void) => {
-                return store.subscribeToAll(callback);
-            },
-            [store], // store 의존성 추가
-        ),
-        refreshFields: useCallback(
-            (prefix: string) => {
-                store.refreshFields(prefix);
-            },
-            [store], // store 의존성 추가
-        ),
-        actions: boundActions,
-        _store: store,
-        clearPersisted,
-        hasPersisted,
-    };
+            hasPersisted,
+        }),
+        [surface, boundActions, hasPersisted, persistConfig, storagePrefix],
+    );
 }

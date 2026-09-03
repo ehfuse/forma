@@ -348,6 +348,24 @@ export class FieldStore<T extends Record<string, any>> {
             ) {
                 add();
             }
+            // 6. 객체 필드가 null·undefined·원시값으로 교체된 경우 —
+            //    하위 경로의 값은 사라지므로(undefined) 값이 있었던 구독자만 깨운다.
+            //    규칙 3·4 는 새 값이 객체/배열일 때만 다뤄서, setValue(field, null) 로 통째로
+            //    지우면 하위 leaf 구독자가 옛 값을 계속 들고 있었다.
+            //    Rule 6: object field replaced by null/undefined/primitive — descendant paths
+            //    become undefined, so wake only subscribers whose value actually disappeared
+            //    (rules 3-4 only cover object/array replacements).
+            else if (
+                subscribedPath.startsWith(`${fieldStr}.`) &&
+                (value === null || typeof value !== "object") &&
+                oldValue !== null &&
+                typeof oldValue === "object"
+            ) {
+                const childPath = subscribedPath.substring(fieldStr.length + 1);
+                if (getNestedValue(oldValue, childPath) !== undefined) {
+                    add();
+                }
+            }
         });
 
         return affected;

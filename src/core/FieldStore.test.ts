@@ -167,6 +167,27 @@ describe("FieldStore notification matching", () => {
             assert.ok(i0.state.count > before, "removal fires");
         });
 
+        // 분기6: 객체 → null·undefined·원시값 / object cleared to null-undefined-primitive
+        test("object cleared to null notifies descendant subscribers", () => {
+            const store = new FieldStore<any>({});
+            store.setValue("upload", { progress: 100, index: 1 });
+            const progress = trackSubscription(store, "upload.progress");
+            const index = trackSubscription(store, "upload.index");
+            const missing = trackSubscription(store, "upload.other");
+            store.setValue("upload", null); // 업로드 완료 후 통째로 비운다 / cleared as a whole
+            assert.equal(progress.state.count, 1, "progress disappeared → fire");
+            assert.equal(index.state.count, 1, "index disappeared → fire");
+            assert.equal(missing.state.count, 0, "already undefined → no fire");
+        });
+
+        test("object replaced by a primitive notifies descendant subscribers", () => {
+            const store = new FieldStore<any>({});
+            store.setValue("upload", { progress: 50 });
+            const progress = trackSubscription(store, "upload.progress");
+            store.setValue("upload", 0);
+            assert.equal(progress.state.count, 1);
+        });
+
         // 분기2: .length / length subscriber
         test("plain array length subscriber fires on length change only", () => {
             const store = new FieldStore<any>({});
@@ -193,6 +214,12 @@ describe("FieldStore notification matching", () => {
                 seed: { user: { name: "Jane", age: 1 } },
                 next: { user: { name: "Jane", age: 2 } },
                 subs: ["user.name", "user.age"],
+            },
+            {
+                name: "object cleared to null",
+                seed: { upload: { progress: 100, index: 1 } },
+                next: { upload: null },
+                subs: ["upload.progress", "upload.index"],
             },
             {
                 name: "array index changed",

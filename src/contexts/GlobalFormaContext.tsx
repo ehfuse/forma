@@ -193,6 +193,9 @@ export function GlobalFormaProvider({
     // 리렌더시키지 않아 children 트리 전체의 cascade 재호출을 막을 수 있다.
     const openModalIdsRef = useRef<string[]>([]);
     const modalTrackingRef = useRef<string[]>([]);
+    // 모달을 열 때 그 밑 이력 칸의 위치(라우터가 적어 둔 idx) — 뒤로가기가 "모달 위에 쌓인 화면에서 돌아온 것" 인지 가린다.
+    // History position (router idx) of the entry under each modal — tells a "return from a screen stacked above" apart.
+    const modalBaseIdxRef = useRef<Map<string, number | null>>(new Map());
 
     /**
      * formId에 해당하는 FieldStore를 가져오거나 새로 생성합니다. | Get or create FieldStore for the given formId.
@@ -523,8 +526,19 @@ export function GlobalFormaProvider({
         modalTrackingRef.current.push(modalId);
         openModalIdsRef.current = [...openModalIdsRef.current, modalId];
 
+        // 지금 칸의 상태(라우터의 usr · key · idx)를 그대로 이어받는다 — 모달 칸에서 다른 화면으로 갔다가 돌아와도
+        // 라우터 상태가 남고, 라우터가 다음 칸의 idx 를 이 칸에서 이어 센다(비워 두면 idx 가 끊겨 "앞 화면 없음" 으로 읽혔다).
+        // Carry over the current entry's state (router usr/key/idx) so that leaving from and returning to the modal entry keeps it.
+        const current = window.history.state;
+        const base: Record<string, unknown> =
+            current && typeof current === "object" ? current : {};
+        modalBaseIdxRef.current.set(
+            modalId,
+            typeof base.idx === "number" ? base.idx : null,
+        );
+
         window.history.pushState(
-            { modalOpen: modalId },
+            { ...base, modalOpen: modalId },
             "",
             window.location.href,
         );
@@ -542,6 +556,7 @@ export function GlobalFormaProvider({
         modalTrackingRef.current = modalTrackingRef.current.filter(
             (id) => id !== modalId,
         );
+        modalBaseIdxRef.current.delete(modalId);
     }, []);
 
     /**
@@ -562,7 +577,31 @@ export function GlobalFormaProvider({
     useEffect(() => {
         const handlePopState = (e: PopStateEvent) => {
             // 열린 모달이 있으면 모달을 닫기
-            if (openModalIdsRef.current.length > 0) {
+            const ids = openModalIdsRef.current;
+            if (ids.length > 0) {
+                /*
+                 * 모달을 연 채 다른 화면(라우트)을 그 위에 쌓았다가 돌아온 뒤로가기는 모달을 닫지 않는다.
+                 * 예전에는 뒤로가기가 오면 무조건 맨 위 모달을 닫아, 시트 위에 화면을 띄우려면 "시트를 닫고 → 이동 → 돌아오면 다시 열기" 를
+                 * 화면마다 손으로 해야 했다.
+                 *   · 도착한 칸이 맨 위 모달의 칸이다 → 그 위 화면에서 돌아온 것.
+                 *   · 도착한 칸의 idx 가 모달 밑 칸보다 크다 → 모달 위에 쌓인 화면끼리 오간 것(모달 칸까지 내려오지 않았다).
+                 * A back navigation that returns to (or stays above) the top modal's own entry must not close it.
+                 */
+                const lastModalId = ids[ids.length - 1];
+                const arrived = (e.state ?? null) as {
+                    modalOpen?: unknown;
+                    idx?: unknown;
+                } | null;
+                if (arrived?.modalOpen === lastModalId) return;
+                const baseIdx = modalBaseIdxRef.current.get(lastModalId);
+                if (
+                    typeof arrived?.idx === "number" &&
+                    typeof baseIdx === "number" &&
+                    arrived.idx > baseIdx
+                ) {
+                    return;
+                }
+
                 e.preventDefault();
                 closeLastModal();
                 return;
